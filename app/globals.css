@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-green: #16a34a;
+    --brand-green-dark: #14532d;
+    --brand-gold: #f59e0b;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply text-gray-900 antialiased;
+  }
+
+  * {
+    @apply border-surface-border;
+  }
+}
+
+@layer components {
+  .container-base {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-padding {
+    @apply py-16 sm:py-20 lg:py-24;
+  }
+
+  .section-title {
+    @apply text-3xl sm:text-4xl font-bold text-brand-blue leading-tight;
+  }
+
+  .section-subtitle {
+    @apply text-gray-600 text-lg leading-relaxed;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-brand-blue to-brand-blueLight bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .animation-delay-100 { animation-delay: 100ms; }
+  .animation-delay-200 { animation-delay: 200ms; }
+  .animation-delay-300 { animation-delay: 300ms; }
+  .animation-delay-400 { animation-delay: 400ms; }
+
+  .text-balance { text-wrap: balance; }
+}
