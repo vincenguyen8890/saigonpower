@@ -1,14 +1,26 @@
 import { getRequestConfig } from 'next-intl/server'
 import type { AbstractIntlMessages } from 'next-intl'
-import { routing } from './routing'
+import { headers } from 'next/headers'
+
+const locales = ['vi', 'en'] as const
+type Locale = typeof locales[number]
+const defaultLocale: Locale = 'vi'
 
 export default getRequestConfig(async ({ requestLocale }) => {
+  // Try requestLocale first (set by next-intl plugin via header)
   let locale = await requestLocale
-  if (!locale || !routing.locales.includes(locale as 'vi' | 'en')) {
-    locale = routing.defaultLocale
+
+  // Fall back to our custom header
+  if (!locale || !locales.includes(locale as Locale)) {
+    const headersList = await headers()
+    const headerLocale = headersList.get('x-next-intl-locale')
+    if (headerLocale && locales.includes(headerLocale as Locale)) {
+      locale = headerLocale
+    } else {
+      locale = defaultLocale
+    }
   }
 
-  // Static imports required — dynamic template literals fail on Vercel Edge
   const messages: AbstractIntlMessages =
     locale === 'vi'
       ? (await import('../messages/vi.json')).default as unknown as AbstractIntlMessages
