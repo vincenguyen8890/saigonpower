@@ -2,8 +2,7 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
-import Header from '@/components/layout/Header'
-import Footer from '@/components/layout/Footer'
+import ConditionalLayout from '@/components/layout/ConditionalLayout'
 import type { Metadata } from 'next'
 
 interface Props {
@@ -27,10 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       locale: locale === 'vi' ? 'vi_VN' : 'en_US',
     },
     alternates: {
-      languages: {
-        vi: '/vi',
-        en: '/en',
-      },
+      languages: { vi: '/vi', en: '/en' },
     },
   }
 }
@@ -46,7 +42,6 @@ export default async function LocaleLayout({ children, params }: Props) {
     notFound()
   }
 
-  // Register locale for this request — required for next-intl server functions
   setRequestLocale(locale)
 
   const messages = await getMessages()
@@ -63,9 +58,9 @@ export default async function LocaleLayout({ children, params }: Props) {
       </head>
       <body className="font-sans">
         <NextIntlClientProvider messages={messages}>
-          <Header />
-          <main>{children}</main>
-          <Footer />
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
         </NextIntlClientProvider>
       </body>
     </html>
