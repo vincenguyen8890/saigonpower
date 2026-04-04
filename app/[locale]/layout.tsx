@@ -1,5 +1,5 @@
 import { NextIntlClientProvider } from 'next-intl'
-import { getMessages, getTranslations } from 'next-intl/server'
+import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 import Header from '@/components/layout/Header'
@@ -45,6 +45,9 @@ export default async function LocaleLayout({ children, params }: Props) {
   if (!routing.locales.includes(locale as 'vi' | 'en')) {
     notFound()
   }
+
+  // Register locale for this request — required for next-intl server functions
+  setRequestLocale(locale)
 
   const messages = await getMessages()
 

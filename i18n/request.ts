@@ -1,24 +1,11 @@
 import { getRequestConfig } from 'next-intl/server'
 import type { AbstractIntlMessages } from 'next-intl'
-import { headers } from 'next/headers'
-
-const locales = ['vi', 'en'] as const
-type Locale = typeof locales[number]
-const defaultLocale: Locale = 'vi'
+import { routing } from './routing'
 
 export default getRequestConfig(async ({ requestLocale }) => {
-  // Try requestLocale first (set by next-intl plugin via header)
   let locale = await requestLocale
-
-  // Fall back to our custom header
-  if (!locale || !locales.includes(locale as Locale)) {
-    const headersList = await headers()
-    const headerLocale = headersList.get('x-next-intl-locale')
-    if (headerLocale && locales.includes(headerLocale as Locale)) {
-      locale = headerLocale
-    } else {
-      locale = defaultLocale
-    }
+  if (!locale || !routing.locales.includes(locale as 'vi' | 'en')) {
+    locale = routing.defaultLocale
   }
 
   const messages: AbstractIntlMessages =
