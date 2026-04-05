@@ -6,8 +6,8 @@
 
 import { createClient } from './server'
 import {
-  mockLeads, mockQuotes, mockCRMStats,
-  type Lead, type QuoteRequest, type LeadStatus, type CRMStats,
+  mockLeads, mockQuotes, mockCRMStats, mockPlans,
+  type Lead, type QuoteRequest, type LeadStatus, type CRMStats, type Plan,
 } from '@/data/mock-crm'
 
 function useMock() {
@@ -299,6 +299,45 @@ export async function getDealById(id: string): Promise<Deal | null> {
     if (error) throw error
     return data
   } catch { return mockDeals.find(d => d.id === id) ?? null }
+}
+
+// ─── Plans ────────────────────────────────────────────────────────────────────
+
+export async function insertPlan(plan: Omit<Plan, 'id'>): Promise<Plan | null> {
+  if (useMock()) {
+    const newPlan = { ...plan, id: `plan-${Date.now()}` }
+    mockPlans.push(newPlan)
+    return newPlan
+  }
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('plans') as any).insert(plan).select().single()
+    if (error) throw error
+    return data
+  } catch { return null }
+}
+
+export async function updatePlan(id: string, updates: Partial<Plan>): Promise<void> {
+  if (useMock()) {
+    const idx = mockPlans.findIndex(p => p.id === id)
+    if (idx !== -1) Object.assign(mockPlans[idx], updates)
+    return
+  }
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('plans') as any).update(updates).eq('id', id)
+}
+
+export async function deletePlan(id: string): Promise<void> {
+  if (useMock()) {
+    const idx = mockPlans.findIndex(p => p.id === id)
+    if (idx !== -1) mockPlans.splice(idx, 1)
+    return
+  }
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('plans') as any).delete().eq('id', id)
 }
 
 // ─── CRM Stats ────────────────────────────────────────────────────────────────
