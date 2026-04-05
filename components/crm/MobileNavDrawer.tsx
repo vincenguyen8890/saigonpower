@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
 import {
   Menu, X, LayoutDashboard, Users, FileText, Settings, LogOut,
   ShieldCheck, UserCheck, Zap, RefreshCw, Building2,
-  TrendingUp, BarChart3, Bot, ListChecks, DollarSign, Inbox,
+  TrendingUp, BarChart3, Bot, ListChecks, DollarSign, Inbox, Contact2,
 } from 'lucide-react'
 import NotificationBell from './NotificationBell'
 import type { CRMNotification } from './NotificationBell'
@@ -47,6 +47,13 @@ export default function MobileNavDrawer({ locale, email, isAdmin, notifications 
     {
       label: null,
       items: [{ href: `/${locale}/crm`, label: 'Dashboard', icon: LayoutDashboard }],
+    },
+    {
+      label: 'People',
+      items: [
+        { href: `/${locale}/crm/contacts`, label: 'Contacts',     icon: Contact2   },
+        { href: `/${locale}/crm/agents`,   label: 'Sales Agents', icon: Users      },
+      ],
     },
     {
       label: 'Pipeline',

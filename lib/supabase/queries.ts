@@ -459,6 +459,61 @@ export async function deleteContract(id: string): Promise<void> {
   await (supabase.from('contracts') as any).delete().eq('id', id)
 }
 
+// ─── Agents ───────────────────────────────────────────────────────────────────
+
+export interface CRMAgent {
+  id: string
+  name: string
+  email: string
+  role: 'admin' | 'agent'
+  phone: string | null
+  active: boolean
+  notes: string | null
+  created_at: string
+}
+
+const mockAgents: CRMAgent[] = [
+  { id: 'agt-001', name: 'Admin',       email: 'admin@saigonllc.com', role: 'admin', phone: '(832) 937-9999', active: true, notes: null, created_at: new Date().toISOString() },
+  { id: 'agt-002', name: 'Sales Agent', email: 'agent@saigonllc.com', role: 'agent', phone: '(832) 937-9998', active: true, notes: null, created_at: new Date().toISOString() },
+]
+
+export async function getCRMAgents(): Promise<CRMAgent[]> {
+  if (useMock()) return mockAgents
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('crm_agents') as any)
+      .select('*').order('created_at', { ascending: true })
+    if (error) throw error
+    return data ?? []
+  } catch { return mockAgents }
+}
+
+export async function insertCRMAgent(agent: Omit<CRMAgent, 'id' | 'created_at'>): Promise<CRMAgent | null> {
+  if (useMock()) return { ...agent, id: `agt-${Date.now()}`, created_at: new Date().toISOString() }
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('crm_agents') as any).insert(agent).select().single()
+    if (error) throw error
+    return data
+  } catch { return null }
+}
+
+export async function updateCRMAgent(id: string, updates: Partial<CRMAgent>): Promise<void> {
+  if (useMock()) return
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('crm_agents') as any).update(updates).eq('id', id)
+}
+
+export async function deleteCRMAgent(id: string): Promise<void> {
+  if (useMock()) return
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('crm_agents') as any).delete().eq('id', id)
+}
+
 // ─── Commissions ─────────────────────────────────────────────────────────────
 
 export interface Commission {

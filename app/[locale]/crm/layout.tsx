@@ -6,7 +6,7 @@ import Image from 'next/image'
 import {
   LayoutDashboard, Users, FileText, Settings, LogOut,
   ShieldCheck, UserCheck, Zap, RefreshCw, Building2,
-  TrendingUp, BarChart3, Bot, ListChecks, DollarSign, Inbox,
+  TrendingUp, BarChart3, Bot, ListChecks, DollarSign, Inbox, Contact2,
 } from 'lucide-react'
 import type { Metadata } from 'next'
 import { getLeads, getContracts, getActivities } from '@/lib/supabase/queries'
@@ -92,6 +92,13 @@ export default async function CRMLayout({ children, params }: Props) {
       label: null,
       items: [
         { href: `/${locale}/crm`,             label: 'Dashboard',        icon: LayoutDashboard },
+      ],
+    },
+    {
+      label: 'People',
+      items: [
+        { href: `/${locale}/crm/contacts`,    label: 'Contacts',         icon: Contact2        },
+        { href: `/${locale}/crm/agents`,      label: 'Sales Agents',     icon: Users           },
       ],
     },
     {
