@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import Header from './Header'
 import Footer from './Footer'
+import ChatWidget from '@/components/chat/ChatWidget'
 
 interface Props {
   children: React.ReactNode
@@ -21,6 +22,7 @@ export default function ConditionalLayout({ children }: Props) {
       <Header />
       <main>{children}</main>
       <Footer />
+      <ChatWidget />
     </>
   )
 }
