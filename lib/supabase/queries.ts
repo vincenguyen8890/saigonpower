@@ -240,15 +240,26 @@ export interface Deal {
   service_type: 'residential' | 'commercial' | null
   notes: string | null
   assigned_to: string | null
+  // extended fields
+  agent_code: string | null
+  service_address: string | null
+  esid: string | null
+  contract_start_date: string | null
+  contract_end_date: string | null
+  rate_kwh: number | null
+  adder_kwh: number | null
+  term_months: number | null
+  product_type: string | null
+  usage_kwh: number | null
   created_at: string
   updated_at: string
 }
 
 const mockDeals: Deal[] = [
-  { id: 'd-001', lead_id: 'lead-002', title: 'Minh Tran – Nail Salon Commercial', value: 200, stage: 'proposal',     probability: 70, expected_close: '2025-05-01', provider: 'Reliant Energy',   plan_name: 'Reliant Business 12', service_type: 'commercial',  notes: null, assigned_to: 'agent@saigonllc.com', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: 'd-002', lead_id: 'lead-003', title: 'Mai Pham – Residential 12mo',       value: 75,  stage: 'negotiation', probability: 85, expected_close: '2025-04-15', provider: 'Gexa Energy',       plan_name: 'Gexa Saver 12',       service_type: 'residential', notes: null, assigned_to: 'agent@saigonllc.com', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: 'd-003', lead_id: 'lead-006', title: 'Hoa Nguyen Restaurant',             value: 350, stage: 'qualified',   probability: 50, expected_close: '2025-05-15', provider: null,                plan_name: null,                  service_type: 'commercial',  notes: 'High usage ~3200 kWh/mo', assigned_to: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: 'd-004', lead_id: 'lead-001', title: 'Lan Nguyen – Residential',          value: 75,  stage: 'prospect',    probability: 30, expected_close: '2025-06-01', provider: null,                plan_name: null,                  service_type: 'residential', notes: null, assigned_to: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'd-001', lead_id: 'lead-002', title: 'Minh Tran – Nail Salon Commercial', value: 200, stage: 'proposal',     probability: 70, expected_close: '2025-05-01', provider: 'Reliant Energy', plan_name: 'Reliant Business 12', service_type: 'commercial',  notes: null, assigned_to: 'agent@saigonllc.com', agent_code: null, service_address: '910 Business Blvd, Sugar Land TX', esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: 0.132, adder_kwh: null, term_months: 12, product_type: 'FIXED RATE', usage_kwh: 1800, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'd-002', lead_id: 'lead-003', title: 'Mai Pham – Residential 12mo',       value: 75,  stage: 'negotiation', probability: 85, expected_close: '2025-04-15', provider: 'Gexa Energy',    plan_name: 'Gexa Saver 12',       service_type: 'residential', notes: null, assigned_to: 'agent@saigonllc.com', agent_code: null, service_address: '5678 Oak Ave, Katy TX', esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: 0.109, adder_kwh: null, term_months: 12, product_type: 'FIXED RATE', usage_kwh: 1200, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'd-003', lead_id: 'lead-006', title: 'Hoa Nguyen Restaurant',             value: 350, stage: 'qualified',   probability: 50, expected_close: '2025-05-15', provider: null,             plan_name: null,                  service_type: 'commercial',  notes: 'High usage ~3200 kWh/mo', assigned_to: null, agent_code: null, service_address: null, esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: null, adder_kwh: null, term_months: null, product_type: null, usage_kwh: 3200, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'd-004', lead_id: 'lead-001', title: 'Lan Nguyen – Residential',          value: 75,  stage: 'prospect',    probability: 30, expected_close: '2025-06-01', provider: null,             plan_name: null,                  service_type: 'residential', notes: null, assigned_to: null, agent_code: null, service_address: null, esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: null, adder_kwh: null, term_months: null, product_type: null, usage_kwh: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
 ]
 
 export async function getDeals(stage?: string): Promise<Deal[]> {

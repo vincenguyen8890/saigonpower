@@ -16,17 +16,27 @@ export async function startRenewalAction(params: {
 
   // Create a renewal deal
   await insertDeal({
-    lead_id:        leadId,
-    title:          `Renewal — ${customerName}`,
-    value:          serviceType === 'commercial' ? 200 : 75,
-    stage:          'prospect',
-    probability:    50,
-    expected_close: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-    provider:       provider,
-    plan_name:      planName,
-    service_type:   serviceType,
-    notes:          `Renewal from contract ${contractId}. Current rate: ${currentRate ? `${(currentRate * 100).toFixed(1)}¢/kWh` : 'N/A'} with ${provider}.`,
-    assigned_to:    null,
+    lead_id:             leadId,
+    title:               `Renewal — ${customerName}`,
+    value:               serviceType === 'commercial' ? 200 : 75,
+    stage:               'prospect',
+    probability:         50,
+    expected_close:      new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+    provider:            provider,
+    plan_name:           planName,
+    service_type:        serviceType,
+    notes:               `Renewal from contract ${contractId}. Current rate: ${currentRate ? `${(currentRate * 100).toFixed(1)}¢/kWh` : 'N/A'} with ${provider}.`,
+    assigned_to:         null,
+    agent_code:          null,
+    service_address:     null,
+    esid:                null,
+    contract_start_date: null,
+    contract_end_date:   null,
+    rate_kwh:            currentRate,
+    adder_kwh:           null,
+    term_months:         null,
+    product_type:        null,
+    usage_kwh:           null,
   })
 
   // Log renewal activity

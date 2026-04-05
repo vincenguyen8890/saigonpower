@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, DollarSign, Target, Calendar, Building2, User, TrendingUp, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, DollarSign, Target, Building2, User, TrendingUp, CheckCircle2, MapPin, Zap, Hash } from 'lucide-react'
 import { getDealById, getLeadById, getActivities } from '@/lib/supabase/queries'
 import { mockProviders } from '@/data/mock-crm'
 import { formatDate } from '@/lib/utils'
@@ -118,26 +118,30 @@ export default async function DealDetailPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Deal Terms */}
+          {/* Contract Details */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <Building2 size={16} className="text-brand-green" />
-              Deal Terms
+              Contract Details
             </h2>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="divide-y divide-gray-50">
               {[
-                { label: 'Provider',        value: deal.provider   ?? '—' },
-                { label: 'Plan',            value: deal.plan_name  ?? '—' },
-                { label: 'Expected Close',  value: deal.expected_close ?? '—' },
-                { label: 'Probability',     value: `${deal.probability}%` },
-                { label: 'Monthly Comm.',   value: commissionPerMonth > 0 ? `$${commissionPerMonth}/mo` : '—' },
-                { label: 'Lifetime Est.',   value: estimatedLifetimeCommission > 0 ? `$${estimatedLifetimeCommission.toLocaleString()}` : '—' },
+                { label: 'Supplier',          value: deal.provider         ?? '—' },
+                { label: 'Plan Name',         value: deal.plan_name        ?? '—' },
+                { label: 'Product Type',      value: deal.product_type     ?? '—' },
+                { label: 'Contract Term',     value: deal.term_months      ? `${deal.term_months} months` : '—' },
+                { label: 'Contract Rate',     value: deal.rate_kwh         ? `${(deal.rate_kwh * 100).toFixed(3)}¢/kWh` : '—' },
+                { label: 'Adder ($/kWh)',     value: deal.adder_kwh        ? `${(deal.adder_kwh * 100).toFixed(3)}¢/kWh` : '—' },
+                { label: 'Est. Usage',        value: deal.usage_kwh        ? `${deal.usage_kwh.toLocaleString()} kWh/mo` : '—' },
+                { label: 'Est. Monthly Bill', value: deal.rate_kwh && deal.usage_kwh ? `$${Math.round((deal.rate_kwh + (deal.adder_kwh ?? 0)) * deal.usage_kwh)}/mo` : '—' },
+                { label: 'Contract Start',    value: deal.contract_start_date ?? '—' },
+                { label: 'Contract End',      value: deal.contract_end_date   ?? '—' },
+                { label: 'Expected Close',    value: deal.expected_close      ?? '—' },
+                { label: 'Probability',       value: `${deal.probability}%` },
               ].map(({ label, value }) => (
-                <div key={label} className="flex items-start gap-3">
-                  <div>
-                    <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-                    <p className="text-sm font-medium text-gray-900">{value}</p>
-                  </div>
+                <div key={label} className="flex items-center justify-between py-2.5">
+                  <span className="text-xs text-gray-400 uppercase tracking-wide">{label}</span>
+                  <span className="text-sm font-medium text-gray-900 text-right">{value}</span>
                 </div>
               ))}
             </div>
@@ -148,6 +152,30 @@ export default async function DealDetailPage({ params }: Props) {
               </div>
             )}
           </div>
+
+          {/* Property Info */}
+          {(deal.service_address || deal.esid) && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <MapPin size={16} className="text-brand-green" />
+                Property Info
+              </h2>
+              <div className="divide-y divide-gray-50">
+                {deal.service_address && (
+                  <div className="flex items-start justify-between py-2.5 gap-4">
+                    <span className="text-xs text-gray-400 uppercase tracking-wide flex-shrink-0">Service Address</span>
+                    <span className="text-sm font-medium text-gray-900 text-right">{deal.service_address}</span>
+                  </div>
+                )}
+                {deal.esid && (
+                  <div className="flex items-center justify-between py-2.5">
+                    <span className="text-xs text-gray-400 uppercase tracking-wide">ESI ID</span>
+                    <span className="text-sm font-mono text-gray-700">{deal.esid}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Activities */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
@@ -236,21 +264,31 @@ export default async function DealDetailPage({ params }: Props) {
             </div>
           )}
 
-          {/* Quick info */}
+          {/* Assignment + Meta */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h2 className="font-semibold text-gray-900 mb-3 text-sm">Meta</h2>
-            <div className="space-y-2 text-xs">
+            <h2 className="font-semibold text-gray-900 mb-3 text-sm">Assignment</h2>
+            <div className="space-y-2.5 text-xs">
               <div className="flex justify-between">
-                <span className="text-gray-400">Assigned</span>
-                <span className="text-gray-700">{deal.assigned_to?.split('@')[0] ?? '—'}</span>
+                <span className="text-gray-400">Sales Agent</span>
+                <span className="text-gray-700 font-medium">{deal.assigned_to?.split('@')[0] ?? '—'}</span>
               </div>
-              <div className="flex justify-between">
+              {deal.agent_code && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Agent Code</span>
+                  <span className="text-gray-700 font-mono">{deal.agent_code}</span>
+                </div>
+              )}
+              <div className="flex justify-between pt-1 border-t border-gray-50">
                 <span className="text-gray-400">Created</span>
                 <span className="text-gray-700">{formatDate(deal.created_at, locale)}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-gray-400">Updated</span>
+                <span className="text-gray-700">{formatDate(deal.updated_at, locale)}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-gray-400">Deal ID</span>
-                <span className="font-mono text-gray-500">{deal.id}</span>
+                <span className="font-mono text-gray-400 text-[10px] truncate ml-2 max-w-[100px]">{deal.id.slice(0,8)}…</span>
               </div>
             </div>
           </div>

@@ -7,7 +7,8 @@ import { createDeal } from './actions'
 import type { Lead } from '@/data/mock-crm'
 import type { Deal } from '@/lib/supabase/queries'
 
-const PROVIDERS = ['Gexa Energy', 'TXU Energy', 'Reliant Energy', 'Green Mountain Energy', 'Cirro Energy', 'Payless Power']
+const PROVIDERS = ['Gexa Energy', 'TXU Energy', 'Reliant Energy', 'Green Mountain Energy', 'Cirro Energy', 'Payless Power', 'Budget Power', 'Pulse Power', '4Change Energy']
+const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHTS', 'FREE WEEKENDS']
 
 export default function NewDealModal({ locale, leads }: { locale: string; leads: Lead[] }) {
   const [open, setOpen] = useState(false)
@@ -17,29 +18,39 @@ export default function NewDealModal({ locale, leads }: { locale: string; leads:
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = e.currentTarget
-    const get = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).value
+    const get  = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).value
 
     startTransition(async () => {
       await createDeal({
-        title:          get('title'),
-        lead_id:        get('lead_id') || null,
-        value:          Number(get('value')) || 0,
-        stage:          get('stage') as Deal['stage'],
-        probability:    Number(get('probability')) || 50,
-        expected_close: get('expected_close') || null,
-        provider:       get('provider') || null,
-        plan_name:      get('plan_name') || null,
-        service_type:   (get('service_type') as 'residential' | 'commercial') || null,
-        notes:          get('notes') || null,
-        assigned_to:    get('assigned_to') || null,
+        title:               get('title'),
+        lead_id:             get('lead_id') || null,
+        value:               Number(get('value')) || 0,
+        stage:               get('stage') as Deal['stage'],
+        probability:         Number(get('probability')) || 50,
+        expected_close:      get('expected_close') || null,
+        provider:            get('provider') || null,
+        plan_name:           get('plan_name') || null,
+        service_type:        (get('service_type') as 'residential' | 'commercial') || null,
+        notes:               get('notes') || null,
+        assigned_to:         get('assigned_to') || null,
+        agent_code:          get('agent_code') || null,
+        service_address:     get('service_address') || null,
+        esid:                get('esid') || null,
+        contract_start_date: get('contract_start_date') || null,
+        contract_end_date:   get('contract_end_date') || null,
+        rate_kwh:            Number(get('rate_kwh')) || null,
+        adder_kwh:           Number(get('adder_kwh')) || null,
+        term_months:         Number(get('term_months')) || null,
+        product_type:        get('product_type') || null,
+        usage_kwh:           Number(get('usage_kwh')) || null,
       })
       setOpen(false)
       router.refresh()
     })
   }
 
-  const inputClass = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green'
-  const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
+  const C = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green'
+  const L = 'block text-xs font-medium text-gray-600 mb-1'
 
   return (
     <>
@@ -53,93 +64,149 @@ export default function NewDealModal({ locale, leads }: { locale: string; leads:
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
               <h2 className="font-semibold text-gray-900">New Deal</h2>
-              <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X size={18} />
-              </button>
+              <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <label className={labelClass}>Deal Title *</label>
-                  <input name="title" required placeholder="e.g. Nguyen – Residential 12mo" className={inputClass} />
-                </div>
-                <div className="col-span-2">
-                  <label className={labelClass}>Linked Lead</label>
-                  <select name="lead_id" defaultValue="" className={inputClass}>
-                    <option value="">— None —</option>
-                    {leads.map(l => (
-                      <option key={l.id} value={l.id}>{l.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Value ($/mo)</label>
-                  <input name="value" type="number" min="0" defaultValue="75" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Probability (%)</label>
-                  <input name="probability" type="number" min="0" max="100" defaultValue="50" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Stage</label>
-                  <select name="stage" defaultValue="prospect" className={inputClass}>
-                    <option value="prospect">Prospect</option>
-                    <option value="qualified">Qualified</option>
-                    <option value="proposal">Proposal</option>
-                    <option value="negotiation">Negotiation</option>
-                    <option value="won">Won</option>
-                    <option value="lost">Lost</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Service Type</label>
-                  <select name="service_type" defaultValue="residential" className={inputClass}>
-                    <option value="residential">Residential</option>
-                    <option value="commercial">Commercial</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Provider</label>
-                  <select name="provider" defaultValue="" className={inputClass}>
-                    <option value="">— Select —</option>
-                    {PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Plan Name</label>
-                  <input name="plan_name" placeholder="e.g. Gexa Saver 12" className={inputClass} />
-                </div>
-                <div className="col-span-2">
-                  <label className={labelClass}>Expected Close Date</label>
-                  <input name="expected_close" type="date" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Assigned To</label>
-                  <input name="assigned_to" placeholder="agent@saigonllc.com" className={inputClass} />
-                </div>
-                <div className="col-span-2">
-                  <label className={labelClass}>Notes</label>
-                  <textarea name="notes" rows={2} className={inputClass.replace('py-2.5', 'py-2') + ' resize-none'} placeholder="Additional notes..." />
+            <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
+
+              {/* ── Basic Info ── */}
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Basic Info</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className={L}>Deal Title *</label>
+                    <input name="title" required placeholder="e.g. Nguyen – Residential 12mo" className={C} />
+                  </div>
+                  <div className="col-span-2">
+                    <label className={L}>Linked Contact</label>
+                    <select name="lead_id" defaultValue="" className={C}>
+                      <option value="">— None —</option>
+                      {leads.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={L}>Stage</label>
+                    <select name="stage" defaultValue="prospect" className={C}>
+                      {['prospect','qualified','proposal','negotiation','won','lost'].map(s => (
+                        <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={L}>Service Type</label>
+                    <select name="service_type" defaultValue="residential" className={C}>
+                      <option value="residential">Residential</option>
+                      <option value="commercial">Commercial</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={L}>Value ($/mo commission)</label>
+                    <input name="value" type="number" min="0" defaultValue="75" className={C} />
+                  </div>
+                  <div>
+                    <label className={L}>Probability (%)</label>
+                    <input name="probability" type="number" min="0" max="100" defaultValue="50" className={C} />
+                  </div>
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors"
-                >
+              {/* ── Contract Details ── */}
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Contract Details</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={L}>Supplier</label>
+                    <select name="provider" defaultValue="" className={C}>
+                      <option value="">— Select —</option>
+                      {PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={L}>Plan Name</label>
+                    <input name="plan_name" placeholder="e.g. Gexa Saver 12" className={C} />
+                  </div>
+                  <div>
+                    <label className={L}>Product Type</label>
+                    <select name="product_type" defaultValue="" className={C}>
+                      <option value="">— Select —</option>
+                      {PRODUCT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={L}>Contract Term (months)</label>
+                    <input name="term_months" type="number" min="0" placeholder="12" className={C} />
+                  </div>
+                  <div>
+                    <label className={L}>Contract Rate ($/kWh)</label>
+                    <input name="rate_kwh" type="number" step="0.001" min="0" placeholder="0.109" className={C} />
+                  </div>
+                  <div>
+                    <label className={L}>Adder ($/kWh)</label>
+                    <input name="adder_kwh" type="number" step="0.001" min="0" placeholder="0.008" className={C} />
+                  </div>
+                  <div>
+                    <label className={L}>Estimated Usage (kWh/mo)</label>
+                    <input name="usage_kwh" type="number" min="0" placeholder="1200" className={C} />
+                  </div>
+                  <div>
+                    <label className={L}>Expected Close Date</label>
+                    <input name="expected_close" type="date" className={C} />
+                  </div>
+                  <div>
+                    <label className={L}>Contract Start Date</label>
+                    <input name="contract_start_date" type="date" className={C} />
+                  </div>
+                  <div>
+                    <label className={L}>Contract End Date</label>
+                    <input name="contract_end_date" type="date" className={C} />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Property ── */}
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Property</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className={L}>Service Address</label>
+                    <input name="service_address" placeholder="123 Main St, Houston TX 77036" className={C} />
+                  </div>
+                  <div>
+                    <label className={L}>ESI ID</label>
+                    <input name="esid" placeholder="10089010238183693001" className={C} />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Assignment ── */}
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Assignment</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={L}>Sales Agent</label>
+                    <input name="assigned_to" placeholder="agent@saigonllc.com" className={C} />
+                  </div>
+                  <div>
+                    <label className={L}>Agent Code</label>
+                    <input name="agent_code" placeholder="AGT-001" className={C} />
+                  </div>
+                  <div className="col-span-2">
+                    <label className={L}>Notes</label>
+                    <textarea name="notes" rows={2} className={C.replace('py-2.5','py-2') + ' resize-none'} placeholder="Additional notes..." />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setOpen(false)}
+                  className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="flex-1 bg-brand-greenDark text-white py-2.5 rounded-xl text-sm hover:bg-brand-green transition-colors disabled:opacity-50 font-medium"
-                >
+                <button type="submit" disabled={isPending}
+                  className="flex-1 bg-brand-greenDark text-white py-2.5 rounded-xl text-sm hover:bg-brand-green transition-colors disabled:opacity-50 font-medium">
                   {isPending ? 'Saving...' : 'Create Deal'}
                 </button>
               </div>
