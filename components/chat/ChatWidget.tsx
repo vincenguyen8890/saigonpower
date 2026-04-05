@@ -298,7 +298,7 @@ export default function ChatWidget() {
                 </button>
               </div>
               <p className="text-center text-gray-300 text-xs mt-1.5">
-                {isVi ? 'Powered by Claude AI · Saigon Power' : 'Powered by Claude AI · Saigon Power'}
+Powered by OpenAI · Saigon Power
               </p>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 const SYSTEM_PROMPT = `You are Saigon Power's friendly AI assistant — a bilingual (Vietnamese/English) customer support bot for a Texas electricity brokerage serving the Vietnamese-American community.
 
@@ -40,20 +40,17 @@ const SYSTEM_PROMPT = `You are Saigon Power's friendly AI assistant — a biling
 - Switch language based on what the customer writes — if they write in Vietnamese, respond in Vietnamese; if English, respond in English
 - Keep responses concise (2-4 sentences max per message unless explaining something complex)
 - Use simple language — avoid electricity jargon unless explaining it
-- Add a helpful call-to-action when relevant (e.g., "Bạn có thể nhập ZIP tại giadienre.com để xem ngay" or link to quote form)
-- Never make up specific rates — direct them to the compare page for live rates
+- Add a helpful call-to-action when relevant
 
 ## DO NOT
 - Quote specific electricity rates (they change daily)
 - Make guarantees about savings amounts
-- Discuss competitor rates specifically
-- Handle complaints about other providers (redirect to calling us)
 - Discuss topics unrelated to electricity or Saigon Power's services
 
 ## Quick redirects
-- To compare plans → "Nhập ZIP của bạn tại giadienre.com/vi/compare" (VI) or "Enter your ZIP at giadienre.com/en/compare" (EN)
-- To get a quote → "/quote" page
-- To speak with a person → "Gọi (832) 937-9999" or "Call (832) 937-9999"
+- To compare plans → giadienre.com/compare
+- To get a quote → /quote page
+- To speak with a person → (832) 937-9999
 
 Start every new conversation with a friendly greeting in Vietnamese (default), then adapt to the customer's language.`
 
@@ -65,7 +62,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid messages' }, { status: 400 })
     }
 
-    // Validate message structure
     const validMessages = messages
       .filter((m: { role: string; content: string }) =>
         m.role && m.content && typeof m.content === 'string' && m.content.trim()
@@ -79,12 +75,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No valid messages' }, { status: 400 })
     }
 
-    // Streaming response
-    const stream = await client.messages.stream({
-      model: 'claude-haiku-4-5-20251001',
+    const stream = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
       max_tokens: 500,
-      system: SYSTEM_PROMPT,
-      messages: validMessages,
+      stream: true,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        ...validMessages,
+      ],
     })
 
     const encoder = new TextEncoder()
@@ -93,12 +91,8 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         try {
           for await (const chunk of stream) {
-            if (
-              chunk.type === 'content_block_delta' &&
-              chunk.delta.type === 'text_delta'
-            ) {
-              controller.enqueue(encoder.encode(chunk.delta.text))
-            }
+            const text = chunk.choices[0]?.delta?.content ?? ''
+            if (text) controller.enqueue(encoder.encode(text))
           }
           controller.close()
         } catch (err) {
