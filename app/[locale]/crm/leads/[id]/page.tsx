@@ -3,12 +3,21 @@ import Link from 'next/link'
 import { ArrowLeft, Phone, Mail, MapPin, Globe, User, FileText, Calendar } from 'lucide-react'
 import LeadStatusBadge from '@/components/crm/LeadStatusBadge'
 import LeadStatusSelect from '@/components/crm/LeadStatusSelect'
-import { mockLeads, mockQuotes } from '@/data/mock-crm'
+import { getLeadById, getQuotesByLead } from '@/lib/supabase/queries'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
+import NotesFormComponent from './NotesForm'
 
 interface Props {
   params: Promise<{ locale: string; id: string }>
+}
+
+const quoteStatusColor: Record<string, string> = {
+  pending:  'bg-amber-100 text-amber-700',
+  reviewed: 'bg-blue-100 text-blue-700',
+  sent:     'bg-purple-100 text-purple-700',
+  accepted: 'bg-green-100 text-green-700',
+  rejected: 'bg-gray-100 text-gray-500',
 }
 
 export default async function LeadDetailPage({ params }: Props) {
@@ -16,19 +25,11 @@ export default async function LeadDetailPage({ params }: Props) {
   setRequestLocale(locale)
   const isVi = locale === 'vi'
 
-  // TODO: Replace with Supabase query
-  const lead = mockLeads.find(l => l.id === id)
+  const [lead, quotes] = await Promise.all([
+    getLeadById(id),
+    getQuotesByLead(id),
+  ])
   if (!lead) notFound()
-
-  const quotes = mockQuotes.filter(q => q.lead_id === id)
-
-  const quoteStatusColor: Record<string, string> = {
-    pending:  'bg-amber-100 text-amber-700',
-    reviewed: 'bg-blue-100 text-blue-700',
-    sent:     'bg-purple-100 text-purple-700',
-    accepted: 'bg-green-100 text-green-700',
-    rejected: 'bg-gray-100 text-gray-500',
-  }
 
   return (
     <div>
@@ -186,7 +187,7 @@ export default async function LeadDetailPage({ params }: Props) {
               <Calendar size={16} className="text-brand-green" />
               {isVi ? 'Ghi Chú' : 'Notes'}
             </h2>
-            <NotesForm leadId={lead.id} initialNotes={lead.notes || ''} locale={locale} />
+            <NotesFormComponent leadId={lead.id} initialNotes={lead.notes || ''} locale={locale} />
           </div>
 
           {/* Timeline */}
@@ -244,10 +245,4 @@ export default async function LeadDetailPage({ params }: Props) {
       </div>
     </div>
   )
-}
-
-// Client component for notes form
-import NotesFormComponent from './NotesForm'
-function NotesForm({ leadId, initialNotes, locale }: { leadId: string; initialNotes: string; locale: string }) {
-  return <NotesFormComponent leadId={leadId} initialNotes={initialNotes} locale={locale} />
 }

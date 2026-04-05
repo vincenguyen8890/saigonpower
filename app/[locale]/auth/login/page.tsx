@@ -127,7 +127,37 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-gray-400 mt-6 flex items-center justify-center gap-1.5">
+          <div className="mt-6 pt-5 border-t border-gray-100">
+            <p className="text-xs text-gray-400 text-center mb-3">
+              {isVi ? 'Đăng nhập nhanh' : 'Quick login'}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail(process.env.NEXT_PUBLIC_ADMIN_EMAIL_HINT || 'admin@saigonllc.com')
+                  setPassword('')
+                }}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-xs font-medium hover:bg-amber-100 transition-colors"
+              >
+                <ShieldCheck size={13} />
+                {isVi ? 'Quản Trị' : 'Admin'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail(process.env.NEXT_PUBLIC_AGENT_EMAIL_HINT || 'agent@saigonllc.com')
+                  setPassword('')
+                }}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-green-200 bg-green-50 text-green-700 text-xs font-medium hover:bg-green-100 transition-colors"
+              >
+                <Zap size={13} />
+                {isVi ? 'Nhân Viên' : 'Agent'}
+              </button>
+            </div>
+          </div>
+
+          <p className="text-center text-xs text-gray-400 mt-4 flex items-center justify-center gap-1.5">
             <Zap size={12} />
             {isVi ? 'Chỉ dành cho nhân viên được ủy quyền' : 'Restricted to authorized staff only'}
           </p>

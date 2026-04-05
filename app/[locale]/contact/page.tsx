@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Phone, Mail, MapPin, Clock, Send, CheckCircle } from 'lucide-react'
 import Input from '@/components/ui/Input'
@@ -11,11 +11,38 @@ export default function ContactPage() {
   const locale = useLocale()
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise(r => setTimeout(r, 1200))
+
+    const form = e.currentTarget
+    const name    = (form.elements.namedItem('name')    as HTMLInputElement).value
+    const email   = (form.elements.namedItem('email')   as HTMLInputElement).value
+    const phone   = (form.elements.namedItem('phone')   as HTMLInputElement).value
+    const subject = (form.elements.namedItem('subject') as HTMLInputElement).value
+    const message = (form.elements.namedItem('message') as HTMLTextAreaElement).value
+
+    try {
+      await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          phone: phone || undefined,
+          zip: '00000',           // Contact form doesn't collect ZIP
+          serviceType: 'residential',
+          preferredLanguage: locale,
+          source: 'contact_form',
+          notes: `Subject: ${subject}\n\n${message}`,
+        }),
+      })
+    } catch {
+      // Always show success to user — don't block on network errors
+    }
+
     setSubmitted(true)
     setLoading(false)
   }
@@ -82,16 +109,17 @@ export default function ContactPage() {
               ) : (
                 <>
                   <h2 className="text-xl font-bold text-brand-blue mb-6">{t('formTitle')}</h2>
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <Input label={t('nameLabel')} placeholder="Nguyễn Văn A" required />
-                      <Input label={t('emailLabel')} type="email" placeholder="email@example.com" required />
+                      <Input name="name" label={t('nameLabel')} placeholder="Nguyễn Văn A" required />
+                      <Input name="email" label={t('emailLabel')} type="email" placeholder="email@example.com" required />
                     </div>
-                    <Input label={t('phoneLabel')} type="tel" placeholder="(832) 555-0100" />
-                    <Input label={t('subjectLabel')} placeholder={locale === 'vi' ? 'Tôi cần tư vấn gói điện' : 'I need electricity advice'} />
+                    <Input name="phone" label={t('phoneLabel')} type="tel" placeholder="(832) 555-0100" />
+                    <Input name="subject" label={t('subjectLabel')} placeholder={locale === 'vi' ? 'Tôi cần tư vấn gói điện' : 'I need electricity advice'} />
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('messageLabel')}</label>
                       <textarea
+                        name="message"
                         rows={4}
                         placeholder={t('messagePlaceholder')}
                         className="w-full border border-surface-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue resize-none"

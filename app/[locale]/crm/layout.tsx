@@ -3,7 +3,7 @@ import { getSession } from '@/lib/auth/session'
 import { setRequestLocale } from 'next-intl/server'
 import Link from 'next/link'
 import Image from 'next/image'
-import { LayoutDashboard, Users, FileText, Settings, LogOut, ShieldCheck, UserCheck } from 'lucide-react'
+import { LayoutDashboard, Users, FileText, Settings, LogOut, ShieldCheck, UserCheck, Zap, RefreshCw } from 'lucide-react'
 import type { Metadata } from 'next'
 
 interface Props {
@@ -28,9 +28,11 @@ export default async function CRMLayout({ children, params }: Props) {
   const isVi = locale === 'vi'
 
   const navItems = [
-    { href: `/${locale}/crm`,        label: 'Overview',  labelVi: 'Tổng Quan',   icon: LayoutDashboard },
-    { href: `/${locale}/crm/leads`,  label: 'Leads',     labelVi: 'Khách Hàng',  icon: Users           },
-    { href: `/${locale}/crm/quotes`, label: 'Quotes',    labelVi: 'Báo Giá',     icon: FileText        },
+    { href: `/${locale}/crm`,              label: 'Overview',  labelVi: 'Tổng Quan',   icon: LayoutDashboard },
+    { href: `/${locale}/crm/leads`,        label: 'Leads',     labelVi: 'Khách Hàng',  icon: Users           },
+    { href: `/${locale}/crm/quotes`,       label: 'Quotes',    labelVi: 'Báo Giá',     icon: FileText        },
+    { href: `/${locale}/crm/contracts`,    label: 'Contracts', labelVi: 'Hợp Đồng',    icon: Zap             },
+    { href: `/${locale}/crm/renewals`,     label: 'Renewals',  labelVi: 'Gia Hạn',     icon: RefreshCw       },
   ]
 
   return (

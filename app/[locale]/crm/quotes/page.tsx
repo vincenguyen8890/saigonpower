@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { FileText, Phone, Mail, Building2 } from 'lucide-react'
-import { mockQuotes } from '@/data/mock-crm'
+import { getQuotes } from '@/lib/supabase/queries'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
 
@@ -23,10 +23,7 @@ export default async function QuotesPage({ params, searchParams }: Props) {
   setRequestLocale(locale)
   const isVi = locale === 'vi'
 
-  // TODO: Replace with Supabase query
-  const quotes = status && status !== 'all'
-    ? mockQuotes.filter(q => q.status === status)
-    : mockQuotes
+  const quotes = await getQuotes(status)
 
   const statusOptions = [
     { value: 'all',      label: 'All',      labelVi: 'Tất Cả'     },
@@ -36,7 +33,7 @@ export default async function QuotesPage({ params, searchParams }: Props) {
     { value: 'accepted', label: 'Accepted', labelVi: 'Chấp Nhận'  },
   ]
 
-  const pendingCount = mockQuotes.filter(q => q.status === 'pending').length
+  const pendingCount = quotes.filter(q => q.status === 'pending').length
 
   return (
     <div>
