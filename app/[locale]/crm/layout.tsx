@@ -9,6 +9,10 @@ import {
   TrendingUp, BarChart3, Bot, ListChecks, DollarSign, Inbox,
 } from 'lucide-react'
 import type { Metadata } from 'next'
+import { getLeads, getContracts, getActivities } from '@/lib/supabase/queries'
+import NotificationBell from '@/components/crm/NotificationBell'
+import MobileNavDrawer from '@/components/crm/MobileNavDrawer'
+import type { CRMNotification } from '@/components/crm/NotificationBell'
 
 interface Props {
   children: React.ReactNode
@@ -27,6 +31,62 @@ export default async function CRMLayout({ children, params }: Props) {
   const { email, role } = session
   const isAdmin = role === 'admin'
 
+  // ── Fetch notification data ────────────────────────────────────────────────
+  const now = new Date()
+  const in30 = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
+
+  const [newLeads, expiringContracts, pendingActivities] = await Promise.all([
+    getLeads({ status: 'new' }),
+    getContracts('active'),
+    getActivities({ completed: false, limit: 100 }),
+  ])
+
+  const notifications: CRMNotification[] = []
+
+  // New leads (created in last 7 days)
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString()
+  const recentNewLeads = newLeads.filter(l => l.created_at > weekAgo)
+  if (recentNewLeads.length > 0) {
+    notifications.push({
+      id:       'new-leads',
+      type:     'lead',
+      title:    `${recentNewLeads.length} new lead${recentNewLeads.length > 1 ? 's' : ''} this week`,
+      subtitle: recentNewLeads.slice(0, 2).map(l => l.name).join(', ') + (recentNewLeads.length > 2 ? ` +${recentNewLeads.length - 2} more` : ''),
+      href:     `/${locale}/crm/leads?status=new`,
+      urgency:  'medium',
+    })
+  }
+
+  // Expiring contracts ≤ 30 days
+  const expiring = expiringContracts.filter(c => {
+    const d = Math.ceil((new Date(c.end_date).getTime() - now.getTime()) / 86400000)
+    return d >= 0 && d <= 30
+  })
+  if (expiring.length > 0) {
+    notifications.push({
+      id:       'expiring-contracts',
+      type:     'contract',
+      title:    `${expiring.length} contract${expiring.length > 1 ? 's' : ''} expiring within 30 days`,
+      subtitle: expiring.slice(0, 2).map(c => c.customer_name ?? c.provider).join(', ') + (expiring.length > 2 ? ` +${expiring.length - 2} more` : ''),
+      href:     `/${locale}/crm/renewals`,
+      urgency:  'high',
+    })
+  }
+
+  // Overdue tasks
+  const overdueTasks = pendingActivities.filter(a => a.due_date && a.due_date < now.toISOString())
+  if (overdueTasks.length > 0) {
+    notifications.push({
+      id:       'overdue-tasks',
+      type:     'task',
+      title:    `${overdueTasks.length} overdue task${overdueTasks.length > 1 ? 's' : ''}`,
+      subtitle: overdueTasks.slice(0, 2).map(a => a.title).join(', '),
+      href:     `/${locale}/crm/tasks`,
+      urgency:  overdueTasks.length > 3 ? 'high' : 'medium',
+    })
+  }
+
+  // ── Nav groups ──────────────────────────────────────────────────────────────
   const navGroups = [
     {
       label: null,
@@ -74,15 +134,23 @@ export default async function CRMLayout({ children, params }: Props) {
   ]
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-60 bg-brand-greenDark flex flex-col flex-shrink-0">
-        {/* Logo */}
+    <div className="flex flex-col lg:flex-row h-screen bg-gray-50 overflow-hidden">
+      {/* ── Mobile top bar + drawer ── */}
+      <MobileNavDrawer
+        locale={locale}
+        email={email}
+        isAdmin={isAdmin}
+        notifications={notifications}
+      />
+
+      {/* ── Desktop Sidebar ── */}
+      <aside className="hidden lg:flex w-60 bg-brand-greenDark flex-col flex-shrink-0">
+        {/* Logo + bell */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-green-700">
           <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0">
             <Image src="/sg-power-logo.jpg" alt="Saigon Power" width={36} height={36} className="object-cover w-full h-full" />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="text-white font-bold text-sm leading-tight">Saigon Power</p>
             <span className={`text-xs px-1.5 py-0.5 rounded font-medium inline-flex items-center gap-1 ${
               isAdmin ? 'bg-amber-400 text-amber-900' : 'bg-green-500 text-white'
@@ -91,6 +159,7 @@ export default async function CRMLayout({ children, params }: Props) {
               {isAdmin ? 'Admin' : 'Agent'}
             </span>
           </div>
+          <NotificationBell notifications={notifications} locale={locale} />
         </div>
 
         {/* Nav */}
@@ -154,9 +223,9 @@ export default async function CRMLayout({ children, params }: Props) {
         </div>
       </aside>
 
-      {/* Main */}
+      {/* ── Main content ── */}
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
+        <div className="p-4 lg:p-6">
           {children}
         </div>
       </main>
