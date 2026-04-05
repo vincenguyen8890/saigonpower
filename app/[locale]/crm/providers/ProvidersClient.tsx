@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Building2, Phone, Globe, Zap, DollarSign, PlusCircle, Pencil, Trash2, X } from 'lucide-react'
 import type { Provider } from '@/data/mock-crm'
 
@@ -119,10 +119,27 @@ function ProviderModal({
   )
 }
 
+const STORAGE_KEY = 'crm_providers'
+
 export default function ProvidersClient({ initialProviders, isAdmin }: Props) {
-  const [providers, setProviders]     = useState<Provider[]>(initialProviders)
-  const [editing, setEditing]         = useState<Provider | null | 'new'>(null)
+  const [providers, setProvidersRaw] = useState<Provider[]>(initialProviders)
+  const [editing, setEditing]        = useState<Provider | null | 'new'>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) setProvidersRaw(JSON.parse(stored))
+    } catch { /* ignore */ }
+  }, [])
+
+  function setProviders(updater: Provider[] | ((prev: Provider[]) => Provider[])) {
+    setProvidersRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }
 
   function handleSave(saved: Provider) {
     setProviders(prev => {

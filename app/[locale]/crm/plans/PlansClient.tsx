@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PlusCircle, Pencil, Trash2, Leaf, Tag, Zap } from 'lucide-react'
 import type { Plan } from '@/data/mock-crm'
 import PlanModal from './PlanModal'
+
+const STORAGE_KEY = 'crm_plans'
 
 interface Props {
   initialPlans: Plan[]
@@ -11,7 +13,23 @@ interface Props {
 }
 
 export default function PlansClient({ initialPlans, isAdmin }: Props) {
-  const [plans, setPlans]           = useState<Plan[]>(initialPlans)
+  const [plans, setPlansRaw] = useState<Plan[]>(initialPlans)
+
+  // Load from localStorage on first render
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) setPlansRaw(JSON.parse(stored))
+    } catch { /* ignore */ }
+  }, [])
+
+  function setPlans(updater: Plan[] | ((prev: Plan[]) => Plan[])) {
+    setPlansRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }
   const [editingPlan, setEditingPlan] = useState<Plan | null | 'new'>(null)
   const [filterService, setFilterService] = useState('all')
   const [filterProvider, setFilterProvider] = useState('all')
