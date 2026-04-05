@@ -2,79 +2,108 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── CSS Design Tokens ─────────────────────────────── */
 @layer base {
   :root {
-    --brand-green: #16a34a;
-    --brand-green-dark: #14532d;
-    --brand-gold: #f59e0b;
+    --brand-green:        #00C853;
+    --brand-green-dark:   #00A846;
+    --brand-blue:         #2979FF;
+    --brand-orange:       #FF6D00;
+    --text-primary:       #0F172A;
+    --text-muted:         #64748B;
+    --surface-bg:         #F8FAFC;
+    --surface-border:     #E2E8F0;
   }
 
-  html {
-    scroll-behavior: smooth;
-  }
+  html  { scroll-behavior: smooth; }
+  body  { @apply text-brand-dark antialiased bg-surface-bg; }
 
-  body {
-    @apply text-gray-900 antialiased;
-  }
-
-  * {
-    @apply border-surface-border;
+  ::selection {
+    background: rgba(0, 200, 83, 0.20);
+    color: #0F172A;
   }
 }
 
+/* ── Shared Component Shortcuts ───────────────────── */
 @layer components {
-  .container-base {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  .container-base  { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
+  .section-pad     { @apply py-20 sm:py-24 lg:py-28; }
+
+  /* Section header pattern */
+  .section-eyebrow {
+    @apply inline-flex items-center gap-2 bg-brand-greenLight border border-brand-greenBorder
+           text-brand-green text-xs font-bold uppercase tracking-widest rounded-full px-3.5 py-1.5 mb-4;
+  }
+  .section-eyebrow-blue {
+    @apply inline-flex items-center gap-2 bg-brand-blueLight border border-brand-blueBorder
+           text-brand-blue text-xs font-bold uppercase tracking-widest rounded-full px-3.5 py-1.5 mb-4;
+  }
+  .section-eyebrow-orange {
+    @apply inline-flex items-center gap-2 bg-brand-orangeLight border border-brand-orangeBorder
+           text-brand-orange text-xs font-bold uppercase tracking-widest rounded-full px-3.5 py-1.5 mb-4;
   }
 
-  .section-padding {
-    @apply py-16 sm:py-20 lg:py-24;
+  .section-title   { @apply text-3xl sm:text-4xl lg:text-5xl font-black text-brand-dark leading-tight tracking-tight; }
+  .section-sub     { @apply text-brand-muted text-lg leading-relaxed; }
+
+  /* Card */
+  .card            { @apply bg-white rounded-2xl border border-surface-border shadow-card; }
+  .card-hover      { @apply hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200; }
+
+  /* CTA Button (always green) */
+  .btn-cta {
+    @apply inline-flex items-center justify-center gap-2 bg-brand-green hover:bg-brand-greenDark
+           text-white font-bold rounded-xl transition-all duration-200 shadow-green
+           hover:shadow-green-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2
+           focus:ring-brand-green focus:ring-offset-2;
+  }
+  .btn-cta-lg  { @apply btn-cta px-8 py-4 text-base; }
+  .btn-cta-md  { @apply btn-cta px-6 py-3 text-sm; }
+  .btn-cta-sm  { @apply btn-cta px-4 py-2 text-sm; }
+
+  /* Secondary outline */
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 border-2 border-brand-green
+           text-brand-green hover:bg-brand-green hover:text-white font-bold rounded-xl
+           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:ring-offset-2;
   }
 
-  .section-title {
-    @apply text-3xl sm:text-4xl font-bold text-brand-blue leading-tight;
+  /* Ghost text button */
+  .btn-ghost {
+    @apply inline-flex items-center gap-1.5 text-brand-muted hover:text-brand-green
+           font-medium transition-colors text-sm;
   }
 
-  .section-subtitle {
-    @apply text-gray-600 text-lg leading-relaxed;
-  }
+  /* Savings number (always green) */
+  .savings-number { @apply text-brand-green font-black; }
 
-  .gradient-text {
-    @apply bg-gradient-to-r from-brand-blue to-brand-blueLight bg-clip-text text-transparent;
-  }
+  /* Warning / urgency */
+  .urgency-text   { @apply text-brand-orange font-semibold; }
+
+  /* Feature badge */
+  .badge-green  { @apply text-xs font-bold px-2.5 py-1 rounded-lg bg-brand-greenLight text-brand-green border border-brand-greenBorder; }
+  .badge-blue   { @apply text-xs font-bold px-2.5 py-1 rounded-lg bg-brand-blueLight text-brand-blue border border-brand-blueBorder; }
+  .badge-orange { @apply text-xs font-bold px-2.5 py-1 rounded-lg bg-brand-orangeLight text-brand-orange border border-brand-orangeBorder; }
 }
 
+/* ── Utilities ─────────────────────────────────────── */
 @layer utilities {
   .animation-delay-100 { animation-delay: 100ms; }
   .animation-delay-200 { animation-delay: 200ms; }
   .animation-delay-300 { animation-delay: 300ms; }
   .animation-delay-400 { animation-delay: 400ms; }
+  .text-balance        { text-wrap: balance; }
 
-  .text-balance { text-wrap: balance; }
+  /* 3D perspective */
+  .perspective-800     { perspective: 800px; }
+  .perspective-1000    { perspective: 1000px; }
+  .preserve-3d         { transform-style: preserve-3d; }
 
-  /* 3D perspective utilities */
-  .perspective-800  { perspective: 800px; }
-  .perspective-1000 { perspective: 1000px; }
-  .preserve-3d      { transform-style: preserve-3d; }
-
-  /* Glass morphism */
-  .glass-dark {
-    background: rgba(255,255,255,0.04);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.08);
+  /* Hero gradient text */
+  .gradient-text-hero {
+    background: linear-gradient(135deg, #00C853, #2979FF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
-  .glass-green {
-    background: rgba(22,163,74,0.08);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(22,163,74,0.15);
-  }
-}
-
-/* Smooth scroll */
-html { scroll-behavior: smooth; }
-
-/* Selection color */
-::selection {
-  background: rgba(22, 163, 74, 0.35);
-  color: white;
 }

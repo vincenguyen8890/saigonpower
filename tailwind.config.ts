@@ -10,82 +10,94 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          // Primary greens (from logo)
-          green:      '#16a34a',   // mid green
-          greenDark:  '#14532d',   // deep forest green (logo dark)
-          greenBright:'#22c55e',   // bright/lime green (logo highlight)
-          greenLight: '#dcfce7',   // soft green tint
+          // ── Primary: Electric Green (CTA, savings, money) ──
+          green:       '#00C853',
+          greenDark:   '#00A846',   // hover / pressed
+          greenLight:  '#E8FFF1',   // soft tint / bg
+          greenBorder: '#A3F0C4',   // border tint
 
-          // Dark neutral (logo black elements)
-          blue:    '#111827',      // near-black (used where "blue" was)
-          blueDark:'#030712',
-          blueLight:'#1f2937',
+          // ── Secondary: Electric Blue (tech, energy, features) ──
+          blue:        '#2979FF',
+          blueDark:    '#1A5FCC',   // hover
+          blueLight:   '#EBF2FF',   // soft tint
+          blueBorder:  '#93BBFF',   // border tint
 
-          // Accent gold — kept for CTAs
-          gold:    '#f59e0b',
-          goldDark:'#d97706',
+          // ── Accent: Orange (urgency, warnings, expiry) ──
+          orange:      '#FF6D00',
+          orangeDark:  '#E05E00',
+          orangeLight: '#FFF3E8',
+          orangeBorder:'#FFBC85',
 
-          red:     '#ef4444',
+          // ── Neutrals ──
+          dark:        '#0F172A',   // primary text
+          muted:       '#64748B',   // secondary text
+          subtle:      '#94A3B8',   // placeholder / disabled
         },
         surface: {
-          light: '#f8fafc',
-          muted: '#f1f5f9',
-          border:'#e2e8f0',
+          bg:     '#F8FAFC',        // page background
+          card:   '#FFFFFF',        // card background
+          muted:  '#F1F5F9',        // muted bg
+          border: '#E2E8F0',        // borders
+          hover:  '#F8FAFC',        // hover state bg
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans:    ['Inter', 'system-ui', 'sans-serif'],
         display: ['Inter', 'system-ui', 'sans-serif'],
       },
+      backgroundImage: {
+        // Hero gradient (green → blue)
+        'hero-gradient':  'linear-gradient(135deg, #00C853 0%, #2979FF 100%)',
+        // CTA section gradient
+        'cta-gradient':   'linear-gradient(135deg, #00C853 0%, #00A846 100%)',
+        // Blue tech gradient
+        'tech-gradient':  'linear-gradient(135deg, #2979FF 0%, #1A5FCC 100%)',
+        // Card gradient
+        'card-gradient':  'linear-gradient(145deg, #ffffff 0%, #F8FAFC 100%)',
+        // Warm orange
+        'orange-gradient':'linear-gradient(135deg, #FF6D00 0%, #FF8C00 100%)',
+      },
+      boxShadow: {
+        'sm':         '0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04)',
+        'card':       '0 4px 16px rgba(15,23,42,0.06)',
+        'card-hover': '0 8px 32px rgba(15,23,42,0.10)',
+        'green':      '0 4px 14px rgba(0,200,83,0.35)',
+        'green-lg':   '0 8px 24px rgba(0,200,83,0.40)',
+        'blue':       '0 4px 14px rgba(41,121,255,0.30)',
+        'orange':     '0 4px 14px rgba(255,109,0,0.30)',
+        'inner':      'inset 0 2px 4px rgba(15,23,42,0.06)',
+      },
       animation: {
-        'fade-up':    'fadeUp 0.6s ease-out forwards',
+        'fade-up':    'fadeUp 0.55s ease-out forwards',
         'fade-in':    'fadeIn 0.4s ease-out forwards',
-        'slide-in':   'slideIn 0.5s ease-out forwards',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'float':      'float 6s ease-in-out infinite',
-        'float-slow': 'float 9s ease-in-out infinite',
-        'glow-pulse': 'glowPulse 3s ease-in-out infinite',
+        'float':      'float 5s ease-in-out infinite',
+        'float-slow': 'float 8s ease-in-out infinite',
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4,0,0.6,1) infinite',
         'shimmer':    'shimmer 2.5s linear infinite',
+        'spin-slow':  'spin 6s linear infinite',
+        'bounce-sm':  'bounceSm 2s ease-in-out infinite',
       },
       keyframes: {
         fadeUp: {
-          '0%':   { opacity: '0', transform: 'translateY(24px)' },
+          '0%':   { opacity: '0', transform: 'translateY(20px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         fadeIn: {
           '0%':   { opacity: '0' },
           '100%': { opacity: '1' },
         },
-        slideIn: {
-          '0%':   { opacity: '0', transform: 'translateX(-24px)' },
-          '100%': { opacity: '1', transform: 'translateX(0)' },
-        },
         float: {
           '0%, 100%': { transform: 'translateY(0px)' },
-          '50%':      { transform: 'translateY(-14px)' },
-        },
-        glowPulse: {
-          '0%, 100%': { opacity: '0.4' },
-          '50%':      { opacity: '0.8' },
+          '50%':      { transform: 'translateY(-10px)' },
         },
         shimmer: {
           '0%':   { backgroundPosition: '-200% center' },
           '100%': { backgroundPosition: '200% center' },
         },
-      },
-      backgroundImage: {
-        'hero-gradient': 'linear-gradient(135deg, #052e16 0%, #14532d 40%, #166534 100%)',
-        'gold-gradient': 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-        'green-gradient': 'linear-gradient(135deg, #16a34a 0%, #14532d 100%)',
-        'sg-gradient': 'linear-gradient(160deg, #111827 0%, #14532d 50%, #16a34a 100%)',
-        'card-gradient': 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-      },
-      boxShadow: {
-        'card': '0 4px 24px rgba(20, 83, 45, 0.08)',
-        'card-hover': '0 8px 40px rgba(20, 83, 45, 0.18)',
-        'gold': '0 4px 20px rgba(245, 158, 11, 0.3)',
-        'blue': '0 4px 20px rgba(17, 24, 39, 0.25)',
-        'green': '0 4px 20px rgba(22, 163, 74, 0.35)',
+        bounceSm: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%':      { transform: 'translateY(-4px)' },
+        },
       },
     },
   },

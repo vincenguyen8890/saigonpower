@@ -20,60 +20,51 @@ export default function FAQPreview() {
   ]
 
   return (
-    <section className="py-28 bg-[#03080E] relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_50%_50%,rgba(22,163,74,0.05),transparent)] pointer-events-none" />
-
+    <section className="py-24 bg-surface-bg">
       <div ref={ref} className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7 }}
-          className="text-center mb-14"
+          initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
         >
-          <div className="inline-flex items-center gap-2 bg-white/[0.05] border border-white/[0.08] rounded-full px-4 py-1.5 mb-5">
-            <HelpCircle size={12} className="text-brand-green" />
-            <span className="text-white/50 text-sm font-medium uppercase tracking-widest">FAQ</span>
+          <div className="section-eyebrow-blue mx-auto w-fit mb-4">
+            <HelpCircle size={12} /> FAQ
           </div>
-          <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight">{t('title')}</h2>
+          <h2 className="section-title">{t('title')}</h2>
         </motion.div>
 
         <div className="space-y-3 mb-10">
           {items.map(({ q, a }, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.1 + i * 0.08 }}
-              className={`border rounded-2xl overflow-hidden transition-colors duration-200 ${
-                openIdx === i ? 'border-brand-green/30 bg-brand-green/5' : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.12]'
+            <motion.div key={i}
+              initial={{ opacity: 0, y: 16 }} animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.45, delay: 0.1 + i * 0.07 }}
+              className={`bg-white rounded-2xl border overflow-hidden transition-all duration-200 ${
+                openIdx === i ? 'border-brand-green/30 shadow-card' : 'border-surface-border hover:border-surface-border/80'
               }`}
             >
               <button
-                className="w-full flex items-center justify-between p-5 text-left"
+                className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-surface-bg/50 transition-colors"
                 onClick={() => setOpenIdx(openIdx === i ? null : i)}
               >
-                <span className="font-semibold text-white/85 pr-4 text-base">{q}</span>
-                <div className={`w-7 h-7 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
-                  openIdx === i ? 'bg-brand-green/20 border-brand-green/30' : 'bg-white/[0.04] border-white/10'
+                <span className="font-semibold text-brand-dark pr-4 text-base">{q}</span>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                  openIdx === i ? 'bg-brand-greenLight border border-brand-greenBorder' : 'bg-surface-bg border border-surface-border'
                 }`}>
-                  <ChevronDown
-                    size={14}
-                    className={`transition-transform duration-200 ${openIdx === i ? 'rotate-180 text-brand-green' : 'text-white/40'}`}
-                  />
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${
+                    openIdx === i ? 'rotate-180 text-brand-green' : 'text-brand-muted'
+                  }`} />
                 </div>
               </button>
 
               <AnimatePresence>
                 {openIdx === i && (
                   <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25, ease: 'easeOut' }}
+                    initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}
                   >
-                    <div className="px-5 pb-5 border-t border-white/[0.06]">
-                      <p className="pt-4 text-white/50 leading-relaxed text-sm">{a}</p>
+                    <div className="px-6 pb-5 border-t border-surface-border">
+                      <p className="pt-4 text-brand-muted leading-relaxed text-sm">{a}</p>
                     </div>
                   </motion.div>
                 )}
@@ -83,15 +74,11 @@ export default function FAQPreview() {
         </div>
 
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={inView ? { opacity: 1 } : {}}
-          transition={{ delay: 0.6 }}
+          initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}} transition={{ delay: 0.5 }}
           className="text-center"
         >
-          <Link
-            href="/faq"
-            className="inline-flex items-center gap-2 text-white/40 hover:text-brand-green transition-colors text-sm font-medium border border-white/[0.08] hover:border-brand-green/30 px-6 py-3 rounded-2xl"
-          >
+          <Link href="/faq"
+            className="inline-flex items-center gap-2 border border-surface-border bg-white hover:border-brand-green hover:text-brand-green text-brand-muted font-semibold px-6 py-3 rounded-2xl text-sm transition-all">
             {t('viewAll')} <ArrowRight size={14} />
           </Link>
         </motion.div>
