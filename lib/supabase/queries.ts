@@ -466,6 +466,7 @@ export interface CRMAgent {
   name: string
   email: string
   role: 'admin' | 'agent'
+  agent_type: string | null
   phone: string | null
   active: boolean
   notes: string | null
@@ -473,8 +474,8 @@ export interface CRMAgent {
 }
 
 const mockAgents: CRMAgent[] = [
-  { id: 'agt-001', name: 'Admin',       email: 'admin@saigonllc.com', role: 'admin', phone: '(832) 937-9999', active: true, notes: null, created_at: new Date().toISOString() },
-  { id: 'agt-002', name: 'Sales Agent', email: 'agent@saigonllc.com', role: 'agent', phone: '(832) 937-9998', active: true, notes: null, created_at: new Date().toISOString() },
+  { id: 'agt-001', name: 'Admin',       email: 'admin@saigonllc.com', role: 'admin', agent_type: 'electricity_broker', phone: '(832) 937-9999', active: true, notes: null, created_at: new Date().toISOString() },
+  { id: 'agt-002', name: 'Sales Agent', email: 'agent@saigonllc.com', role: 'agent', agent_type: 'realtor',            phone: '(832) 937-9998', active: true, notes: null, created_at: new Date().toISOString() },
 ]
 
 export async function getCRMAgents(): Promise<CRMAgent[]> {

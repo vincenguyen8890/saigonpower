@@ -8,11 +8,15 @@ CREATE TABLE IF NOT EXISTS public.crm_agents (
   name       TEXT NOT NULL,
   email      TEXT NOT NULL,
   role       TEXT NOT NULL DEFAULT 'agent' CHECK (role IN ('admin', 'agent')),
+  agent_type TEXT,
   phone      TEXT,
   active     BOOLEAN NOT NULL DEFAULT TRUE,
   notes      TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- If table already exists, add the column
+ALTER TABLE public.crm_agents ADD COLUMN IF NOT EXISTS agent_type TEXT;
 
 CREATE UNIQUE INDEX IF NOT EXISTS crm_agents_email_idx ON public.crm_agents(email);
 

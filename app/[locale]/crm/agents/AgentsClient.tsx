@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { UserPlus, X, Loader2, Shield, UserCheck, Phone, Mail, Pencil, Trash2, ToggleLeft, ToggleRight, TrendingUp, Users, CheckCircle2 } from 'lucide-react'
+import { UserPlus, X, Loader2, Shield, UserCheck, Phone, Mail, Pencil, Trash2, ToggleLeft, ToggleRight, TrendingUp, Users, CheckCircle2, Briefcase } from 'lucide-react'
 import { saveAgentAction, toggleAgentAction, deleteAgentAction } from './actions'
 import type { CRMAgent } from '@/lib/supabase/queries'
 
@@ -36,25 +36,27 @@ function getInitials(name: string) {
 function AgentModal({ agent, onClose }: { agent?: CRMAgent; onClose: () => void }) {
   const [isPending, startTransition] = useTransition()
   const [form, setForm] = useState({
-    name:   agent?.name  ?? '',
-    email:  agent?.email ?? '',
-    role:   agent?.role  ?? 'agent' as 'admin' | 'agent',
-    phone:  agent?.phone ?? '',
-    notes:  agent?.notes ?? '',
-    active: agent?.active ?? true,
+    name:       agent?.name       ?? '',
+    email:      agent?.email      ?? '',
+    role:       agent?.role       ?? 'agent' as 'admin' | 'agent',
+    agent_type: agent?.agent_type ?? '',
+    phone:      agent?.phone      ?? '',
+    notes:      agent?.notes      ?? '',
+    active:     agent?.active     ?? true,
   })
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     startTransition(async () => {
       await saveAgentAction({
-        id:     agent?.id,
-        name:   form.name,
-        email:  form.email,
-        role:   form.role,
-        phone:  form.phone || null,
-        notes:  form.notes || null,
-        active: form.active,
+        id:         agent?.id,
+        name:       form.name,
+        email:      form.email,
+        role:       form.role,
+        agent_type: form.agent_type || null,
+        phone:      form.phone || null,
+        notes:      form.notes || null,
+        active:     form.active,
       })
       onClose()
     })
@@ -85,6 +87,18 @@ function AgentModal({ agent, onClose }: { agent?: CRMAgent; onClose: () => void 
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green">
                 <option value="agent">Agent</option>
                 <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1">Agent Type</label>
+              <select value={form.agent_type} onChange={e => setForm(f => ({ ...f, agent_type: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green">
+                <option value="">— select type —</option>
+                <option value="electricity_broker">Electricity Broker</option>
+                <option value="realtor">Realtor</option>
+                <option value="insurance_agent">Insurance Agent</option>
+                <option value="loan_officer">Loan Officer</option>
+                <option value="other">Other</option>
               </select>
             </div>
             <div>
@@ -162,6 +176,14 @@ function AgentCard({ agent, agentStats }: { agent: CRMAgent; agentStats: AgentSt
             </button>
           </div>
         </div>
+
+        {/* Agent type */}
+        {agent.agent_type && (
+          <div className="flex items-center gap-1.5 mb-3">
+            <Briefcase size={12} className="text-gray-400 flex-shrink-0" />
+            <span className="text-xs text-gray-500 capitalize">{agent.agent_type.replace(/_/g, ' ')}</span>
+          </div>
+        )}
 
         {/* Contact info */}
         <div className="space-y-1.5 mb-4">
