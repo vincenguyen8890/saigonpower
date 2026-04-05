@@ -1,58 +1,60 @@
+'use client'
+
+import { motion } from 'framer-motion'
+import { Shield, Clock, Award, Zap } from 'lucide-react'
 import { useLocale } from 'next-intl'
-import { MessageCircle, ShieldCheck, RefreshCw, Bell } from 'lucide-react'
+
+const PROVIDERS = [
+  'Gexa Energy', 'TXU Energy', 'Reliant Energy', 'Green Mountain Energy',
+  'Cirro Energy', 'Payless Power', '4Change Energy', 'Pulse Power',
+  'Constellation', 'NRG Energy', 'Ambit Energy', 'Stream Energy',
+]
 
 export default function TrustBar() {
   const locale = useLocale()
   const isVi = locale === 'vi'
 
-  const items = [
-    {
-      icon: MessageCircle,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-      title: isVi ? 'Hỗ Trợ Tiếng Việt' : 'Vietnamese Support',
-      desc: isVi ? 'Tư vấn 7 ngày/tuần' : '7 days a week',
-    },
-    {
-      icon: ShieldCheck,
-      color: 'text-green-600',
-      bg: 'bg-green-50',
-      title: isVi ? 'Không Phí Ẩn' : 'No Hidden Fees',
-      desc: isVi ? 'Minh bạch 100%' : '100% transparent',
-    },
-    {
-      icon: RefreshCw,
-      color: 'text-amber-600',
-      bg: 'bg-amber-50',
-      title: isVi ? 'Chuyên Texas' : 'Texas Specialists',
-      desc: isVi ? 'Thị trường ERCOT' : 'ERCOT market experts',
-    },
-    {
-      icon: Bell,
-      color: 'text-purple-600',
-      bg: 'bg-purple-50',
-      title: isVi ? 'Nhắc Gia Hạn' : 'Renewal Reminders',
-      desc: isVi ? 'Tránh giá cao khi hết hạn' : 'Never pay rollover rates',
-    },
+  const badges = [
+    { icon: Shield, text: isVi ? 'Miễn phí 100%' : '100% Free Service' },
+    { icon: Clock,  text: isVi ? 'So sánh 30 giây' : 'Compare in 30 Sec' },
+    { icon: Award,  text: isVi ? 'Đánh giá cao nhất' : '#1 Vietnamese Broker' },
+    { icon: Zap,    text: isVi ? '50+ nhà cung cấp' : '50+ Providers' },
   ]
 
   return (
-    <section className="bg-white border-b border-gray-100 py-6">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-          {items.map(({ icon: Icon, color, bg, title, desc }) => (
-            <div key={title} className="flex items-center gap-3">
-              <div className={`w-10 h-10 ${bg} rounded-xl flex-shrink-0 flex items-center justify-center`}>
-                <Icon size={18} className={color} />
+    <div className="bg-[#03080E] border-y border-white/[0.06]">
+      {/* Trust badges row */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {badges.map(({ icon: Icon, text }) => (
+            <div key={text} className="flex items-center justify-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-brand-green/10 flex items-center justify-center flex-shrink-0">
+                <Icon size={14} className="text-brand-green" />
               </div>
-              <div>
-                <p className="text-sm font-bold text-gray-900 leading-tight">{title}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
-              </div>
+              <span className="text-white/60 text-sm font-medium">{text}</span>
             </div>
           ))}
         </div>
       </div>
-    </section>
+
+      {/* Provider marquee */}
+      <div className="border-t border-white/[0.04] py-4 overflow-hidden relative">
+        <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#03080E] to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#03080E] to-transparent z-10 pointer-events-none" />
+
+        <motion.div
+          animate={{ x: ['0%', '-50%'] }}
+          transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
+          className="flex items-center gap-12 whitespace-nowrap"
+        >
+          {[...PROVIDERS, ...PROVIDERS].map((name, i) => (
+            <div key={i} className="flex items-center gap-2.5 text-white/25 hover:text-white/50 transition-colors">
+              <div className="w-1.5 h-1.5 rounded-full bg-brand-green/40" />
+              <span className="text-sm font-medium tracking-wide">{name}</span>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </div>
   )
 }

@@ -1,76 +1,75 @@
+'use client'
+
+import { useRef } from 'react'
 import { useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
-import { Bell, ArrowRight, RefreshCw } from 'lucide-react'
+import { motion, useInView } from 'framer-motion'
+import { Bell, ArrowRight, RefreshCw, AlertTriangle } from 'lucide-react'
 
 export default function RenewalBanner() {
   const locale = useLocale()
   const isVi = locale === 'vi'
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-60px' })
 
   return (
-    <section className="bg-brand-greenDark relative overflow-hidden">
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-[0.06]"
-        style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '32px 32px' }}
-      />
-      <div className="absolute -right-20 -top-20 w-64 h-64 bg-brand-green/20 rounded-full blur-3xl" />
-      <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-brand-greenBright/10 rounded-full blur-3xl" />
+    <section className="py-5 bg-[#03080E]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          ref={ref}
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7 }}
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-greenDark via-green-800 to-brand-green"
+        >
+          {/* Pattern overlay */}
+          <div className="absolute inset-0 opacity-[0.06]"
+            style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+          <div className="absolute right-0 top-0 w-[400px] h-full bg-gradient-to-l from-brand-greenBright/20 to-transparent pointer-events-none" />
 
-      <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-16 text-center">
+          <div className="relative px-8 py-12 md:py-14 flex flex-col md:flex-row items-center justify-between gap-8">
+            {/* Left */}
+            <div className="text-center md:text-left max-w-xl">
+              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-3.5 py-1.5 mb-4">
+                <Bell size={13} className="text-brand-gold" />
+                <span className="text-green-200 text-xs font-semibold uppercase tracking-widest">
+                  {isVi ? 'Dịch vụ gia hạn' : 'Renewal service'}
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight mb-3">
+                {isVi ? (
+                  <>Chúng tôi nhắc bạn <span className="text-brand-gold">trước 60 ngày</span> hết hạn</>
+                ) : (
+                  <>We remind you <span className="text-brand-gold">60 days before</span> expiry</>
+                )}
+              </h2>
+              <p className="text-green-200/80 text-base leading-relaxed">
+                {isVi
+                  ? 'Hợp đồng hết hạn → giá tăng 30–50%. Saigon Power tự động tìm gói tốt hơn cho bạn.'
+                  : "Expired contract = 30–50% rate spike. We automatically find you a better plan."}
+              </p>
+            </div>
 
-        {/* Icon badge */}
-        <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 mb-6">
-          <Bell size={14} className="text-brand-gold" />
-          <span className="text-green-200 text-sm font-medium">
-            {isVi ? 'Dịch vụ gia hạn hợp đồng' : 'Contract renewal service'}
-          </span>
-        </div>
-
-        {/* Main message */}
-        <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
-          {isVi ? (
-            <>
-              Chúng tôi sẽ nhắc bạn <span className="text-brand-gold">trước khi</span><br />
-              hợp đồng hết hạn
-            </>
-          ) : (
-            <>
-              We'll remind you <span className="text-brand-gold">before</span><br />
-              your contract expires
-            </>
-          )}
-        </h2>
-
-        <p className="text-green-200 text-lg max-w-2xl mx-auto mb-8">
-          {isVi
-            ? 'Khi hợp đồng điện hết hạn mà không gia hạn, bạn sẽ bị chuyển sang giá thả nổi – cao hơn 30–50%. Saigon Power nhắc trước 60 ngày và tìm gói tốt hơn cho bạn.'
-            : "When your contract expires without renewal, you're switched to variable rates — 30–50% higher. We remind you 60 days early and find you a better plan."}
-        </p>
-
-        {/* CTA buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            href="/quote"
-            className="flex items-center gap-2 bg-brand-gold hover:bg-brand-goldDark text-white font-bold px-8 py-4 rounded-2xl transition-colors shadow-gold"
-          >
-            <Bell size={16} />
-            {isVi ? 'Đăng ký nhắc nhở miễn phí' : 'Sign up for free reminders'}
-            <ArrowRight size={16} />
-          </Link>
-          <Link
-            href="/compare"
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-8 py-4 rounded-2xl transition-colors"
-          >
-            <RefreshCw size={16} />
-            {isVi ? 'So sánh gói mới ngay' : 'Compare new plans now'}
-          </Link>
-        </div>
-
-        {/* Proof */}
-        <p className="text-green-400 text-sm mt-6">
-          {isVi
-            ? '✓ Hơn 500 khách hàng đã tránh được giá cao nhờ dịch vụ này'
-            : '✓ 500+ customers have avoided high rollover rates with this service'}
-        </p>
+            {/* Right - CTAs */}
+            <div className="flex flex-col gap-3 shrink-0">
+              <Link
+                href="/quote"
+                className="flex items-center justify-center gap-2 bg-brand-gold hover:bg-brand-goldDark text-white font-bold px-7 py-3.5 rounded-2xl transition-all shadow-gold whitespace-nowrap hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] hover:-translate-y-0.5"
+              >
+                <Bell size={15} />
+                {isVi ? 'Đăng ký nhắc nhở miễn phí' : 'Get free reminders'}
+                <ArrowRight size={15} />
+              </Link>
+              <Link
+                href="/compare"
+                className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-7 py-3.5 rounded-2xl transition-all whitespace-nowrap"
+              >
+                <RefreshCw size={15} />
+                {isVi ? 'So sánh gói mới' : 'Compare new plans'}
+              </Link>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   )

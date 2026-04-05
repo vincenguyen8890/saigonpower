@@ -51,4 +51,30 @@
   .animation-delay-400 { animation-delay: 400ms; }
 
   .text-balance { text-wrap: balance; }
+
+  /* 3D perspective utilities */
+  .perspective-800  { perspective: 800px; }
+  .perspective-1000 { perspective: 1000px; }
+  .preserve-3d      { transform-style: preserve-3d; }
+
+  /* Glass morphism */
+  .glass-dark {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .glass-green {
+    background: rgba(22,163,74,0.08);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(22,163,74,0.15);
+  }
+}
+
+/* Smooth scroll */
+html { scroll-behavior: smooth; }
+
+/* Selection color */
+::selection {
+  background: rgba(22, 163, 74, 0.35);
+  color: white;
 }
