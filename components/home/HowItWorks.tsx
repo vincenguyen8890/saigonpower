@@ -34,9 +34,6 @@ export default function HowItWorks() {
     <section className="py-20 bg-surface-light">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
-          <div className="inline-block bg-brand-blue/10 text-brand-blue text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
-            {t('title')}
-          </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-brand-blue mb-4">{t('title')}</h2>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">{t('subtitle')}</p>
         </div>
