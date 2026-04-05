@@ -389,6 +389,74 @@ export async function deleteProvider(id: string): Promise<void> {
   await (supabase.from('crm_providers') as any).delete().eq('id', id)
 }
 
+// ─── Contracts ────────────────────────────────────────────────────────────────
+
+export interface Contract {
+  id: string
+  lead_id: string | null
+  provider: string
+  plan_name: string | null
+  service_type: 'residential' | 'commercial'
+  address: string | null
+  zip: string | null
+  esid: string | null
+  start_date: string
+  end_date: string
+  rate_kwh: number | null
+  term_months: number | null
+  status: 'active' | 'expired' | 'cancelled' | 'pending'
+  notes: string | null
+  created_at: string
+  updated_at: string
+  // denormalized for display
+  customer_name?: string
+}
+
+const mockContracts: Contract[] = [
+  { id: 'ctr-001', lead_id: 'lead-004', customer_name: 'Hung Le',         provider: 'Gexa Energy',    plan_name: 'Gexa Saver 12',       service_type: 'residential', address: '1234 Main St, Houston TX',      zip: '77036', esid: null, start_date: '2024-01-15', end_date: '2025-01-15', rate_kwh: 0.109, term_months: 12, status: 'active',  notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'ctr-002', lead_id: 'lead-003', customer_name: 'Mai Pham',        provider: 'TXU Energy',     plan_name: 'TXU Energy Saver 24', service_type: 'residential', address: '5678 Oak Ave, Katy TX',         zip: '77450', esid: null, start_date: '2023-06-01', end_date: '2025-06-01', rate_kwh: 0.118, term_months: 24, status: 'active',  notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'ctr-003', lead_id: 'lead-002', customer_name: 'Minh Tran Nails', provider: 'Reliant Energy', plan_name: 'Reliant Business 12', service_type: 'commercial',  address: '910 Business Blvd, Sugar Land', zip: '77479', esid: null, start_date: '2024-03-01', end_date: '2025-03-01', rate_kwh: 0.132, term_months: 12, status: 'active',  notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'ctr-004', lead_id: 'lead-008', customer_name: 'Linh Do',         provider: 'Green Mountain', plan_name: 'Green Simple 12',     service_type: 'residential', address: '321 Elm St, Houston TX',        zip: '77081', esid: null, start_date: '2024-02-01', end_date: '2025-02-01', rate_kwh: 0.125, term_months: 12, status: 'active',  notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+]
+
+export async function getContracts(status?: string): Promise<Contract[]> {
+  if (useMock()) return status && status !== 'all' ? mockContracts.filter(c => c.status === status) : mockContracts
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (supabase.from('contracts') as any).select('*').order('end_date', { ascending: true }).limit(200)
+    if (status && status !== 'all') q = q.eq('status', status)
+    const { data, error } = await q
+    if (error) throw error
+    return data ?? []
+  } catch { return mockContracts }
+}
+
+export async function insertContract(contract: Omit<Contract, 'id' | 'created_at' | 'updated_at'>): Promise<Contract | null> {
+  if (useMock()) return { ...contract, id: `ctr-${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('contracts') as any).insert(contract).select().single()
+    if (error) throw error
+    return data
+  } catch { return null }
+}
+
+export async function updateContract(id: string, updates: Partial<Contract>): Promise<void> {
+  if (useMock()) return
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('contracts') as any).update(updates).eq('id', id)
+}
+
+export async function deleteContract(id: string): Promise<void> {
+  if (useMock()) return
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('contracts') as any).delete().eq('id', id)
+}
+
 // ─── CRM Stats ────────────────────────────────────────────────────────────────
 
 export async function getCRMStats(): Promise<CRMStats> {
