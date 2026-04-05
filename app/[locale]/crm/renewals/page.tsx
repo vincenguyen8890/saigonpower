@@ -16,8 +16,6 @@ const mockContracts = [
 export default async function RenewalCalendarPage({ params }: Props) {
   const { locale } = await params
   setRequestLocale(locale)
-  const isVi = locale === 'vi'
-
   let contracts = mockContracts
   const isPlaceholder = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')
   if (!isPlaceholder) {
@@ -42,10 +40,10 @@ export default async function RenewalCalendarPage({ params }: Props) {
     days < 0 ? 'expired' : days <= 30 ? 'critical' : days <= 60 ? 'warning' : 'ok'
 
   const urgencyConfig = {
-    expired:  { bar: 'bg-gray-400',   text: 'text-gray-500',  badge: 'bg-gray-100 text-gray-500',    label: isVi ? 'Đã hết hạn' : 'Expired'        },
-    critical: { bar: 'bg-red-500',    text: 'text-red-600',   badge: 'bg-red-100 text-red-700',      label: isVi ? 'Cần gia hạn ngay' : 'Renew now' },
-    warning:  { bar: 'bg-amber-400',  text: 'text-amber-600', badge: 'bg-amber-100 text-amber-700',  label: isVi ? 'Sắp hết hạn' : 'Expiring soon'  },
-    ok:       { bar: 'bg-green-400',  text: 'text-green-600', badge: 'bg-green-100 text-green-700',  label: isVi ? 'Còn thời gian' : 'On track'      },
+    expired:  { bar: 'bg-gray-400',   text: 'text-gray-500',  badge: 'bg-gray-100 text-gray-500',    label: 'Expired'       },
+    critical: { bar: 'bg-red-500',    text: 'text-red-600',   badge: 'bg-red-100 text-red-700',      label: 'Renew now'     },
+    warning:  { bar: 'bg-amber-400',  text: 'text-amber-600', badge: 'bg-amber-100 text-amber-700',  label: 'Expiring soon' },
+    ok:       { bar: 'bg-green-400',  text: 'text-green-600', badge: 'bg-green-100 text-green-700',  label: 'On track'      },
   }
 
   const counts = {
@@ -57,7 +55,7 @@ export default async function RenewalCalendarPage({ params }: Props) {
 
   // Group by month
   const byMonth = contracts.reduce<Record<string, typeof contracts>>((acc, c) => {
-    const key = new Date(c.end_date).toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US', { year: 'numeric', month: 'long' })
+    const key = new Date(c.end_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
     if (!acc[key]) acc[key] = []
     acc[key].push(c)
     return acc
@@ -68,20 +66,20 @@ export default async function RenewalCalendarPage({ params }: Props) {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Calendar size={22} className="text-brand-greenDark" />
-          {isVi ? 'Lịch Gia Hạn Hợp Đồng' : 'Renewal Calendar'}
+          Renewal Calendar
         </h1>
         <p className="text-gray-500 text-sm mt-1">
-          {counts.critical} {isVi ? 'cần gia hạn trong 30 ngày' : 'need renewal within 30 days'}
+          {counts.critical} need renewal within 30 days
         </p>
       </div>
 
       {/* Summary row */}
       <div className="grid grid-cols-4 gap-3 mb-8">
         {([
-          { key: 'expired',  label: isVi ? 'Đã Hết Hạn'    : 'Expired',        count: counts.expired  },
-          { key: 'critical', label: isVi ? 'Trong 30 Ngày' : 'Within 30 days', count: counts.critical },
-          { key: 'warning',  label: isVi ? 'Trong 60 Ngày' : 'Within 60 days', count: counts.warning  },
-          { key: 'ok',       label: isVi ? 'Hơn 60 Ngày'  : 'Over 60 days',   count: counts.ok       },
+          { key: 'expired',  label: 'Expired',        count: counts.expired  },
+          { key: 'critical', label: 'Within 30 days', count: counts.critical },
+          { key: 'warning',  label: 'Within 60 days', count: counts.warning  },
+          { key: 'ok',       label: 'Over 60 days',   count: counts.ok       },
         ] as const).map(s => {
           const cfg = urgencyConfig[s.key]
           return (
@@ -101,7 +99,7 @@ export default async function RenewalCalendarPage({ params }: Props) {
             <div className="flex items-center gap-3 mb-3">
               <h2 className="font-semibold text-gray-700 text-sm capitalize">{month}</h2>
               <div className="flex-1 h-px bg-gray-100" />
-              <span className="text-xs text-gray-400">{monthContracts.length} {isVi ? 'hợp đồng' : 'contracts'}</span>
+              <span className="text-xs text-gray-400">{monthContracts.length} contracts</span>
             </div>
 
             <div className="space-y-2">
@@ -127,13 +125,13 @@ export default async function RenewalCalendarPage({ params }: Props) {
 
                       {/* Plan */}
                       <div className="hidden sm:block min-w-[140px]">
-                        <p className="text-xs text-gray-400">{isVi ? 'Gói hiện tại' : 'Current plan'}</p>
+                        <p className="text-xs text-gray-400">Current plan</p>
                         <p className="text-sm text-gray-700">{c.plan_name}</p>
                       </div>
 
                       {/* Expiry */}
                       <div className="min-w-[100px]">
-                        <p className="text-xs text-gray-400">{isVi ? 'Hết hạn' : 'Expires'}</p>
+                        <p className="text-xs text-gray-400">Expires</p>
                         <p className="text-sm font-medium text-gray-900">{formatDate(c.end_date, locale)}</p>
                       </div>
 
@@ -141,8 +139,8 @@ export default async function RenewalCalendarPage({ params }: Props) {
                       <div>
                         <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${cfg.badge}`}>
                           {daysLeft < 0
-                            ? (isVi ? 'Đã hết hạn' : 'Expired')
-                            : `${daysLeft} ${isVi ? 'ngày còn lại' : 'days left'}`}
+                            ? 'Expired'
+                            : `${daysLeft} days left`}
                         </span>
                       </div>
 
@@ -150,18 +148,18 @@ export default async function RenewalCalendarPage({ params }: Props) {
                       <span className={`text-xs px-2 py-0.5 rounded font-medium hidden md:inline ${
                         c.service_type === 'commercial' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'
                       }`}>
-                        {c.service_type === 'commercial' ? (isVi ? 'TM' : 'Comm.') : (isVi ? 'DC' : 'Res.')}
+                        {c.service_type === 'commercial' ? 'Comm.' : 'Res.'}
                       </span>
 
                       {/* Actions */}
                       <div className="ml-auto flex items-center gap-2 flex-shrink-0">
                         <button className="text-xs text-gray-400 hover:text-brand-greenDark flex items-center gap-1 transition-colors">
                           <Bell size={12} />
-                          {isVi ? 'Nhắc' : 'Remind'}
+                          Remind
                         </button>
                         <button className="text-xs bg-brand-greenDark text-white px-3 py-1.5 rounded-lg hover:bg-brand-green transition-colors font-medium flex items-center gap-1">
                           <RefreshCw size={11} />
-                          {isVi ? 'Gia Hạn' : 'Renew'}
+                          Renew
                         </button>
                       </div>
                     </div>

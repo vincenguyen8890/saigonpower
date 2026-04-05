@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+let client: OpenAI | null = null
+function getClient() {
+  if (!client) client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  return client
+}
 
 const SYSTEM_PROMPT = `You are Saigon Power's friendly AI assistant — a bilingual (Vietnamese/English) customer support bot for a Texas electricity brokerage serving the Vietnamese-American community.
 
@@ -75,7 +79,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No valid messages' }, { status: 400 })
     }
 
-    const stream = await client.chat.completions.create({
+    const stream = await getClient().chat.completions.create({
       model: 'gpt-4o-mini',
       max_tokens: 500,
       stream: true,

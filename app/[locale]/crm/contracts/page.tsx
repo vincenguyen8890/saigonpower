@@ -16,8 +16,6 @@ const mockContracts = [
 export default async function ContractsPage({ params }: Props) {
   const { locale } = await params
   setRequestLocale(locale)
-  const isVi = locale === 'vi'
-
   // TODO: Replace with Supabase query
   let contracts = mockContracts
   const isPlaceholder = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')
@@ -41,9 +39,9 @@ export default async function ContractsPage({ params }: Props) {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{isVi ? 'Quản Lý Hợp Đồng' : 'Contracts'}</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Contracts</h1>
         <p className="text-gray-500 text-sm mt-1">
-          {active} {isVi ? 'hợp đồng đang hoạt động' : 'active contracts'} · {expiring} {isVi ? 'sắp hết hạn' : 'expiring soon'}
+          {active} active contracts · {expiring} expiring soon
         </p>
       </div>
 
@@ -52,7 +50,7 @@ export default async function ContractsPage({ params }: Props) {
           <table className="w-full">
             <thead className="border-b border-gray-100 bg-gray-50/50">
               <tr>
-                {[isVi?'ID':'ID', isVi?'Khách Hàng':'Customer', isVi?'Gói Điện':'Plan', isVi?'Nhà Cung Cấp':'Provider', isVi?'Giá':'Rate', isVi?'Hết Hạn':'Expires', isVi?'Dịch Vụ':'Service', isVi?'Trạng Thái':'Status'].map((h, i) => (
+                {['ID', 'Customer', 'Plan', 'Provider', 'Rate', 'Expires', 'Service', 'Status'].map((h, i) => (
                   <th key={i} className={`text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-5 py-3 ${[3,6].includes(i)?'hidden md:table-cell':''}`}>{h}</th>
                 ))}
               </tr>
@@ -84,19 +82,19 @@ export default async function ContractsPage({ params }: Props) {
                         <div>
                           <p className="text-xs text-gray-700">{formatDate(c.end_date, locale)}</p>
                           <p className={`text-xs font-medium ${urgency==='red'?'text-red-500':urgency==='amber'?'text-amber-500':'text-gray-400'}`}>
-                            {daysLeft > 0 ? `${daysLeft} ${isVi?'ngày':'days'}` : (isVi?'Đã hết hạn':'Expired')}
+                            {daysLeft > 0 ? `${daysLeft} days` : 'Expired'}
                           </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">
                       <span className={`text-xs px-2 py-0.5 rounded font-medium ${c.service_type==='commercial'?'bg-blue-50 text-blue-700':'bg-green-50 text-green-700'}`}>
-                        {c.service_type==='commercial'?(isVi?'TM':'Comm.'):(isVi?'DC':'Res.')}
+                        {c.service_type === 'commercial' ? 'Comm.' : 'Res.'}
                       </span>
                     </td>
                     <td className="px-5 py-4">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${c.status==='active'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-500'}`}>
-                        {c.status==='active'?(isVi?'Đang Hoạt Động':'Active'):(isVi?'Đã Hết Hạn':'Expired')}
+                        {c.status === 'active' ? 'Active' : 'Expired'}
                       </span>
                     </td>
                   </tr>

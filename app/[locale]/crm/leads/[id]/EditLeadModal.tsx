@@ -2,9 +2,11 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { PlusCircle, X } from 'lucide-react'
+import { Pencil, X } from 'lucide-react'
+import { updateLeadFull } from '../actions'
+import type { Lead } from '@/data/mock-crm'
 
-export default function NewLeadModal({ locale }: { locale: string }) {
+export default function EditLeadModal({ lead }: { lead: Lead }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
@@ -15,19 +17,16 @@ export default function NewLeadModal({ locale }: { locale: string }) {
     const get = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).value
 
     startTransition(async () => {
-      await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name:              get('name'),
-          email:             get('email') || undefined,
-          phone:             get('phone') || undefined,
-          zip:               get('zip'),
-          serviceType:       get('serviceType') || 'residential',
-          preferredLanguage: get('preferredLanguage') || 'en',
-          source:            get('source') || 'manual',
-          notes:             get('notes') || undefined,
-        }),
+      await updateLeadFull(lead.id, {
+        name:               get('name'),
+        email:              get('email'),
+        phone:              get('phone'),
+        zip:                get('zip'),
+        service_type:       get('service_type'),
+        preferred_language: get('preferred_language'),
+        source:             get('source'),
+        notes:              get('notes'),
+        assigned_to:        get('assigned_to'),
       })
       setOpen(false)
       router.refresh()
@@ -41,57 +40,57 @@ export default function NewLeadModal({ locale }: { locale: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 bg-brand-greenDark text-white text-sm px-4 py-2 rounded-xl hover:bg-brand-green transition-colors font-medium"
+        className="flex items-center gap-2 border border-gray-200 text-gray-600 text-sm px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors"
       >
-        <PlusCircle size={16} />
-        Add Lead
+        <Pencil size={14} />
+        Edit Lead
       </button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-900">Add New Lead</h2>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+              <h2 className="font-semibold text-gray-900">Edit Lead — {lead.name}</h2>
               <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <label className={labelClass}>Full Name *</label>
-                  <input name="name" required placeholder="Nguyen Van A" className={inputClass} />
+                  <input name="name" required defaultValue={lead.name} className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Phone</label>
-                  <input name="phone" type="tel" placeholder="(832) 555-0100" className={inputClass} />
+                  <input name="phone" type="tel" defaultValue={lead.phone} className={inputClass} />
                 </div>
                 <div>
-                  <label className={labelClass}>ZIP *</label>
-                  <input name="zip" required maxLength={5} placeholder="77036" className={inputClass} />
+                  <label className={labelClass}>ZIP</label>
+                  <input name="zip" maxLength={5} defaultValue={lead.zip} className={inputClass} />
                 </div>
                 <div className="col-span-2">
                   <label className={labelClass}>Email</label>
-                  <input name="email" type="email" placeholder="email@example.com" className={inputClass} />
+                  <input name="email" type="email" defaultValue={lead.email} className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Service Type</label>
-                  <select name="serviceType" defaultValue="residential" className={inputClass}>
+                  <select name="service_type" defaultValue={lead.service_type} className={inputClass}>
                     <option value="residential">Residential</option>
                     <option value="commercial">Commercial</option>
                   </select>
                 </div>
                 <div>
                   <label className={labelClass}>Language</label>
-                  <select name="preferredLanguage" defaultValue="vi" className={inputClass}>
+                  <select name="preferred_language" defaultValue={lead.preferred_language} className={inputClass}>
                     <option value="vi">Vietnamese</option>
                     <option value="en">English</option>
                   </select>
                 </div>
                 <div>
                   <label className={labelClass}>Source</label>
-                  <select name="source" defaultValue="manual" className={inputClass}>
+                  <select name="source" defaultValue={lead.source || 'manual'} className={inputClass}>
                     <option value="manual">Manual Entry</option>
                     <option value="phone">Phone Call</option>
                     <option value="referral">Referral</option>
@@ -100,13 +99,18 @@ export default function NewLeadModal({ locale }: { locale: string }) {
                     <option value="website">Website</option>
                   </select>
                 </div>
+                <div>
+                  <label className={labelClass}>Assigned To</label>
+                  <input name="assigned_to" defaultValue={lead.assigned_to || ''} placeholder="agent@saigonllc.com" className={inputClass} />
+                </div>
                 <div className="col-span-2">
                   <label className={labelClass}>Notes</label>
                   <textarea
                     name="notes"
-                    rows={2}
+                    rows={3}
+                    defaultValue={lead.notes || ''}
                     className={inputClass.replace('py-2.5', 'py-2') + ' resize-none'}
-                    placeholder="Additional notes..."
+                    placeholder="Internal notes..."
                   />
                 </div>
               </div>
@@ -124,7 +128,7 @@ export default function NewLeadModal({ locale }: { locale: string }) {
                   disabled={isPending}
                   className="flex-1 bg-brand-greenDark text-white py-2.5 rounded-xl text-sm hover:bg-brand-green transition-colors disabled:opacity-50 font-medium"
                 >
-                  {isPending ? 'Saving...' : 'Add Lead'}
+                  {isPending ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>
