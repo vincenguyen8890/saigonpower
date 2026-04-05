@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { PlusCircle, Pencil, Trash2, Leaf, Tag, Zap } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { PlusCircle, Pencil, Trash2, Leaf, Tag, Zap, Loader2 } from 'lucide-react'
 import type { Plan } from '@/data/mock-crm'
 import PlanModal from './PlanModal'
-
-const STORAGE_KEY = 'crm_plans'
+import { savePlanAction, deletePlanAction } from './actions'
 
 interface Props {
   initialPlans: Plan[]
@@ -13,23 +12,8 @@ interface Props {
 }
 
 export default function PlansClient({ initialPlans, isAdmin }: Props) {
-  const [plans, setPlansRaw] = useState<Plan[]>(initialPlans)
-
-  // Load from localStorage on first render
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) setPlansRaw(JSON.parse(stored))
-    } catch { /* ignore */ }
-  }, [])
-
-  function setPlans(updater: Plan[] | ((prev: Plan[]) => Plan[])) {
-    setPlansRaw(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
-      return next
-    })
-  }
+  const [plans, setPlans] = useState<Plan[]>(initialPlans)
+  const [isPending, startTransition] = useTransition()
   const [editingPlan, setEditingPlan] = useState<Plan | null | 'new'>(null)
   const [filterService, setFilterService] = useState('all')
   const [filterProvider, setFilterProvider] = useState('all')
@@ -48,21 +32,27 @@ export default function PlansClient({ initialPlans, isAdmin }: Props) {
   const bestRate = visible.length > 0 ? Math.min(...visible.map(p => p.rate_kwh)) : 0
 
   function handleSave(saved: Plan) {
+    // Optimistic update
     setPlans(prev => {
       const idx = prev.findIndex(p => p.id === saved.id)
-      if (idx !== -1) {
-        const next = [...prev]
-        next[idx] = saved
-        return next
-      }
+      if (idx !== -1) { const next = [...prev]; next[idx] = saved; return next }
       return [...prev, saved]
     })
     setEditingPlan(null)
+    // Persist to DB
+    startTransition(async () => {
+      const result = await savePlanAction(saved)
+      // If DB returned a real UUID, replace the temp ID
+      if (result && result.id !== saved.id) {
+        setPlans(prev => prev.map(p => p.id === saved.id ? result : p))
+      }
+    })
   }
 
   function handleDelete(id: string) {
     setPlans(prev => prev.filter(p => p.id !== id))
     setDeleteConfirm(null)
+    startTransition(() => deletePlanAction(id))
   }
 
   return (
@@ -74,15 +64,22 @@ export default function PlansClient({ initialPlans, isAdmin }: Props) {
             {visible.length} plans shown{bestRate > 0 ? ` · Best rate: ${(bestRate * 100).toFixed(1)}¢/kWh` : ''}
           </p>
         </div>
-        {isAdmin && (
-          <button
-            onClick={() => setEditingPlan('new')}
-            className="flex items-center gap-2 bg-brand-greenDark text-white text-sm px-4 py-2 rounded-xl hover:bg-brand-green transition-colors"
-          >
-            <PlusCircle size={15} />
-            Add Plan
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {isPending && (
+            <span className="flex items-center gap-1.5 text-xs text-gray-400">
+              <Loader2 size={12} className="animate-spin" /> Saving…
+            </span>
+          )}
+          {isAdmin && (
+            <button
+              onClick={() => setEditingPlan('new')}
+              className="flex items-center gap-2 bg-brand-greenDark text-white text-sm px-4 py-2 rounded-xl hover:bg-brand-green transition-colors"
+            >
+              <PlusCircle size={15} />
+              Add Plan
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}

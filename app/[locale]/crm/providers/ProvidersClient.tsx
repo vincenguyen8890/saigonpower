@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Building2, Phone, Globe, Zap, DollarSign, PlusCircle, Pencil, Trash2, X } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { Building2, Phone, Globe, Zap, DollarSign, PlusCircle, Pencil, Trash2, X, Loader2 } from 'lucide-react'
 import type { Provider } from '@/data/mock-crm'
+import { saveProviderAction, deleteProviderAction } from './actions'
 
 interface Props {
   initialProviders: Provider[]
@@ -119,27 +120,11 @@ function ProviderModal({
   )
 }
 
-const STORAGE_KEY = 'crm_providers'
-
 export default function ProvidersClient({ initialProviders, isAdmin }: Props) {
-  const [providers, setProvidersRaw] = useState<Provider[]>(initialProviders)
-  const [editing, setEditing]        = useState<Provider | null | 'new'>(null)
+  const [providers, setProviders] = useState<Provider[]>(initialProviders)
+  const [editing, setEditing]     = useState<Provider | null | 'new'>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) setProvidersRaw(JSON.parse(stored))
-    } catch { /* ignore */ }
-  }, [])
-
-  function setProviders(updater: Provider[] | ((prev: Provider[]) => Provider[])) {
-    setProvidersRaw(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
-      return next
-    })
-  }
+  const [isPending, startTransition] = useTransition()
 
   function handleSave(saved: Provider) {
     setProviders(prev => {
@@ -148,11 +133,18 @@ export default function ProvidersClient({ initialProviders, isAdmin }: Props) {
       return [...prev, saved]
     })
     setEditing(null)
+    startTransition(async () => {
+      const result = await saveProviderAction(saved)
+      if (result && result.id !== saved.id) {
+        setProviders(prev => prev.map(p => p.id === saved.id ? result : p))
+      }
+    })
   }
 
   function handleDelete(id: string) {
     setProviders(prev => prev.filter(p => p.id !== id))
     setDeleteConfirm(null)
+    startTransition(() => deleteProviderAction(id))
   }
 
   const active = providers.filter(p => p.status === 'active')
@@ -164,14 +156,21 @@ export default function ProvidersClient({ initialProviders, isAdmin }: Props) {
           <h1 className="text-2xl font-bold text-gray-900">Energy Providers</h1>
           <p className="text-gray-500 text-sm mt-1">{active.length} active provider partnerships</p>
         </div>
-        {isAdmin && (
-          <button
-            onClick={() => setEditing('new')}
-            className="flex items-center gap-2 bg-brand-greenDark text-white text-sm px-4 py-2 rounded-xl hover:bg-brand-green transition-colors"
-          >
-            <PlusCircle size={15} /> Add Provider
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {isPending && (
+            <span className="flex items-center gap-1.5 text-xs text-gray-400">
+              <Loader2 size={12} className="animate-spin" /> Saving…
+            </span>
+          )}
+          {isAdmin && (
+            <button
+              onClick={() => setEditing('new')}
+              className="flex items-center gap-2 bg-brand-greenDark text-white text-sm px-4 py-2 rounded-xl hover:bg-brand-green transition-colors"
+            >
+              <PlusCircle size={15} /> Add Provider
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">

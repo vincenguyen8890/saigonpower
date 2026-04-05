@@ -6,8 +6,8 @@
 
 import { createClient } from './server'
 import {
-  mockLeads, mockQuotes, mockCRMStats, mockPlans,
-  type Lead, type QuoteRequest, type LeadStatus, type CRMStats, type Plan,
+  mockLeads, mockQuotes, mockCRMStats, mockPlans, mockProviders,
+  type Lead, type QuoteRequest, type LeadStatus, type CRMStats, type Plan, type Provider,
 } from '@/data/mock-crm'
 
 function useMock() {
@@ -303,6 +303,17 @@ export async function getDealById(id: string): Promise<Deal | null> {
 
 // ─── Plans ────────────────────────────────────────────────────────────────────
 
+export async function getPlansFromDB(): Promise<Plan[]> {
+  if (useMock()) return mockPlans
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('crm_plans') as any).select('*').order('provider_name').order('rate_kwh')
+    if (error) throw error
+    return data ?? []
+  } catch { return mockPlans }
+}
+
 export async function insertPlan(plan: Omit<Plan, 'id'>): Promise<Plan | null> {
   if (useMock()) {
     const newPlan = { ...plan, id: `plan-${Date.now()}` }
@@ -312,7 +323,7 @@ export async function insertPlan(plan: Omit<Plan, 'id'>): Promise<Plan | null> {
   try {
     const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('plans') as any).insert(plan).select().single()
+    const { data, error } = await (supabase.from('crm_plans') as any).insert(plan).select().single()
     if (error) throw error
     return data
   } catch { return null }
@@ -326,7 +337,7 @@ export async function updatePlan(id: string, updates: Partial<Plan>): Promise<vo
   }
   const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('plans') as any).update(updates).eq('id', id)
+  await (supabase.from('crm_plans') as any).update(updates).eq('id', id)
 }
 
 export async function deletePlan(id: string): Promise<void> {
@@ -337,7 +348,45 @@ export async function deletePlan(id: string): Promise<void> {
   }
   const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('plans') as any).delete().eq('id', id)
+  await (supabase.from('crm_plans') as any).delete().eq('id', id)
+}
+
+// ─── Providers ────────────────────────────────────────────────────────────────
+
+export async function getProvidersFromDB(): Promise<import('@/data/mock-crm').Provider[]> {
+  if (useMock()) return mockProviders
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('crm_providers') as any).select('*').order('name')
+    if (error) throw error
+    return data ?? []
+  } catch { return mockProviders }
+}
+
+export async function insertProvider(provider: Omit<import('@/data/mock-crm').Provider, 'id'>): Promise<import('@/data/mock-crm').Provider | null> {
+  if (useMock()) return { ...provider, id: `prv-${Date.now()}` }
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('crm_providers') as any).insert(provider).select().single()
+    if (error) throw error
+    return data
+  } catch { return null }
+}
+
+export async function updateProvider(id: string, updates: Partial<import('@/data/mock-crm').Provider>): Promise<void> {
+  if (useMock()) return
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('crm_providers') as any).update(updates).eq('id', id)
+}
+
+export async function deleteProvider(id: string): Promise<void> {
+  if (useMock()) return
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('crm_providers') as any).delete().eq('id', id)
 }
 
 // ─── CRM Stats ────────────────────────────────────────────────────────────────

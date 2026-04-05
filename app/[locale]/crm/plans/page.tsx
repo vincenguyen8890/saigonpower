@@ -1,5 +1,5 @@
 import { setRequestLocale } from 'next-intl/server'
-import { mockPlans } from '@/data/mock-crm'
+import { getPlansFromDB } from '@/lib/supabase/queries'
 import { getSession } from '@/lib/auth/session'
 import PlansClient from './PlansClient'
 
@@ -11,8 +11,8 @@ export default async function PlansPage({ params }: Props) {
   const { locale } = await params
   setRequestLocale(locale)
 
-  const session = await getSession()
+  const [session, plans] = await Promise.all([getSession(), getPlansFromDB()])
   const isAdmin = session?.role === 'admin'
 
-  return <PlansClient initialPlans={mockPlans} isAdmin={isAdmin} />
+  return <PlansClient initialPlans={plans} isAdmin={isAdmin} />
 }
