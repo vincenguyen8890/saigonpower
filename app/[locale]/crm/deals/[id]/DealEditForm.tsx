@@ -4,12 +4,12 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Pencil, X } from 'lucide-react'
 import { updateDealAction, runDealStageAutomation } from '../actions'
-import type { Deal } from '@/lib/supabase/queries'
+import type { Deal, CRMAgent } from '@/lib/supabase/queries'
 
 const PROVIDERS     = ['Gexa Energy', 'TXU Energy', 'Reliant Energy', 'Green Mountain Energy', 'Cirro Energy', 'Payless Power', 'Budget Power', 'Pulse Power', '4Change Energy']
 const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHTS', 'FREE WEEKENDS']
 
-export default function DealEditForm({ deal, locale }: { deal: Deal; locale: string }) {
+export default function DealEditForm({ deal, locale, agents }: { deal: Deal; locale: string; agents: CRMAgent[] }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
@@ -23,15 +23,12 @@ export default function DealEditForm({ deal, locale }: { deal: Deal; locale: str
     startTransition(async () => {
       await updateDealAction(deal.id, {
         title:               get('title'),
-        value:               Number(get('value'))       || deal.value,
         stage:               newStage as Deal['stage'],
-        probability:         Number(get('probability')) || deal.probability,
         expected_close:      get('expected_close')      || null,
         provider:            get('provider')            || null,
         plan_name:           get('plan_name')           || null,
         notes:               get('notes')               || null,
         assigned_to:         get('assigned_to')         || null,
-        agent_code:          get('agent_code')          || null,
         service_address:     get('service_address')     || null,
         esid:                get('esid')                || null,
         contract_start_date: get('contract_start_date') || null,
@@ -90,14 +87,6 @@ export default function DealEditForm({ deal, locale }: { deal: Deal; locale: str
                         <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
                       ))}
                     </select>
-                  </div>
-                  <div>
-                    <label className={L}>Probability (%)</label>
-                    <input name="probability" type="number" min="0" max="100" defaultValue={deal.probability} className={C} />
-                  </div>
-                  <div>
-                    <label className={L}>Value ($/mo commission)</label>
-                    <input name="value" type="number" min="0" defaultValue={deal.value} className={C} />
                   </div>
                   <div>
                     <label className={L}>Expected Close Date</label>
@@ -176,11 +165,12 @@ export default function DealEditForm({ deal, locale }: { deal: Deal; locale: str
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={L}>Sales Agent</label>
-                    <input name="assigned_to" defaultValue={deal.assigned_to ?? ''} placeholder="agent@saigonllc.com" className={C} />
-                  </div>
-                  <div>
-                    <label className={L}>Agent Code</label>
-                    <input name="agent_code" defaultValue={deal.agent_code ?? ''} placeholder="AGT-001" className={C} />
+                    <select name="assigned_to" defaultValue={deal.assigned_to ?? ''} className={C}>
+                      <option value="">— Unassigned —</option>
+                      {agents.filter(a => a.active).map(a => (
+                        <option key={a.id} value={a.email}>{a.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="col-span-2">
                     <label className={L}>Notes</label>

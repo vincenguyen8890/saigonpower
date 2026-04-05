@@ -6,11 +6,12 @@ import { PlusCircle, X } from 'lucide-react'
 import { createDeal } from './actions'
 import type { Lead } from '@/data/mock-crm'
 import type { Deal } from '@/lib/supabase/queries'
+import type { CRMAgent } from '@/lib/supabase/queries'
 
 const PROVIDERS = ['Gexa Energy', 'TXU Energy', 'Reliant Energy', 'Green Mountain Energy', 'Cirro Energy', 'Payless Power', 'Budget Power', 'Pulse Power', '4Change Energy']
 const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHTS', 'FREE WEEKENDS']
 
-export default function NewDealModal({ locale, leads }: { locale: string; leads: Lead[] }) {
+export default function NewDealModal({ locale, leads, agents }: { locale: string; leads: Lead[]; agents: CRMAgent[] }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
@@ -20,20 +21,23 @@ export default function NewDealModal({ locale, leads }: { locale: string; leads:
     const form = e.currentTarget
     const get  = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).value
 
+    const assignedEmail = get('assigned_to') || null
+    const selectedAgent = agents.find(a => a.email === assignedEmail)
+
     startTransition(async () => {
       await createDeal({
         title:               get('title'),
         lead_id:             get('lead_id') || null,
-        value:               Number(get('value')) || 0,
+        value:               0,
         stage:               get('stage') as Deal['stage'],
-        probability:         Number(get('probability')) || 50,
+        probability:         50,
         expected_close:      get('expected_close') || null,
         provider:            get('provider') || null,
         plan_name:           get('plan_name') || null,
         service_type:        (get('service_type') as 'residential' | 'commercial') || null,
         notes:               get('notes') || null,
-        assigned_to:         get('assigned_to') || null,
-        agent_code:          get('agent_code') || null,
+        assigned_to:         assignedEmail,
+        agent_code:          selectedAgent?.id ?? null,
         service_address:     get('service_address') || null,
         esid:                get('esid') || null,
         contract_start_date: get('contract_start_date') || null,
@@ -101,14 +105,6 @@ export default function NewDealModal({ locale, leads }: { locale: string; leads:
                       <option value="residential">Residential</option>
                       <option value="commercial">Commercial</option>
                     </select>
-                  </div>
-                  <div>
-                    <label className={L}>Value ($/mo commission)</label>
-                    <input name="value" type="number" min="0" defaultValue="75" className={C} />
-                  </div>
-                  <div>
-                    <label className={L}>Probability (%)</label>
-                    <input name="probability" type="number" min="0" max="100" defaultValue="50" className={C} />
                   </div>
                 </div>
               </div>
@@ -187,11 +183,12 @@ export default function NewDealModal({ locale, leads }: { locale: string; leads:
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={L}>Sales Agent</label>
-                    <input name="assigned_to" placeholder="agent@saigonllc.com" className={C} />
-                  </div>
-                  <div>
-                    <label className={L}>Agent Code</label>
-                    <input name="agent_code" placeholder="AGT-001" className={C} />
+                    <select name="assigned_to" defaultValue="" className={C}>
+                      <option value="">— Unassigned —</option>
+                      {agents.filter(a => a.active).map(a => (
+                        <option key={a.id} value={a.email}>{a.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="col-span-2">
                     <label className={L}>Notes</label>

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, DollarSign, Target, Building2, User, TrendingUp, CheckCircle2, MapPin, Zap, Hash } from 'lucide-react'
-import { getDealById, getLeadById, getActivities } from '@/lib/supabase/queries'
+import { getDealById, getLeadById, getActivities, getCRMAgents } from '@/lib/supabase/queries'
 import { mockProviders } from '@/data/mock-crm'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
@@ -27,9 +27,10 @@ export default async function DealDetailPage({ params }: Props) {
   const deal = await getDealById(id)
   if (!deal) notFound()
 
-  const [lead, activities] = await Promise.all([
+  const [lead, activities, agents] = await Promise.all([
     deal.lead_id ? getLeadById(deal.lead_id) : Promise.resolve(null),
     deal.lead_id ? getActivities({ leadId: deal.lead_id, limit: 10 }) : getActivities({ limit: 10 }),
+    getCRMAgents(),
   ])
 
   const provider = mockProviders.find(p => p.name === deal.provider)
@@ -67,7 +68,7 @@ export default async function DealDetailPage({ params }: Props) {
             <span className="text-xs text-gray-400">Updated {formatDate(deal.updated_at, locale)}</span>
           </div>
         </div>
-        <DealEditForm deal={deal} locale={locale} />
+        <DealEditForm deal={deal} locale={locale} agents={agents} />
       </div>
 
       {/* Stage Progress */}
@@ -270,14 +271,12 @@ export default async function DealDetailPage({ params }: Props) {
             <div className="space-y-2.5 text-xs">
               <div className="flex justify-between">
                 <span className="text-gray-400">Sales Agent</span>
-                <span className="text-gray-700 font-medium">{deal.assigned_to?.split('@')[0] ?? '—'}</span>
+                <span className="text-gray-700 font-medium">
+                  {deal.assigned_to
+                    ? (agents.find(a => a.email === deal.assigned_to)?.name ?? deal.assigned_to.split('@')[0])
+                    : '—'}
+                </span>
               </div>
-              {deal.agent_code && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Agent Code</span>
-                  <span className="text-gray-700 font-mono">{deal.agent_code}</span>
-                </div>
-              )}
               <div className="flex justify-between pt-1 border-t border-gray-50">
                 <span className="text-gray-400">Created</span>
                 <span className="text-gray-700">{formatDate(deal.created_at, locale)}</span>
