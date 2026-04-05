@@ -58,10 +58,30 @@ export default function ProposalGenerator({ locale, leads, selectedLead, plans, 
   async function handleSend() {
     if (!selectedLead || chosenPlans.length === 0) return
     setSending(true)
-    // Simulate API call — in production, POST to /api/crm/proposals/send
-    await new Promise(r => setTimeout(r, 900))
-    setSending(false)
-    setSent(true)
+    try {
+      const res = await fetch('/api/crm/proposals/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead: selectedLead,
+          plans: chosenPlans,
+          usageKwh,
+          bestPlanName: bestPlan?.name,
+          bestMonthly: bestPlan?.monthlyEstimate,
+          bestAnnual: bestPlan?.annualEstimate,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || 'Failed to send proposal')
+        return
+      }
+      setSent(true)
+    } catch {
+      alert('Network error — please try again')
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
