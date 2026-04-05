@@ -10,6 +10,8 @@ import {
   type Lead, type QuoteRequest, type LeadStatus, type CRMStats, type Plan, type Provider,
 } from '@/data/mock-crm'
 
+export type { Lead, QuoteRequest, Plan, Provider }
+
 function useMock() {
   return process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')
 }
@@ -455,6 +457,173 @@ export async function deleteContract(id: string): Promise<void> {
   const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase.from('contracts') as any).delete().eq('id', id)
+}
+
+// ─── Commissions ─────────────────────────────────────────────────────────────
+
+export interface Commission {
+  id: string
+  deal_id: string | null
+  lead_id: string | null
+  provider: string
+  period_start: string
+  period_end: string | null
+  amount_expected: number
+  amount_received: number
+  status: 'pending' | 'received' | 'short_pay' | 'missing'
+  notes: string | null
+  created_at: string
+}
+
+const mockCommissions: Commission[] = [
+  { id: 'com-001', deal_id: 'd-001', lead_id: 'lead-002', provider: 'Reliant Energy', period_start: '2026-03-01', period_end: '2026-03-31', amount_expected: 200, amount_received: 175, status: 'short_pay', notes: null, created_at: new Date().toISOString() },
+  { id: 'com-002', deal_id: 'd-001', lead_id: 'lead-002', provider: 'Reliant Energy', period_start: '2026-04-01', period_end: '2026-04-30', amount_expected: 200, amount_received: 200, status: 'received',  notes: null, created_at: new Date().toISOString() },
+  { id: 'com-003', deal_id: 'd-002', lead_id: 'lead-003', provider: 'Gexa Energy',    period_start: '2026-03-01', period_end: '2026-03-31', amount_expected: 75,  amount_received: 0,   status: 'missing',   notes: null, created_at: new Date().toISOString() },
+  { id: 'com-004', deal_id: 'd-002', lead_id: 'lead-003', provider: 'Gexa Energy',    period_start: '2026-04-01', period_end: '2026-04-30', amount_expected: 75,  amount_received: 75,  status: 'received',  notes: null, created_at: new Date().toISOString() },
+  { id: 'com-005', deal_id: 'd-003', lead_id: 'lead-006', provider: 'N/A',            period_start: '2026-04-01', period_end: '2026-04-30', amount_expected: 350, amount_received: 0,   status: 'pending',   notes: null, created_at: new Date().toISOString() },
+]
+
+export async function getCommissions(opts?: { status?: string; dealId?: string }): Promise<Commission[]> {
+  if (useMock()) {
+    let rows = mockCommissions
+    if (opts?.status && opts.status !== 'all') rows = rows.filter(r => r.status === opts.status)
+    if (opts?.dealId) rows = rows.filter(r => r.deal_id === opts.dealId)
+    return rows
+  }
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (supabase.from('commissions') as any)
+      .select('*')
+      .order('period_start', { ascending: false })
+      .limit(200)
+    if (opts?.status && opts.status !== 'all') q = q.eq('status', opts.status)
+    if (opts?.dealId) q = q.eq('deal_id', opts.dealId)
+    const { data, error } = await q
+    if (error) throw error
+    return data ?? []
+  } catch { return mockCommissions }
+}
+
+export async function insertCommission(c: Omit<Commission, 'id' | 'created_at'>): Promise<Commission | null> {
+  if (useMock()) return { ...c, id: `com-${Date.now()}`, created_at: new Date().toISOString() }
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('commissions') as any).insert(c).select().single()
+    if (error) throw error
+    return data
+  } catch { return null }
+}
+
+export async function updateCommission(id: string, updates: Partial<Commission>): Promise<void> {
+  if (useMock()) return
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('commissions') as any).update(updates).eq('id', id)
+}
+
+// ─── RFP Requests ─────────────────────────────────────────────────────────────
+
+export interface RFPRequest {
+  id: string
+  lead_id: string | null
+  title: string
+  service_type: 'residential' | 'commercial'
+  usage_kwh: number
+  zip: string | null
+  status: 'draft' | 'sent' | 'received' | 'closed'
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface RFPResponse {
+  id: string
+  rfp_id: string
+  provider_name: string
+  plan_name: string | null
+  rate_kwh: number | null
+  term_months: number | null
+  cancellation_fee: number | null
+  renewable: boolean
+  notes: string | null
+  status: 'pending' | 'received' | 'declined'
+  created_at: string
+}
+
+const mockRFPs: RFPRequest[] = [
+  { id: 'rfp-001', lead_id: 'lead-006', title: 'Hoa Nguyen Restaurant — Commercial Rate RFP', service_type: 'commercial', usage_kwh: 3200, zip: '77099', status: 'received', notes: 'Vietnamese restaurant, high summer usage', created_by: 'agent@saigonllc.com', created_at: new Date(Date.now() - 3 * 86400000).toISOString(), updated_at: new Date().toISOString() },
+  { id: 'rfp-002', lead_id: 'lead-002', title: 'Minh Tran Nails — Commercial Renewal RFP',   service_type: 'commercial', usage_kwh: 1800, zip: '77479', status: 'sent',     notes: 'Contract expires Mar 2025',            created_by: 'agent@saigonllc.com', created_at: new Date(Date.now() - 1 * 86400000).toISOString(), updated_at: new Date().toISOString() },
+]
+
+const mockRFPResponses: RFPResponse[] = [
+  { id: 'rfpr-001', rfp_id: 'rfp-001', provider_name: 'Reliant Energy', plan_name: 'Reliant Business 12', rate_kwh: 0.128, term_months: 12, cancellation_fee: 350, renewable: false, notes: null, status: 'received', created_at: new Date().toISOString() },
+  { id: 'rfpr-002', rfp_id: 'rfp-001', provider_name: 'TXU Energy',     plan_name: 'TXU Business 12',     rate_kwh: 0.131, term_months: 12, cancellation_fee: 300, renewable: false, notes: null, status: 'received', created_at: new Date().toISOString() },
+  { id: 'rfpr-003', rfp_id: 'rfp-001', provider_name: 'Cirro Energy',   plan_name: null,                  rate_kwh: null,  term_months: null, cancellation_fee: null, renewable: false, notes: 'No commercial product in this area', status: 'declined', created_at: new Date().toISOString() },
+  { id: 'rfpr-004', rfp_id: 'rfp-002', provider_name: 'Reliant Energy', plan_name: 'Reliant Business 12', rate_kwh: 0.130, term_months: 12, cancellation_fee: 350, renewable: false, notes: null, status: 'received', created_at: new Date().toISOString() },
+  { id: 'rfpr-005', rfp_id: 'rfp-002', provider_name: 'TXU Energy',     plan_name: null,                  rate_kwh: null,  term_months: null, cancellation_fee: null, renewable: false, notes: 'Pending review',                     status: 'pending',  created_at: new Date().toISOString() },
+]
+
+export async function getRFPs(): Promise<RFPRequest[]> {
+  if (useMock()) return mockRFPs
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('rfp_requests') as any)
+      .select('*').order('created_at', { ascending: false }).limit(100)
+    if (error) throw error
+    return data ?? []
+  } catch { return mockRFPs }
+}
+
+export async function insertRFP(rfp: Omit<RFPRequest, 'id' | 'created_at' | 'updated_at'>): Promise<RFPRequest | null> {
+  if (useMock()) return { ...rfp, id: `rfp-${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('rfp_requests') as any).insert(rfp).select().single()
+    if (error) throw error
+    return data
+  } catch { return null }
+}
+
+export async function updateRFP(id: string, updates: Partial<RFPRequest>): Promise<void> {
+  if (useMock()) return
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('rfp_requests') as any).update(updates).eq('id', id)
+}
+
+export async function getRFPResponses(rfpId: string): Promise<RFPResponse[]> {
+  if (useMock()) return mockRFPResponses.filter(r => r.rfp_id === rfpId)
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('rfp_responses') as any)
+      .select('*').eq('rfp_id', rfpId).order('created_at')
+    if (error) throw error
+    return data ?? []
+  } catch { return mockRFPResponses.filter(r => r.rfp_id === rfpId) }
+}
+
+export async function insertRFPResponse(r: Omit<RFPResponse, 'id' | 'created_at'>): Promise<RFPResponse | null> {
+  if (useMock()) return { ...r, id: `rfpr-${Date.now()}`, created_at: new Date().toISOString() }
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('rfp_responses') as any).insert(r).select().single()
+    if (error) throw error
+    return data
+  } catch { return null }
+}
+
+export async function updateRFPResponse(id: string, updates: Partial<RFPResponse>): Promise<void> {
+  if (useMock()) return
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('rfp_responses') as any).update(updates).eq('id', id)
 }
 
 // ─── CRM Stats ────────────────────────────────────────────────────────────────

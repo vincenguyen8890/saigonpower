@@ -1,22 +1,14 @@
 import { setRequestLocale } from 'next-intl/server'
-import { getDeals } from '@/lib/supabase/queries'
-import { mockProviders } from '@/data/mock-crm'
-import { DollarSign, TrendingUp, AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
+import { getDeals, getCommissions, getProvidersFromDB } from '@/lib/supabase/queries'
+import { DollarSign, TrendingUp, AlertTriangle, CheckCircle2, Clock, PlusCircle } from 'lucide-react'
+import Link from 'next/link'
+import RecordPaymentButton from './RecordPaymentButton'
+import NewCommissionButton from './NewCommissionButton'
 
 interface Props {
   params: Promise<{ locale: string }>
   searchParams: Promise<{ status?: string }>
 }
-
-// Mock commission records tied to deals
-const mockCommissions = [
-  { deal_id: 'd-001', period: 'Apr 2026', expected: 200, received: 200, status: 'received' as const },
-  { deal_id: 'd-001', period: 'Mar 2026', expected: 200, received: 175, status: 'short_pay' as const },
-  { deal_id: 'd-002', period: 'Apr 2026', expected: 75,  received: 75,  status: 'received' as const },
-  { deal_id: 'd-002', period: 'Mar 2026', expected: 75,  received: 0,   status: 'missing' as const  },
-  { deal_id: 'd-003', period: 'Apr 2026', expected: 350, received: 0,   status: 'pending' as const  },
-  { deal_id: 'd-004', period: 'Apr 2026', expected: 75,  received: 0,   status: 'pending' as const  },
-]
 
 const STATUS_STYLES = {
   received:  { bg: 'bg-green-50',  text: 'text-green-700',  label: 'Received'  },
@@ -25,42 +17,85 @@ const STATUS_STYLES = {
   pending:   { bg: 'bg-gray-100',  text: 'text-gray-600',   label: 'Pending'   },
 }
 
+const statusOptions = [
+  { value: 'all',       label: 'All'       },
+  { value: 'pending',   label: 'Pending'   },
+  { value: 'received',  label: 'Received'  },
+  { value: 'short_pay', label: 'Short Pay' },
+  { value: 'missing',   label: 'Missing'   },
+]
+
 export default async function AccountingPage({ params, searchParams }: Props) {
   const { locale } = await params
   const { status } = await searchParams
   setRequestLocale(locale)
 
-  const deals = await getDeals()
+  const [deals, commissions, providers] = await Promise.all([
+    getDeals(),
+    getCommissions(status && status !== 'all' ? { status } : undefined),
+    getProvidersFromDB(),
+  ])
+
   const dealMap = Object.fromEntries(deals.map(d => [d.id, d]))
+  const providerMap = Object.fromEntries(providers.map(p => [p.name, p]))
 
-  const providerMap = Object.fromEntries(mockProviders.map(p => [p.name, p]))
+  // Auto-generate expected commission rows for active deals with NO commission record yet
+  const currentPeriodStart = new Date()
+  currentPeriodStart.setDate(1)
+  const periodLabel = currentPeriodStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 
-  // Filter
-  let rows = mockCommissions
-  if (status && status !== 'all') rows = rows.filter(r => r.status === status)
+  const dealsWithCommission = new Set(commissions.map(c => c.deal_id))
+  const activeDeals = deals.filter(d => !['won', 'lost'].includes(d.stage))
 
-  // Summary stats
-  const totalExpected = mockCommissions.reduce((s, r) => s + r.expected, 0)
-  const totalReceived = mockCommissions.reduce((s, r) => s + r.received, 0)
-  const totalOutstanding = mockCommissions
-    .filter(r => r.status !== 'received')
-    .reduce((s, r) => s + (r.expected - r.received), 0)
-  const shortPays = mockCommissions.filter(r => r.status === 'short_pay').length
-  const missing   = mockCommissions.filter(r => r.status === 'missing').length
+  const autoRows = activeDeals
+    .filter(d => !dealsWithCommission.has(d.id) && d.provider)
+    .map(d => {
+      const prov = providerMap[d.provider!]
+      const expected = prov
+        ? (d.service_type === 'commercial' ? prov.commission_commercial : prov.commission_residential)
+        : d.value
+      return {
+        id:              `auto-${d.id}`,
+        deal_id:         d.id,
+        lead_id:         d.lead_id,
+        provider:        d.provider ?? '—',
+        period_start:    currentPeriodStart.toISOString().split('T')[0],
+        period_end:      null,
+        amount_expected: expected,
+        amount_received: 0,
+        status:          'pending' as const,
+        notes:           'Auto-computed — not yet saved',
+        created_at:      new Date().toISOString(),
+        _isAuto:         true,
+      }
+    })
 
-  const statusOptions = [
-    { value: 'all',       label: 'All'       },
-    { value: 'pending',   label: 'Pending'   },
-    { value: 'received',  label: 'Received'  },
-    { value: 'short_pay', label: 'Short Pay' },
-    { value: 'missing',   label: 'Missing'   },
+  // Combine DB records + auto rows (auto rows shown at bottom)
+  const allRows = [
+    ...commissions,
+    ...(status && status !== 'all' && status !== 'pending' ? [] : autoRows),
   ]
+
+  // Summary — always use all commissions (not filtered) for totals
+  const allCommissions = await getCommissions()
+  const totalExpected   = allCommissions.reduce((s, r) => s + r.amount_expected, 0)
+    + autoRows.reduce((s, r) => s + r.amount_expected, 0)
+  const totalReceived   = allCommissions.reduce((s, r) => s + r.amount_received, 0)
+  const totalOutstanding = allCommissions
+    .filter(r => r.status !== 'received')
+    .reduce((s, r) => s + (r.amount_expected - r.amount_received), 0)
+    + autoRows.reduce((s, r) => s + r.amount_expected, 0)
+  const issues = allCommissions.filter(r => r.status === 'short_pay' || r.status === 'missing').length
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Commission Accounting</h1>
-        <p className="text-gray-500 text-sm mt-1">Track expected vs received commission per deal</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Commission Accounting</h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Expected vs received · Current period: {periodLabel}
+          </p>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -79,7 +114,9 @@ export default async function AccountingPage({ params, searchParams }: Props) {
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Received</span>
           </div>
           <p className="text-2xl font-bold text-green-700">${totalReceived.toLocaleString()}</p>
-          <p className="text-xs text-gray-400 mt-1">{((totalReceived / totalExpected) * 100).toFixed(0)}% collected</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {totalExpected > 0 ? ((totalReceived / totalExpected) * 100).toFixed(0) : 0}% collected
+          </p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center gap-2 mb-1">
@@ -94,20 +131,18 @@ export default async function AccountingPage({ params, searchParams }: Props) {
             <AlertTriangle size={15} className="text-red-500" />
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Issues</span>
           </div>
-          <p className="text-2xl font-bold text-red-600">{shortPays + missing}</p>
-          <p className="text-xs text-gray-400 mt-1">{shortPays} short pays · {missing} missing</p>
+          <p className="text-2xl font-bold text-red-600">{issues}</p>
+          <p className="text-xs text-gray-400 mt-1">short pays or missing</p>
         </div>
       </div>
 
       {/* Filter */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
-        <form className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {statusOptions.map(opt => (
-            <button
+            <Link
               key={opt.value}
-              name="status"
-              value={opt.value}
-              type="submit"
+              href={opt.value === 'all' ? `/${locale}/crm/accounting` : `/${locale}/crm/accounting?status=${opt.value}`}
               className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
                 (status ?? 'all') === opt.value
                   ? 'bg-brand-greenDark text-white'
@@ -115,9 +150,12 @@ export default async function AccountingPage({ params, searchParams }: Props) {
               }`}
             >
               {opt.label}
-            </button>
+            </Link>
           ))}
-        </form>
+          <div className="ml-auto">
+            <NewCommissionButton deals={deals} />
+          </div>
+        </div>
       </div>
 
       {/* Commission Table */}
@@ -126,49 +164,53 @@ export default async function AccountingPage({ params, searchParams }: Props) {
           <table className="w-full">
             <thead className="border-b border-gray-100 bg-gray-50/50">
               <tr>
-                {['Deal', 'Provider', 'Period', 'Expected', 'Received', 'Variance', 'Status'].map((h, i) => (
-                  <th
-                    key={i}
-                    className={`text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-5 py-3 ${i >= 5 ? 'hidden lg:table-cell' : ''} ${i === 2 ? 'hidden md:table-cell' : ''}`}
-                  >
+                {['Deal', 'Provider', 'Period', 'Expected', 'Received', 'Variance', 'Status', ''].map((h, i) => (
+                  <th key={i} className={`text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-5 py-3 ${
+                    i === 5 ? 'hidden lg:table-cell' : ''
+                  } ${i === 2 ? 'hidden md:table-cell' : ''}`}>
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {rows.map((row, idx) => {
-                const deal = dealMap[row.deal_id]
-                const variance = row.received - row.expected
+              {allRows.map((row, idx) => {
+                const deal = row.deal_id ? dealMap[row.deal_id] : null
+                const variance = row.amount_received - row.amount_expected
                 const style = STATUS_STYLES[row.status]
-                const provider = deal?.provider ? providerMap[deal.provider] : null
+                const isAuto = '_isAuto' in row && Boolean(row._isAuto)
                 return (
-                  <tr key={idx} className="hover:bg-gray-50/60 transition-colors">
+                  <tr key={idx} className={`hover:bg-gray-50/60 transition-colors ${isAuto ? 'opacity-60' : ''}`}>
                     <td className="px-5 py-4">
                       <p className="text-sm font-semibold text-gray-900 truncate max-w-[180px]">
-                        {deal?.title ?? row.deal_id}
+                        {deal?.title ?? '—'}
                       </p>
-                      <p className="text-xs text-gray-400">{deal?.service_type ?? '—'}</p>
+                      <p className="text-xs text-gray-400">
+                        {deal?.service_type ?? '—'}
+                        {isAuto && <span className="ml-1 text-amber-500 italic">· auto</span>}
+                      </p>
                     </td>
                     <td className="px-5 py-4">
-                      <p className="text-sm text-gray-700">{deal?.provider ?? '—'}</p>
-                      {provider && (
+                      <p className="text-sm text-gray-700">{row.provider}</p>
+                      {providerMap[row.provider] && (
                         <p className="text-xs text-gray-400">
                           ${deal?.service_type === 'commercial'
-                            ? provider.commission_commercial
-                            : provider.commission_residential}/mo commission
+                            ? providerMap[row.provider].commission_commercial
+                            : providerMap[row.provider].commission_residential}/mo rate
                         </p>
                       )}
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">
-                      <span className="text-sm text-gray-700">{row.period}</span>
+                      <span className="text-sm text-gray-700">
+                        {new Date(row.period_start).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                      </span>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="text-sm font-semibold text-gray-900">${row.expected}</span>
+                      <span className="text-sm font-semibold text-gray-900">${row.amount_expected}</span>
                     </td>
                     <td className="px-5 py-4">
-                      <span className={`text-sm font-semibold ${row.received > 0 ? 'text-green-700' : 'text-gray-400'}`}>
-                        ${row.received}
+                      <span className={`text-sm font-semibold ${row.amount_received > 0 ? 'text-green-700' : 'text-gray-400'}`}>
+                        ${row.amount_received}
                       </span>
                     </td>
                     <td className="px-5 py-4 hidden lg:table-cell">
@@ -183,6 +225,11 @@ export default async function AccountingPage({ params, searchParams }: Props) {
                         {style.label}
                       </span>
                     </td>
+                    <td className="px-5 py-4 text-right">
+                      {!isAuto && row.status !== 'received' && (
+                        <RecordPaymentButton commission={row} />
+                      )}
+                    </td>
                   </tr>
                 )
               })}
@@ -190,7 +237,7 @@ export default async function AccountingPage({ params, searchParams }: Props) {
           </table>
         </div>
 
-        {rows.length === 0 && (
+        {allRows.length === 0 && (
           <div className="text-center py-12 text-gray-400">
             <TrendingUp size={32} className="mx-auto mb-2 opacity-40" />
             <p className="text-sm">No records match this filter.</p>
@@ -202,7 +249,7 @@ export default async function AccountingPage({ params, searchParams }: Props) {
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Provider Commission Rates</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {mockProviders.filter(p => p.status === 'active').map(p => (
+          {providers.filter(p => p.status === 'active').map(p => (
             <div key={p.id} className="bg-white rounded-xl border border-gray-100 p-3 text-center">
               <p className="text-xs font-semibold text-gray-700 truncate">{p.short_name}</p>
               <p className="text-xs text-gray-400 mt-1">Res: <span className="text-green-700 font-medium">${p.commission_residential}</span></p>
@@ -210,6 +257,9 @@ export default async function AccountingPage({ params, searchParams }: Props) {
             </div>
           ))}
         </div>
+        <p className="text-xs text-gray-400 mt-3 italic">
+          * &quot;Auto&quot; rows are computed from active deals without a commission record — click &quot;+ Add&quot; to save them.
+        </p>
       </div>
     </div>
   )

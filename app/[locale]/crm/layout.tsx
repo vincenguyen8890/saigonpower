@@ -6,7 +6,7 @@ import Image from 'next/image'
 import {
   LayoutDashboard, Users, FileText, Settings, LogOut,
   ShieldCheck, UserCheck, Zap, RefreshCw, Building2,
-  TrendingUp, BarChart3, Bot, ListChecks, DollarSign,
+  TrendingUp, BarChart3, Bot, ListChecks, DollarSign, Inbox,
 } from 'lucide-react'
 import type { Metadata } from 'next'
 
@@ -41,6 +41,7 @@ export default async function CRMLayout({ children, params }: Props) {
         { href: `/${locale}/crm/deals`,       label: 'Deals',            icon: TrendingUp      },
         { href: `/${locale}/crm/tasks`,       label: 'Work Queue',       icon: ListChecks      },
         { href: `/${locale}/crm/proposals`,   label: 'Proposals',        icon: FileText        },
+        { href: `/${locale}/crm/rfp`,         label: 'Rate RFPs',        icon: Inbox           },
       ],
     },
     {

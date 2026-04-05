@@ -1,8 +1,8 @@
-import { Users, FileText, Zap, AlertTriangle, TrendingUp, DollarSign, Target, CheckCircle2 } from 'lucide-react'
+import { Users, FileText, Zap, AlertTriangle, TrendingUp, DollarSign, Target, CheckCircle2, RefreshCw, Briefcase } from 'lucide-react'
 import Link from 'next/link'
 import StatCard from '@/components/crm/StatCard'
 import LeadStatusBadge from '@/components/crm/LeadStatusBadge'
-import { getCRMStats, getLeads, getDeals, getActivities } from '@/lib/supabase/queries'
+import { getCRMStats, getLeads, getDeals, getActivities, getContracts, getProvidersFromDB } from '@/lib/supabase/queries'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
 import RevenueChart from '@/components/crm/RevenueChart'
@@ -14,14 +14,35 @@ export default async function CRMOverview({ params }: Props) {
   const { locale } = await params
   setRequestLocale(locale)
 
-  const [stats, recentLeads, deals, activities] = await Promise.all([
+  const [stats, recentLeads, deals, activities, contracts, providers] = await Promise.all([
     getCRMStats(),
     getLeads(),
     getDeals(),
     getActivities({ completed: false, limit: 20 }),
+    getContracts('active'),
+    getProvidersFromDB(),
   ])
 
   const recentDisplayed = recentLeads.slice(0, 5)
+
+  // Portfolio valuation
+  const now = new Date()
+  const providerMap = Object.fromEntries(providers.map(p => [p.name, p]))
+  const expiring30 = contracts.filter(c => {
+    const d = Math.ceil((new Date(c.end_date).getTime() - now.getTime()) / 86400000)
+    return d >= 0 && d <= 30
+  })
+  const expiring60 = contracts.filter(c => {
+    const d = Math.ceil((new Date(c.end_date).getTime() - now.getTime()) / 86400000)
+    return d > 30 && d <= 60
+  })
+  const annualCommission = contracts.reduce((sum, c) => {
+    const prov = providerMap[c.provider]
+    if (!prov) return sum
+    const monthly = c.service_type === 'commercial' ? prov.commission_commercial : prov.commission_residential
+    return sum + monthly * 12
+  }, 0)
+  const totalMwhMonth = contracts.length * 1200 / 1000 // rough estimate 1200 kWh avg per contract
 
   // Deal pipeline summary
   const totalPipelineValue = deals.reduce((s, d) => s + d.value, 0)
@@ -51,6 +72,55 @@ export default async function CRMOverview({ params }: Props) {
         <StatCard title="Pending Quotes"     value={stats.pendingQuotes}    subtitle="Awaiting review"                   icon={FileText}      color="yellow" />
         <StatCard title="Active Contracts"   value={stats.activeContracts}  subtitle="Currently active"                  icon={Zap}           color="green"  />
         <StatCard title="Expiring Soon"      value={stats.expiringSoon}     subtitle="Within 30 days"                    icon={AlertTriangle} color="red"    />
+      </div>
+
+      {/* Portfolio Valuation */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+            <Briefcase size={16} className="text-brand-green" />
+            Portfolio Valuation
+          </h2>
+          <Link href={`/${locale}/crm/renewals`} className="text-xs text-brand-green hover:text-brand-greenDark font-medium">
+            View renewals →
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center p-3 bg-gray-50 rounded-xl">
+            <p className="text-2xl font-bold text-gray-900">{contracts.length}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Active Contracts</p>
+          </div>
+          <div className="text-center p-3 bg-gray-50 rounded-xl">
+            <p className="text-2xl font-bold text-gray-900">{totalMwhMonth.toFixed(1)}</p>
+            <p className="text-xs text-gray-500 mt-0.5">MWh/mo Under Mgmt</p>
+          </div>
+          <div className="text-center p-3 bg-green-50 rounded-xl">
+            <p className="text-2xl font-bold text-green-700">${annualCommission.toLocaleString()}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Est. Annual Commission</p>
+          </div>
+          <div className="text-center p-3 bg-red-50 rounded-xl">
+            <p className="text-2xl font-bold text-red-600">{expiring30.length}</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              At-Risk ≤30d
+              {expiring60.length > 0 && <span className="text-amber-500"> · {expiring60.length} by 60d</span>}
+            </p>
+          </div>
+        </div>
+        {expiring30.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-50">
+            <p className="text-xs text-red-600 font-medium mb-1.5">
+              <AlertTriangle size={11} className="inline mr-1" />
+              Contracts expiring within 30 days:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {expiring30.map(c => (
+                <span key={c.id} className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded-lg">
+                  {c.customer_name ?? c.provider} · {c.end_date}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Company Snapshot + Revenue Chart */}

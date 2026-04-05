@@ -1,35 +1,18 @@
-import { RefreshCw, Calendar, MapPin, Bell } from 'lucide-react'
+import { Calendar, MapPin, RefreshCw, AlertTriangle } from 'lucide-react'
 import { setRequestLocale } from 'next-intl/server'
 import { formatDate } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/server'
+import { getContracts } from '@/lib/supabase/queries'
+import StartRenewalButton from './StartRenewalButton'
+import Link from 'next/link'
 
 interface Props { params: Promise<{ locale: string }> }
-
-const mockContracts = [
-  { id: 'CTR-001', user_name: 'Hung Le',        plan_name: 'Gexa Saver 12',       provider: 'Gexa Energy',    rate_kwh: 0.109, end_date: '2025-01-15', service_address: '1234 Main St, Houston TX 77036',      status: 'active', service_type: 'residential' },
-  { id: 'CTR-004', user_name: 'Linh Do',         plan_name: 'Green Mtn Simple 12', provider: 'Green Mountain', rate_kwh: 0.125, end_date: '2025-02-01', service_address: '321 Elm St, Houston TX 77081',         status: 'active', service_type: 'residential' },
-  { id: 'CTR-003', user_name: 'Minh Tran Nails', plan_name: 'Reliant Business 12', provider: 'Reliant Energy', rate_kwh: 0.132, end_date: '2025-03-01', service_address: '910 Business Blvd, Sugar Land TX 77479', status: 'active', service_type: 'commercial'  },
-  { id: 'CTR-005', user_name: 'David Kim',       plan_name: 'Cirro Value 6',       provider: 'Cirro Energy',   rate_kwh: 0.114, end_date: '2025-04-01', service_address: '654 Pine Rd, Pearland TX 77584',       status: 'active', service_type: 'residential' },
-  { id: 'CTR-002', user_name: 'Mai Pham',        plan_name: 'TXU Energy Saver 24', provider: 'TXU Energy',     rate_kwh: 0.118, end_date: '2025-06-01', service_address: '5678 Oak Ave, Katy TX 77450',          status: 'active', service_type: 'residential' },
-]
 
 export default async function RenewalCalendarPage({ params }: Props) {
   const { locale } = await params
   setRequestLocale(locale)
-  let contracts = mockContracts
-  const isPlaceholder = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')
-  if (!isPlaceholder) {
-    try {
-      const supabase = await createClient()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase.from('contracts') as any)
-        .select('*')
-        .eq('status', 'active')
-        .order('end_date', { ascending: true })
-        .limit(200)
-      if (data?.length) contracts = data
-    } catch { /* fallback */ }
-  }
+
+  // Fetch all active contracts sorted by expiry
+  const contracts = await getContracts('active')
 
   const now = new Date()
 
@@ -53,8 +36,13 @@ export default async function RenewalCalendarPage({ params }: Props) {
     ok:       contracts.filter(c => getDaysLeft(c.end_date) > 60).length,
   }
 
+  // Sort by soonest expiry first
+  const sorted = [...contracts].sort(
+    (a, b) => new Date(a.end_date).getTime() - new Date(b.end_date).getTime()
+  )
+
   // Group by month
-  const byMonth = contracts.reduce<Record<string, typeof contracts>>((acc, c) => {
+  const byMonth = sorted.reduce<Record<string, typeof sorted>>((acc, c) => {
     const key = new Date(c.end_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
     if (!acc[key]) acc[key] = []
     acc[key].push(c)
@@ -63,14 +51,25 @@ export default async function RenewalCalendarPage({ params }: Props) {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Calendar size={22} className="text-brand-greenDark" />
-          Renewal Calendar
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">
-          {counts.critical} need renewal within 30 days
-        </p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Calendar size={22} className="text-brand-greenDark" />
+            Renewal Calendar
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">
+            {counts.critical > 0
+              ? <span className="text-red-600 font-medium">{counts.critical} need renewal within 30 days</span>
+              : 'No urgent renewals'}
+            {' '}&middot; {contracts.length} active contracts
+          </p>
+        </div>
+        <Link
+          href={`/${locale}/crm/contracts`}
+          className="text-sm bg-brand-greenDark text-white px-4 py-2 rounded-xl hover:bg-brand-green transition-colors font-medium"
+        >
+          + Add Contract
+        </Link>
       </div>
 
       {/* Summary row */}
@@ -92,84 +91,111 @@ export default async function RenewalCalendarPage({ params }: Props) {
         })}
       </div>
 
-      {/* Calendar timeline — grouped by month */}
-      <div className="space-y-6">
-        {Object.entries(byMonth).map(([month, monthContracts]) => (
-          <div key={month}>
-            <div className="flex items-center gap-3 mb-3">
-              <h2 className="font-semibold text-gray-700 text-sm capitalize">{month}</h2>
-              <div className="flex-1 h-px bg-gray-100" />
-              <span className="text-xs text-gray-400">{monthContracts.length} contracts</span>
-            </div>
+      {/* Alert banner for critical */}
+      {counts.critical > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-5 flex items-start gap-3">
+          <AlertTriangle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-red-700">
+              {counts.critical} contract{counts.critical > 1 ? 's' : ''} expiring within 30 days
+            </p>
+            <p className="text-xs text-red-600 mt-0.5">
+              Click &quot;Renew&quot; to create a renewal deal and start rate shopping for the customer.
+            </p>
+          </div>
+        </div>
+      )}
 
-            <div className="space-y-2">
-              {monthContracts.map(c => {
-                const daysLeft = getDaysLeft(c.end_date)
-                const urgency = getUrgency(daysLeft)
-                const cfg = urgencyConfig[urgency]
+      {contracts.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 text-center text-gray-400">
+          <RefreshCw size={40} className="mx-auto mb-3 opacity-30" />
+          <p>No active contracts</p>
+          <Link href={`/${locale}/crm/contracts`} className="text-sm text-brand-green hover:underline mt-2 inline-block">
+            Add a contract →
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {Object.entries(byMonth).map(([month, monthContracts]) => (
+            <div key={month}>
+              <div className="flex items-center gap-3 mb-3">
+                <h2 className="font-semibold text-gray-700 text-sm capitalize">{month}</h2>
+                <div className="flex-1 h-px bg-gray-100" />
+                <span className="text-xs text-gray-400">{monthContracts.length} contracts</span>
+              </div>
 
-                return (
-                  <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm flex overflow-hidden hover:shadow-md transition-shadow">
-                    {/* Urgency stripe */}
-                    <div className={`w-1 flex-shrink-0 ${cfg.bar}`} />
+              <div className="space-y-2">
+                {monthContracts.map(c => {
+                  const daysLeft = getDaysLeft(c.end_date)
+                  const urgency = getUrgency(daysLeft)
+                  const cfg = urgencyConfig[urgency]
+                  const displayName = c.customer_name ?? 'Unknown Customer'
 
-                    <div className="flex-1 p-4 flex flex-wrap items-center gap-4">
-                      {/* Customer */}
-                      <div className="min-w-[160px]">
-                        <p className="text-sm font-semibold text-gray-900">{c.user_name}</p>
-                        <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                          <MapPin size={10} />
-                          {c.service_address?.split(',').slice(-2).join(',').trim()}
-                        </p>
-                      </div>
+                  return (
+                    <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm flex overflow-hidden hover:shadow-md transition-shadow">
+                      <div className={`w-1 flex-shrink-0 ${cfg.bar}`} />
 
-                      {/* Plan */}
-                      <div className="hidden sm:block min-w-[140px]">
-                        <p className="text-xs text-gray-400">Current plan</p>
-                        <p className="text-sm text-gray-700">{c.plan_name}</p>
-                      </div>
+                      <div className="flex-1 p-4 flex flex-wrap items-center gap-4">
+                        {/* Customer */}
+                        <div className="min-w-[160px]">
+                          <p className="text-sm font-semibold text-gray-900">{displayName}</p>
+                          <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                            <MapPin size={10} />
+                            {c.address?.split(',').slice(-2).join(',').trim() ?? c.zip ?? '—'}
+                          </p>
+                        </div>
 
-                      {/* Expiry */}
-                      <div className="min-w-[100px]">
-                        <p className="text-xs text-gray-400">Expires</p>
-                        <p className="text-sm font-medium text-gray-900">{formatDate(c.end_date, locale)}</p>
-                      </div>
+                        {/* Plan */}
+                        <div className="hidden sm:block min-w-[140px]">
+                          <p className="text-xs text-gray-400">Current plan</p>
+                          <p className="text-sm text-gray-700">{c.plan_name ?? c.provider}</p>
+                          {c.rate_kwh && (
+                            <p className="text-xs text-gray-400">{(c.rate_kwh * 100).toFixed(1)}¢/kWh</p>
+                          )}
+                        </div>
 
-                      {/* Days left */}
-                      <div>
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${cfg.badge}`}>
-                          {daysLeft < 0
-                            ? 'Expired'
-                            : `${daysLeft} days left`}
+                        {/* Expiry */}
+                        <div className="min-w-[100px]">
+                          <p className="text-xs text-gray-400">Expires</p>
+                          <p className="text-sm font-medium text-gray-900">{formatDate(c.end_date, locale)}</p>
+                        </div>
+
+                        {/* Days left */}
+                        <div>
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${cfg.badge}`}>
+                            {daysLeft < 0 ? 'Expired' : `${daysLeft} days left`}
+                          </span>
+                        </div>
+
+                        {/* Type */}
+                        <span className={`text-xs px-2 py-0.5 rounded font-medium hidden md:inline ${
+                          c.service_type === 'commercial' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'
+                        }`}>
+                          {c.service_type === 'commercial' ? 'Comm.' : 'Res.'}
                         </span>
-                      </div>
 
-                      {/* Type */}
-                      <span className={`text-xs px-2 py-0.5 rounded font-medium hidden md:inline ${
-                        c.service_type === 'commercial' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'
-                      }`}>
-                        {c.service_type === 'commercial' ? 'Comm.' : 'Res.'}
-                      </span>
-
-                      {/* Actions */}
-                      <div className="ml-auto flex items-center gap-2 flex-shrink-0">
-                        <button className="text-xs text-gray-400 hover:text-brand-greenDark flex items-center gap-1 transition-colors">
-                          <Bell size={12} />
-                          Remind
-                        </button>
-                        <button className="text-xs bg-brand-greenDark text-white px-3 py-1.5 rounded-lg hover:bg-brand-green transition-colors font-medium flex items-center gap-1">
-                          <RefreshCw size={11} />
-                          Renew
-                        </button>
+                        {/* Actions */}
+                        <div className="ml-auto">
+                          <StartRenewalButton
+                            contractId={c.id}
+                            leadId={c.lead_id}
+                            customerName={displayName}
+                            provider={c.provider}
+                            planName={c.plan_name}
+                            serviceType={c.service_type}
+                            currentRate={c.rate_kwh}
+                            endDate={c.end_date}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

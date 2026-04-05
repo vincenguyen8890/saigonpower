@@ -65,6 +65,26 @@ export default async function ReportsPage({ params }: Props) {
     })
     .filter(p => p.deals > 0)
 
+  // ── Pipeline Health ───────────────────────────────────────────
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString()
+  const stalledDeals = deals.filter(d =>
+    !['won', 'lost'].includes(d.stage) &&
+    d.updated_at < thirtyDaysAgo
+  )
+  const wonDealsCount   = deals.filter(d => d.stage === 'won').length
+  const lostDealsCount  = deals.filter(d => d.stage === 'lost').length
+  const winRate = (wonDealsCount + lostDealsCount) > 0
+    ? Math.round(wonDealsCount / (wonDealsCount + lostDealsCount) * 100)
+    : 0
+  const avgDealValue = deals.length > 0
+    ? Math.round(deals.reduce((s, d) => s + d.value, 0) / deals.length)
+    : 0
+  const stageConversion = stages.map((s, i) => {
+    const count = deals.filter(d => d.stage === s).length
+    const prev  = i > 0 ? deals.filter(d => d.stage === stages[i - 1]).length : null
+    return { stage: s, count, convRate: prev && prev > 0 ? Math.round(count / prev * 100) : null }
+  })
+
   // ── Activity Stats ────────────────────────────────────────────
   const totalActivities = activities.length
   const completedActivities = activities.filter(a => a.completed).length
@@ -168,6 +188,76 @@ export default async function ReportsPage({ params }: Props) {
           <p className="text-xs text-gray-400 mb-4">Where leads are coming from</p>
           <LeadSourceChart data={sourceData.length > 0 ? sourceData : [{ name: 'No data', value: 1 }]} />
         </div>
+      </div>
+
+      {/* Pipeline Health */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Target size={16} className="text-brand-green" />
+          Pipeline Health
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+          <div className="text-center p-3 bg-green-50 rounded-xl">
+            <p className="text-2xl font-bold text-green-700">{winRate}%</p>
+            <p className="text-xs text-gray-500 mt-0.5">Win Rate</p>
+            <p className="text-xs text-gray-400">{wonDealsCount}W / {lostDealsCount}L</p>
+          </div>
+          <div className="text-center p-3 bg-gray-50 rounded-xl">
+            <p className="text-2xl font-bold text-gray-900">${avgDealValue}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Avg Deal Value</p>
+          </div>
+          <div className={`text-center p-3 rounded-xl ${stalledDeals.length > 0 ? 'bg-amber-50' : 'bg-gray-50'}`}>
+            <p className={`text-2xl font-bold ${stalledDeals.length > 0 ? 'text-amber-600' : 'text-gray-900'}`}>
+              {stalledDeals.length}
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">Stalled Deals</p>
+            <p className="text-xs text-gray-400">No update in 30d</p>
+          </div>
+          <div className="text-center p-3 bg-gray-50 rounded-xl">
+            <p className="text-2xl font-bold text-gray-900">{deals.filter(d => !['won','lost'].includes(d.stage)).length}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Active Deals</p>
+          </div>
+        </div>
+        {/* Stage conversion */}
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Stage Conversion</p>
+          <div className="flex items-center gap-1 flex-wrap">
+            {stageConversion.filter(s => s.stage !== 'lost').map((s, i, arr) => (
+              <div key={s.stage} className="flex items-center gap-1">
+                <div className="text-center">
+                  <div className={`text-sm font-bold px-2.5 py-1.5 rounded-lg ${
+                    s.stage === 'won' ? 'bg-green-100 text-green-700' :
+                    s.count > 0 ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-400'
+                  }`}>
+                    {s.count}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1 capitalize">{s.stage}</p>
+                </div>
+                {i < arr.length - 1 && (
+                  <div className="flex flex-col items-center mx-1">
+                    <span className="text-gray-300 text-xs">→</span>
+                    {s.convRate !== null && (
+                      <span className="text-xs text-gray-400">{s.convRate}%</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        {stalledDeals.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-50">
+            <p className="text-xs font-medium text-amber-600 mb-2">Stalled deals (no update in 30+ days):</p>
+            <div className="space-y-1">
+              {stalledDeals.slice(0, 5).map(d => (
+                <div key={d.id} className="flex items-center justify-between text-xs text-gray-600">
+                  <span>{d.title}</span>
+                  <span className="capitalize text-gray-400">{d.stage}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Commission Estimates + Activity Breakdown */}
