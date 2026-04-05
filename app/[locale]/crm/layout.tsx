@@ -3,7 +3,7 @@ import { getSession } from '@/lib/auth/session'
 import { setRequestLocale } from 'next-intl/server'
 import Link from 'next/link'
 import Image from 'next/image'
-import { LayoutDashboard, Users, FileText, Settings, LogOut, ShieldCheck, UserCheck, Zap, RefreshCw } from 'lucide-react'
+import { LayoutDashboard, Users, FileText, Settings, LogOut, ShieldCheck, UserCheck, Zap, RefreshCw, Building2 } from 'lucide-react'
 import type { Metadata } from 'next'
 
 interface Props {
@@ -27,12 +27,33 @@ export default async function CRMLayout({ children, params }: Props) {
   const isAdmin = role === 'admin'
   const isVi = locale === 'vi'
 
-  const navItems = [
-    { href: `/${locale}/crm`,              label: 'Overview',  labelVi: 'Tổng Quan',   icon: LayoutDashboard },
-    { href: `/${locale}/crm/leads`,        label: 'Leads',     labelVi: 'Khách Hàng',  icon: Users           },
-    { href: `/${locale}/crm/quotes`,       label: 'Quotes',    labelVi: 'Báo Giá',     icon: FileText        },
-    { href: `/${locale}/crm/contracts`,    label: 'Contracts', labelVi: 'Hợp Đồng',    icon: Zap             },
-    { href: `/${locale}/crm/renewals`,     label: 'Renewals',  labelVi: 'Gia Hạn',     icon: RefreshCw       },
+  const navGroups = [
+    {
+      label: null,
+      items: [
+        { href: `/${locale}/crm`,           label: 'Dashboard',         labelVi: 'Tổng Quan',        icon: LayoutDashboard },
+      ],
+    },
+    {
+      label: isVi ? 'Khách Hàng' : 'Leads',
+      items: [
+        { href: `/${locale}/crm/leads`,     label: 'Leads',             labelVi: 'Danh Sách',        icon: Users           },
+      ],
+    },
+    {
+      label: isVi ? 'Hợp Đồng' : 'Contracts',
+      items: [
+        { href: `/${locale}/crm/contracts`, label: 'Contracts',         labelVi: 'Hợp Đồng',         icon: FileText        },
+        { href: `/${locale}/crm/renewals`,  label: 'Renewal Calendar',  labelVi: 'Lịch Gia Hạn',     icon: RefreshCw       },
+      ],
+    },
+    {
+      label: isVi ? 'Danh Mục' : 'Catalog',
+      items: [
+        { href: `/${locale}/crm/providers`, label: 'Providers',         labelVi: 'Nhà Cung Cấp',     icon: Building2       },
+        { href: `/${locale}/crm/plans`,     label: 'Plans',             labelVi: 'Gói Điện',          icon: Zap             },
+      ],
+    },
   ]
 
   return (
@@ -58,26 +79,33 @@ export default async function CRMLayout({ children, params }: Props) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map(({ href, label, labelVi, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-green-200 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium"
-            >
-              <Icon size={18} className="flex-shrink-0" />
-              {isVi ? labelVi : label}
-            </Link>
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {navGroups.map((group, gi) => (
+            <div key={gi} className={gi > 0 ? 'pt-3' : ''}>
+              {group.label && (
+                <p className="px-3 text-xs font-semibold text-green-500 uppercase tracking-wider mb-1">
+                  {group.label}
+                </p>
+              )}
+              {group.items.map(({ href, label, labelVi, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-green-200 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium"
+                >
+                  <Icon size={18} className="flex-shrink-0" />
+                  {isVi ? labelVi : label}
+                </Link>
+              ))}
+            </div>
           ))}
 
-          {/* Admin-only section */}
+          {/* Admin-only */}
           {isAdmin && (
-            <>
-              <div className="pt-3 pb-1">
-                <p className="px-3 text-xs font-semibold text-green-500 uppercase tracking-wider">
-                  {isVi ? 'Quản Trị' : 'Admin'}
-                </p>
-              </div>
+            <div className="pt-3">
+              <p className="px-3 text-xs font-semibold text-green-500 uppercase tracking-wider mb-1">
+                {isVi ? 'Quản Trị' : 'Admin'}
+              </p>
               <Link
                 href={`/${locale}/crm/settings`}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-green-200 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium"
@@ -85,7 +113,7 @@ export default async function CRMLayout({ children, params }: Props) {
                 <Settings size={18} className="flex-shrink-0" />
                 {isVi ? 'Cài Đặt' : 'Settings'}
               </Link>
-            </>
+            </div>
           )}
         </nav>
 

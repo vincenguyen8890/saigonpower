@@ -235,6 +235,57 @@ export const mockQuotes: QuoteRequest[] = [
   },
 ]
 
+export interface Provider {
+  id: string
+  name: string
+  short_name: string
+  website: string
+  phone: string
+  commission_residential: number // $ per enrollment
+  commission_commercial: number
+  active_plans: number
+  notes: string | null
+  status: 'active' | 'inactive'
+}
+
+export interface Plan {
+  id: string
+  provider_id: string
+  provider_name: string
+  name: string
+  rate_kwh: number
+  term_months: number
+  service_type: ServiceType
+  cancellation_fee: number | null
+  renewable: boolean
+  promo: string | null
+  status: 'active' | 'inactive'
+}
+
+export const mockProviders: Provider[] = [
+  { id: 'prv-001', name: 'Gexa Energy',      short_name: 'Gexa',       website: 'gexaenergy.com',    phone: '1-855-639-2727', commission_residential: 75,  commission_commercial: 150, active_plans: 4, notes: 'Best residential rates in Houston area.',   status: 'active'   },
+  { id: 'prv-002', name: 'TXU Energy',       short_name: 'TXU',        website: 'txu.com',           phone: '1-800-818-6132', commission_residential: 80,  commission_commercial: 175, active_plans: 6, notes: 'Large brand — good for EN-speaking clients.', status: 'active'   },
+  { id: 'prv-003', name: 'Reliant Energy',   short_name: 'Reliant',    website: 'reliant.com',       phone: '1-866-222-7100', commission_residential: 70,  commission_commercial: 200, active_plans: 5, notes: 'Strong commercial pricing.',                status: 'active'   },
+  { id: 'prv-004', name: 'Green Mountain',   short_name: 'GreenMtn',   website: 'greenmountain.com', phone: '1-866-785-1885', commission_residential: 65,  commission_commercial: 120, active_plans: 3, notes: '100% renewable options.',                   status: 'active'   },
+  { id: 'prv-005', name: 'Cirro Energy',     short_name: 'Cirro',      website: 'cirroenergy.com',   phone: '1-888-600-0872', commission_residential: 60,  commission_commercial: 100, active_plans: 3, notes: 'Budget plans for price-sensitive customers.', status: 'active'  },
+  { id: 'prv-006', name: 'Payless Power',    short_name: 'Payless',    website: 'paylesspower.com',  phone: '1-888-963-9363', commission_residential: 50,  commission_commercial: 0,   active_plans: 2, notes: 'Prepaid only. Good for credit-challenged.',  status: 'active'   },
+]
+
+export const mockPlans: Plan[] = [
+  { id: 'plan-001', provider_id: 'prv-001', provider_name: 'Gexa Energy',    name: 'Gexa Saver 12',        rate_kwh: 0.109, term_months: 12, service_type: 'residential', cancellation_fee: 150, renewable: false, promo: null,                  status: 'active' },
+  { id: 'plan-002', provider_id: 'prv-001', provider_name: 'Gexa Energy',    name: 'Gexa Saver 24',        rate_kwh: 0.115, term_months: 24, service_type: 'residential', cancellation_fee: 200, renewable: false, promo: '$50 bill credit',      status: 'active' },
+  { id: 'plan-003', provider_id: 'prv-001', provider_name: 'Gexa Energy',    name: 'Gexa Green 12',        rate_kwh: 0.118, term_months: 12, service_type: 'residential', cancellation_fee: 150, renewable: true,  promo: null,                  status: 'active' },
+  { id: 'plan-004', provider_id: 'prv-002', provider_name: 'TXU Energy',     name: 'TXU Simple Rate 12',   rate_kwh: 0.121, term_months: 12, service_type: 'residential', cancellation_fee: 175, renewable: false, promo: null,                  status: 'active' },
+  { id: 'plan-005', provider_id: 'prv-002', provider_name: 'TXU Energy',     name: 'TXU Energy Saver 24',  rate_kwh: 0.118, term_months: 24, service_type: 'residential', cancellation_fee: 200, renewable: false, promo: '$100 Visa gift card', status: 'active' },
+  { id: 'plan-006', provider_id: 'prv-002', provider_name: 'TXU Energy',     name: 'TXU Business 12',      rate_kwh: 0.128, term_months: 12, service_type: 'commercial',  cancellation_fee: 300, renewable: false, promo: null,                  status: 'active' },
+  { id: 'plan-007', provider_id: 'prv-003', provider_name: 'Reliant Energy', name: 'Reliant Secure 12',    rate_kwh: 0.124, term_months: 12, service_type: 'residential', cancellation_fee: 150, renewable: false, promo: null,                  status: 'active' },
+  { id: 'plan-008', provider_id: 'prv-003', provider_name: 'Reliant Energy', name: 'Reliant Business 12',  rate_kwh: 0.132, term_months: 12, service_type: 'commercial',  cancellation_fee: 350, renewable: false, promo: null,                  status: 'active' },
+  { id: 'plan-009', provider_id: 'prv-004', provider_name: 'Green Mountain', name: 'Green Simple 12',      rate_kwh: 0.125, term_months: 12, service_type: 'residential', cancellation_fee: 100, renewable: true,  promo: null,                  status: 'active' },
+  { id: 'plan-010', provider_id: 'prv-005', provider_name: 'Cirro Energy',   name: 'Cirro Value 6',        rate_kwh: 0.114, term_months: 6,  service_type: 'residential', cancellation_fee: 75,  renewable: false, promo: null,                  status: 'active' },
+  { id: 'plan-011', provider_id: 'prv-005', provider_name: 'Cirro Energy',   name: 'Cirro Value 12',       rate_kwh: 0.119, term_months: 12, service_type: 'residential', cancellation_fee: 100, renewable: false, promo: null,                  status: 'active' },
+  { id: 'plan-012', provider_id: 'prv-006', provider_name: 'Payless Power',  name: 'Payless Prepaid',      rate_kwh: 0.138, term_months: 0,  service_type: 'residential', cancellation_fee: null,renewable: false, promo: 'No deposit required', status: 'active' },
+]
+
 export const mockCRMStats: CRMStats = {
   newLeadsToday: 3,
   newLeadsWeek: 8,
