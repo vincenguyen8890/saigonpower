@@ -1,33 +1,32 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { X, Loader2 } from 'lucide-react'
-import { createPlanAction, updatePlanAction } from './actions'
+import { useState } from 'react'
+import { X } from 'lucide-react'
 import type { Plan } from '@/data/mock-crm'
 import { mockProviders } from '@/data/mock-crm'
 
 interface Props {
-  plan?: Plan        // undefined = create mode
+  plan?: Plan
   onClose: () => void
+  onSave: (plan: Plan) => void
 }
 
 const PROVIDERS = mockProviders.filter(p => p.status === 'active')
 
-export default function PlanModal({ plan, onClose }: Props) {
+export default function PlanModal({ plan, onClose, onSave }: Props) {
   const isEdit = !!plan
-  const [isPending, startTransition] = useTransition()
 
   const [form, setForm] = useState({
-    provider_id:       plan?.provider_id       ?? PROVIDERS[0]?.id ?? '',
-    provider_name:     plan?.provider_name     ?? PROVIDERS[0]?.name ?? '',
-    name:              plan?.name              ?? '',
-    rate_kwh:          plan?.rate_kwh          ?? 0.109,
-    term_months:       plan?.term_months       ?? 12,
-    service_type:      plan?.service_type      ?? 'residential',
-    cancellation_fee:  plan?.cancellation_fee  ?? null,
-    renewable:         plan?.renewable         ?? false,
-    promo:             plan?.promo             ?? '',
-    status:            plan?.status            ?? 'active',
+    provider_id:      plan?.provider_id      ?? PROVIDERS[0]?.id ?? '',
+    provider_name:    plan?.provider_name    ?? PROVIDERS[0]?.name ?? '',
+    name:             plan?.name             ?? '',
+    rate_kwh:         plan?.rate_kwh         ?? 0.109,
+    term_months:      plan?.term_months      ?? 12,
+    service_type:     plan?.service_type     ?? ('residential' as Plan['service_type']),
+    cancellation_fee: plan?.cancellation_fee ?? (null as number | null),
+    renewable:        plan?.renewable        ?? false,
+    promo:            plan?.promo            ?? '',
+    status:           plan?.status           ?? ('active' as Plan['status']),
   })
 
   function handleProviderChange(id: string) {
@@ -37,23 +36,20 @@ export default function PlanModal({ plan, onClose }: Props) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const payload = {
-      ...form,
+    const saved: Plan = {
+      id:               isEdit ? plan.id : `plan-${Date.now()}`,
+      provider_id:      form.provider_id,
+      provider_name:    form.provider_name,
+      name:             form.name.trim(),
       rate_kwh:         Number(form.rate_kwh),
       term_months:      Number(form.term_months),
+      service_type:     form.service_type,
       cancellation_fee: form.cancellation_fee !== null ? Number(form.cancellation_fee) : null,
+      renewable:        form.renewable,
       promo:            form.promo.trim() || null,
-      service_type:     form.service_type as Plan['service_type'],
-      status:           form.status as Plan['status'],
+      status:           form.status,
     }
-    startTransition(async () => {
-      if (isEdit) {
-        await updatePlanAction(plan.id, payload)
-      } else {
-        await createPlanAction(payload)
-      }
-      onClose()
-    })
+    onSave(saved)
   }
 
   return (
@@ -194,14 +190,12 @@ export default function PlanModal({ plan, onClose }: Props) {
             <span className="text-sm text-gray-700">100% Renewable energy</span>
           </label>
 
-          {/* Actions */}
           <div className="flex gap-3 pt-2">
             <button
               type="submit"
-              disabled={isPending}
-              className="flex-1 flex items-center justify-center gap-2 bg-brand-greenDark text-white text-sm py-2.5 rounded-xl hover:bg-brand-green transition-colors disabled:opacity-60"
+              className="flex-1 bg-brand-greenDark text-white text-sm py-2.5 rounded-xl hover:bg-brand-green transition-colors"
             >
-              {isPending ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : isEdit ? 'Save Changes' : 'Add Plan'}
+              {isEdit ? 'Save Changes' : 'Add Plan'}
             </button>
             <button
               type="button"
