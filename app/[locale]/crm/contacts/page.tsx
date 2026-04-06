@@ -15,6 +15,7 @@ export default async function ContactsPage({ params }: Props) {
     getCRMAgents(),
     getProvidersFromDB(),
   ])
+  const isAdmin = session?.role === 'admin'
 
   return (
     <ContactsTable
@@ -23,6 +24,7 @@ export default async function ContactsPage({ params }: Props) {
       currentUserEmail={session?.email ?? ''}
       agents={agents}
       providers={providers}
+      isAdmin={isAdmin}
     />
   )
 }

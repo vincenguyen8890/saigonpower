@@ -89,6 +89,13 @@ export async function updateLead(id: string, updates: Partial<Lead>): Promise<vo
   await (supabase.from('leads') as any).update(updates).eq('id', id)
 }
 
+export async function deleteLead(id: string): Promise<void> {
+  if (useMock()) return
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('leads') as any).delete().eq('id', id)
+}
+
 export async function insertLead(lead: Omit<Lead, 'id' | 'created_at' | 'updated_at'>): Promise<Lead | null> {
   if (useMock()) return { ...lead, id: `lead-${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
 

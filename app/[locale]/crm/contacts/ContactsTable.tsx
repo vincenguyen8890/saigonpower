@@ -3,11 +3,12 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Search, Download, SlidersHorizontal, UserPlus, Mail, Phone, ChevronLeft, ChevronRight, X, PlusCircle, TrendingUp } from 'lucide-react'
+import { Search, Download, SlidersHorizontal, UserPlus, Mail, Phone, ChevronLeft, ChevronRight, X, PlusCircle, TrendingUp, Trash2 } from 'lucide-react'
 import type { Lead, CRMAgent } from '@/lib/supabase/queries'
 import type { Provider } from '@/data/mock-crm'
 import { formatDate } from '@/lib/utils'
 import { createDeal } from '../deals/actions'
+import { deleteCustomerAction } from './actions'
 import type { Deal } from '@/lib/supabase/queries'
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
   currentUserEmail: string
   agents: CRMAgent[]
   providers: Provider[]
+  isAdmin: boolean
 }
 
 const AVATAR_COLORS = [
@@ -253,7 +255,7 @@ function QuickDealModal({
 }
 
 // ─── Main Table ───────────────────────────────────────────────────────────────
-export default function ContactsTable({ contacts, locale, currentUserEmail, agents, providers }: Props) {
+export default function ContactsTable({ contacts, locale, currentUserEmail, agents, providers, isAdmin }: Props) {
   const [view,         setView]         = useState<View>('all')
   const [search,       setSearch]       = useState('')
   const [selected,     setSelected]     = useState<Set<string>>(new Set())
@@ -261,6 +263,8 @@ export default function ContactsTable({ contacts, locale, currentUserEmail, agen
   const [statusFilter, setStatusFilter] = useState('all')
   const [showFilters,  setShowFilters]  = useState(false)
   const [dealContact,  setDealContact]  = useState<Lead | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [deleting,      setDeleting]      = useState<string | null>(null)
 
   const byView = useMemo(() => {
     if (view === 'mine')       return contacts.filter(c => c.assigned_to === currentUserEmail)
@@ -305,6 +309,13 @@ export default function ContactsTable({ contacts, locale, currentUserEmail, agen
   }
 
   const statusOptions = ['all','new','contacted','quoted','enrolled','lost']
+
+  async function handleDelete(id: string) {
+    setDeleting(id)
+    await deleteCustomerAction(id)
+    setDeleteConfirm(null)
+    setDeleting(null)
+  }
 
   return (
     <div>
@@ -528,7 +539,7 @@ export default function ContactsTable({ contacts, locale, currentUserEmail, agen
                         <button
                           onClick={() => setDealContact(contact)}
                           className="flex items-center gap-1 text-xs bg-brand-greenDark text-white px-2.5 py-1.5 rounded-lg hover:bg-brand-green transition-colors font-medium"
-                          title="Create deal from this customer"
+                          title="Create deal"
                         >
                           <PlusCircle size={11} />
                           Deal
@@ -539,6 +550,34 @@ export default function ContactsTable({ contacts, locale, currentUserEmail, agen
                         >
                           View
                         </Link>
+                        {isAdmin && (
+                          deleteConfirm === contact.id ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-red-600 font-medium">Delete?</span>
+                              <button
+                                onClick={() => handleDelete(contact.id)}
+                                disabled={deleting === contact.id}
+                                className="text-xs bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 disabled:opacity-50"
+                              >
+                                Yes
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirm(null)}
+                                className="text-xs text-gray-400 hover:text-gray-600 px-1"
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setDeleteConfirm(contact.id)}
+                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete customer"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )
+                        )}
                       </div>
                     </td>
                   </tr>
