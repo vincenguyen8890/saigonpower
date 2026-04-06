@@ -6,55 +6,46 @@ import { Html } from '@react-three/drei'
 import * as THREE from 'three'
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Floating plan cards rendered as DOM elements inside the 3D scene via
-   @react-three/drei's <Html> — gives us full CSS/React power at a 3D position.
+   Floating plan cards — styled to match reference design
 ───────────────────────────────────────────────────────────────────────────── */
 
 interface CardData {
   position: [number, number, number]
   price: number
   label: string
-  provider: string
-  rate: string
-  term: string
+  subLabel?: string
   isBest: boolean
-  floatOffset: number   // phase offset for floating animation
+  floatOffset: number
   floatSpeed: number
 }
 
 const CARDS: CardData[] = [
   {
-    position:    [-2.6, 1.6, 0.8],
+    position:    [-3.0, 1.5, 0.6],
     price:       210,
-    label:       'Current Plan',
-    provider:    'TXU Energy',
-    rate:        '14.2¢/kWh',
-    term:        'Month-to-month',
+    label:       'Plan A',
+    subLabel:    'TXU Energy',
     isBest:      false,
     floatOffset: 0,
-    floatSpeed:  0.9,
+    floatSpeed:  0.85,
   },
   {
-    position:    [0, 2.4, 0.8],
+    position:    [0, 2.7, 0.6],
     price:       123,
-    label:       'Best Plan ✦',
-    provider:    'Gexa Energy',
-    rate:        '9.8¢/kWh',
-    term:        '12-month fixed',
+    label:       'Best Plan',
+    subLabel:    'Lowest Rate!',
     isBest:      true,
     floatOffset: Math.PI / 2,
-    floatSpeed:  1.1,
+    floatSpeed:  1.0,
   },
   {
-    position:    [2.6, 1.6, 0.8],
+    position:    [3.0, 1.5, 0.6],
     price:       180,
-    label:       'Alternative',
-    provider:    'Reliant',
-    rate:        '11.4¢/kWh',
-    term:        '6-month fixed',
+    label:       'Plan B',
+    subLabel:    'Reliant Energy',
     isBest:      false,
     floatOffset: Math.PI,
-    floatSpeed:  0.8,
+    floatSpeed:  0.75,
   },
 ]
 
@@ -66,11 +57,9 @@ function SingleCard({ data }: { data: CardData }) {
   useFrame(({ clock }) => {
     if (!groupRef.current) return
     const t = clock.getElapsedTime()
-    const floatY = Math.sin(t * data.floatSpeed + data.floatOffset) * 0.06
-    groupRef.current.position.y = baseY + floatY
-    // Smooth scale toward target
-    const targetScale = data.isBest ? (hovered ? 1.12 : 1.05) : (hovered ? 1.06 : 1.0)
-    groupRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.08)
+    groupRef.current.position.y = baseY + Math.sin(t * data.floatSpeed + data.floatOffset) * 0.07
+    const target = data.isBest ? (hovered ? 1.12 : 1.06) : (hovered ? 1.06 : 1.0)
+    groupRef.current.scale.lerp(new THREE.Vector3(target, target, target), 0.1)
   })
 
   return (
@@ -80,119 +69,86 @@ function SingleCard({ data }: { data: CardData }) {
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
     >
-      <Html
-        center
-        distanceFactor={6}
-        style={{ pointerEvents: 'auto' }}
-        occlude={false}
-      >
-        <div
-          className="select-none"
-          style={{
-            width: data.isBest ? '148px' : '128px',
+      <Html center distanceFactor={6} occlude={false} style={{ pointerEvents: 'auto' }}>
+        {data.isBest ? (
+          /* ── Best plan card — vivid green ──────────────────── */
+          <div style={{
+            width: '148px',
             borderRadius: '16px',
-            background: data.isBest
-              ? 'linear-gradient(145deg, #ffffff 0%, #f0fff8 100%)'
-              : 'rgba(255,255,255,0.92)',
-            border: data.isBest ? '2px solid #00C853' : '1.5px solid #E2E8F0',
-            boxShadow: data.isBest
-              ? '0 12px 40px rgba(0,200,83,0.25), 0 4px 16px rgba(0,0,0,0.08)'
-              : hovered
-                ? '0 8px 24px rgba(0,0,0,0.12)'
-                : '0 4px 16px rgba(0,0,0,0.08)',
-            padding: data.isBest ? '14px 12px' : '12px 10px',
-            transition: 'box-shadow 0.25s ease',
-            backdropFilter: 'blur(12px)',
-          }}
-        >
-          {/* Label */}
-          <div style={{
-            fontSize: data.isBest ? '9px' : '8px',
-            fontWeight: 700,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: data.isBest ? '#00C853' : '#64748B',
-            marginBottom: '6px',
+            background: 'linear-gradient(145deg, #00C853 0%, #00A846 100%)',
+            border: '2px solid rgba(255,255,255,0.35)',
+            boxShadow: '0 16px 48px rgba(0,200,83,0.5), 0 0 0 1px rgba(0,200,83,0.3)',
+            padding: '16px 14px',
+            textAlign: 'center',
+            cursor: 'pointer',
           }}>
-            {data.label}
-          </div>
-
-          {/* Provider */}
-          <div style={{ fontSize: '10px', color: '#64748B', marginBottom: '4px', fontWeight: 500 }}>
-            {data.provider}
-          </div>
-
-          {/* Price */}
-          <div style={{
-            fontSize: data.isBest ? '26px' : '22px',
-            fontWeight: 900,
-            color: data.isBest ? '#00C853' : '#0F172A',
-            lineHeight: 1,
-            marginBottom: '2px',
-          }}>
-            ${data.price}
-            <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748B' }}>/mo</span>
-          </div>
-
-          {/* Rate */}
-          <div style={{ fontSize: '10px', color: '#64748B', marginBottom: '6px' }}>
-            {data.rate}
-          </div>
-
-          {/* Term badge */}
-          <div style={{
-            display: 'inline-block',
-            fontSize: '8px',
-            fontWeight: 700,
-            padding: '3px 7px',
-            borderRadius: '20px',
-            background: data.isBest ? 'rgba(0,200,83,0.12)' : 'rgba(41,121,255,0.08)',
-            color: data.isBest ? '#00A846' : '#2979FF',
-            border: data.isBest ? '1px solid rgba(0,200,83,0.25)' : '1px solid rgba(41,121,255,0.2)',
-          }}>
-            {data.term}
-          </div>
-
-          {/* Best plan CTA */}
-          {data.isBest && (
+            <div style={{ fontSize: '11px', fontWeight: 800, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.08em', marginBottom: '8px', textTransform: 'uppercase' }}>
+              {data.label}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '1px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '15px', fontWeight: 900, color: 'white' }}>$</span>
+              <span style={{ fontSize: '36px', fontWeight: 900, color: 'white', lineHeight: 1 }}>{data.price}</span>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>/mo</span>
+            </div>
             <div style={{
-              marginTop: '10px',
-              background: '#00C853',
-              color: 'white',
-              borderRadius: '8px',
-              padding: '6px 0',
+              background: 'rgba(255,255,255,0.22)',
+              borderRadius: '20px',
+              padding: '4px 10px',
               fontSize: '9px',
               fontWeight: 800,
-              textAlign: 'center',
+              color: 'white',
               letterSpacing: '0.04em',
-              cursor: 'pointer',
+              border: '1px solid rgba(255,255,255,0.3)',
             }}>
-              SELECT PLAN →
+              {data.subLabel}
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          /* ── Regular plan card — glassy white ─────────────── */
+          <div style={{
+            width: '120px',
+            borderRadius: '14px',
+            background: 'rgba(255,255,255,0.12)',
+            backdropFilter: 'blur(16px)',
+            border: '1.5px solid rgba(255,255,255,0.3)',
+            boxShadow: hovered
+              ? '0 12px 32px rgba(41,121,255,0.25)'
+              : '0 8px 24px rgba(0,0,0,0.35)',
+            padding: '14px 12px',
+            textAlign: 'center',
+            transition: 'box-shadow 0.25s ease',
+            cursor: 'pointer',
+          }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.06em', marginBottom: '6px', textTransform: 'uppercase' }}>
+              {data.label}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '1px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 900, color: 'white' }}>$</span>
+              <span style={{ fontSize: '28px', fontWeight: 900, color: 'white', lineHeight: 1 }}>{data.price}</span>
+            </div>
+            <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)', marginTop: '3px' }}>/month</div>
+          </div>
+        )}
       </Html>
 
-      {/* Glow halo for best plan */}
-      {data.isBest && <BestPlanGlow />}
+      {/* Green glow halo for best plan */}
+      {data.isBest && <BestGlow />}
     </group>
   )
 }
 
-function BestPlanGlow() {
+function BestGlow() {
   const meshRef = useRef<THREE.Mesh>(null)
   useFrame(({ clock }) => {
     if (!meshRef.current) return
     const t = clock.getElapsedTime()
-    const mat = meshRef.current.material as THREE.MeshBasicMaterial
-    mat.opacity = 0.06 + Math.sin(t * 2.0) * 0.04
-    const s = 1 + Math.sin(t * 1.4) * 0.08
-    meshRef.current.scale.setScalar(s)
+    ;(meshRef.current.material as THREE.MeshBasicMaterial).opacity = 0.07 + Math.sin(t * 1.8) * 0.05
+    meshRef.current.scale.setScalar(1 + Math.sin(t * 1.2) * 0.1)
   })
   return (
-    <mesh ref={meshRef} position={[0, -0.05, -0.1]}>
-      <planeGeometry args={[1.4, 1.0]} />
-      <meshBasicMaterial color="#00C853" transparent opacity={0.08} depthWrite={false} side={THREE.DoubleSide} />
+    <mesh ref={meshRef} position={[0, 0, -0.15]}>
+      <planeGeometry args={[1.6, 1.1]} />
+      <meshBasicMaterial color="#00C853" transparent opacity={0.1} depthWrite={false} side={THREE.DoubleSide} />
     </mesh>
   )
 }

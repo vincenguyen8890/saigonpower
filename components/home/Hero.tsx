@@ -272,7 +272,7 @@ export default function Hero() {
             className="relative"
           >
             {/* 3D canvas — hidden on mobile */}
-            <div className="hidden lg:block w-full h-[540px]">
+            <div className="hidden lg:block w-full h-[540px] rounded-3xl overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.4)]">
               <HeroScene />
             </div>
 

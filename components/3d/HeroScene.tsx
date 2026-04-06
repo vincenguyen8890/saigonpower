@@ -2,7 +2,7 @@
 
 import { Suspense, useRef, useEffect, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls, Environment } from '@react-three/drei'
+import { Environment } from '@react-three/drei'
 import * as THREE from 'three'
 import TexasMap from './TexasMap'
 import EnergyLines from './EnergyLines'
@@ -10,11 +10,11 @@ import PlanCards from './PlanCard'
 import SavingsIndicator from './SavingsIndicator'
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Camera rig: follows mouse for a gentle parallax effect
+   Camera rig: gentle mouse parallax
 ───────────────────────────────────────────────────────────────────────────── */
 function CameraRig() {
   const { camera, size } = useThree()
-  const target = useRef(new THREE.Vector3(0, 0, 0))
+  const target = useRef(new THREE.Vector3())
   const mouse  = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
@@ -27,72 +27,86 @@ function CameraRig() {
   }, [size])
 
   useFrame((_, delta) => {
-    // Gentle parallax — max ±0.35 units on each axis
-    target.current.x = mouse.current.x * 0.35
-    target.current.y = -mouse.current.y * 0.20
-    camera.position.x += (target.current.x - camera.position.x) * delta * 1.8
-    camera.position.y += (target.current.y + 5.5 - camera.position.y) * delta * 1.8
+    target.current.x = mouse.current.x * 0.28
+    target.current.y = -mouse.current.y * 0.18
+    camera.position.x += (target.current.x           - camera.position.x) * delta * 1.6
+    camera.position.y += (target.current.y + 5.8     - camera.position.y) * delta * 1.6
   })
   return null
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Soft ambient glow sphere behind the centre
+   Background gradient mesh (dark blue → dark teal, like the reference)
 ───────────────────────────────────────────────────────────────────────────── */
-function BackGlow() {
-  const mesh = useRef<THREE.Mesh>(null)
-  useFrame(({ clock }) => {
-    if (!mesh.current) return
-    const mat = mesh.current.material as THREE.MeshBasicMaterial
-    mat.opacity = 0.12 + Math.sin(clock.getElapsedTime() * 0.8) * 0.04
-  })
+function SceneBackground() {
   return (
-    <mesh ref={mesh} position={[0, 1.2, -1]}>
-      <sphereGeometry args={[3.5, 20, 20]} />
-      <meshBasicMaterial color="#00C853" transparent opacity={0.12} side={THREE.BackSide} depthWrite={false} />
-    </mesh>
+    <>
+      {/* Main background plane */}
+      <mesh position={[0, 3, -8]} scale={[30, 20, 1]}>
+        <planeGeometry />
+        <meshBasicMaterial color="#050e1e" />
+      </mesh>
+      {/* Subtle teal/green glow bottom-right */}
+      <mesh position={[4, -1, -6]}>
+        <sphereGeometry args={[5, 16, 16]} />
+        <meshBasicMaterial color="#042a18" transparent opacity={0.6} side={THREE.BackSide} depthWrite={false} />
+      </mesh>
+      {/* Blue glow bottom-left */}
+      <mesh position={[-4, 0, -6]}>
+        <sphereGeometry args={[5, 16, 16]} />
+        <meshBasicMaterial color="#061538" transparent opacity={0.55} side={THREE.BackSide} depthWrite={false} />
+      </mesh>
+    </>
   )
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Fallback loader shown inside <Suspense>
+   Fallback
 ───────────────────────────────────────────────────────────────────────────── */
 function SceneLoader() {
   return (
-    <mesh position={[0, 0, 0]}>
-      <boxGeometry args={[0.1, 0.1, 0.1]} />
+    <mesh>
+      <boxGeometry args={[0.01, 0.01, 0.01]} />
       <meshBasicMaterial color="#00C853" transparent opacity={0} />
     </mesh>
   )
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Main 3D scene (runs inside <Canvas>)
+   Main scene
 ───────────────────────────────────────────────────────────────────────────── */
 function Scene() {
   return (
     <>
-      {/* Camera parallax rig */}
       <CameraRig />
+      <SceneBackground />
 
-      {/* Lighting */}
-      <ambientLight intensity={0.7} />
+      {/* Ambient — low, to let emissives pop */}
+      <ambientLight intensity={0.25} />
+
+      {/* Key light from top-right */}
       <directionalLight
-        position={[4, 8, 4]}
-        intensity={1.2}
+        position={[5, 10, 5]}
+        intensity={1.4}
         castShadow
         shadow-mapSize={[512, 512]}
+        color="#ffffff"
       />
-      <directionalLight position={[-4, 4, -4]} intensity={0.3} color="#2979FF" />
-      <pointLight position={[0, 3, 2]} intensity={0.8} color="#00C853" distance={8} />
 
-      {/* Environment for subtle reflections */}
-      <Environment preset="dawn" />
+      {/* Blue fill from the left */}
+      <directionalLight position={[-6, 3, -3]} intensity={0.6} color="#2979FF" />
 
-      {/* Background glow */}
-      <BackGlow />
+      {/* Green bounce from below map surface */}
+      <pointLight position={[0, -1, 1]} intensity={1.2} color="#00C853" distance={9} />
 
-      {/* Scene objects */}
+      {/* Blue accent point */}
+      <pointLight position={[-3, 2, 3]} intensity={0.7} color="#2979FF" distance={10} />
+
+      {/* Gold sparkle fill */}
+      <pointLight position={[3, 1, -1]} intensity={0.4} color="#FFD700" distance={8} />
+
+      <Environment preset="night" />
+
       <Suspense fallback={<SceneLoader />}>
         <TexasMap />
         <EnergyLines />
@@ -104,7 +118,7 @@ function Scene() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Public component — exported and used in the Hero
+   Exported component
 ───────────────────────────────────────────────────────────────────────────── */
 export default function HeroScene() {
   const [mounted, setMounted] = useState(false)
@@ -112,8 +126,8 @@ export default function HeroScene() {
 
   if (!mounted) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-surface-bg">
-        <div className="w-8 h-8 border-2 border-brand-green border-t-transparent rounded-full animate-spin" />
+      <div className="w-full h-full flex items-center justify-center" style={{ background: '#050e1e' }}>
+        <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -121,17 +135,18 @@ export default function HeroScene() {
   return (
     <Canvas
       shadows
-      dpr={[1, 1.5]}                         // cap pixel ratio for perf
-      camera={{ position: [0, 5.5, 9], fov: 42, near: 0.1, far: 60 }}
+      dpr={[1, 1.5]}
+      camera={{ position: [0, 5.8, 10], fov: 40, near: 0.1, far: 80 }}
       gl={{
         antialias: true,
-        alpha: true,
+        alpha: false,                                   // solid background
         powerPreference: 'high-performance',
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 1.1,
+        toneMappingExposure: 1.0,
       }}
-      style={{ background: 'transparent' }}
     >
+      {/* Three.js scene background color */}
+      <color attach="background" args={['#050e1e']} />
       <Scene />
     </Canvas>
   )

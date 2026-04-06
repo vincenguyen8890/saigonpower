@@ -5,142 +5,186 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Stylised Texas platform:
-   - Flat grid base with subtle height-noise tiles (represents landscape)
-   - Thin glowing grid lines on top
-   - A faint dot-glow pulse in the centre
+   Approximate Texas outline in local XY space.
+   After mesh rotation [-PI/2, 0, 0]:  shape X → world X,  shape Y → world Z
 ───────────────────────────────────────────────────────────────────────────── */
+const TX_VERTS: [number, number][] = [
+  [-4.0, -3.0], // NW panhandle
+  [-0.8, -3.0], // Panhandle NE
+  [-0.8, -1.9], // Panhandle bottom (OK border join)
+  [ 3.2, -1.9], // NE corner (Red River)
+  [ 3.6, -0.4], // E border
+  [ 3.3,  1.2], // SE coast (Sabine)
+  [ 2.8,  2.2], // Gulf coast turn
+  [ 1.8,  3.0], // Corpus area
+  [ 0.6,  3.2], // South tip (Brownsville)
+  [-0.4,  2.8], // Rio Grande
+  [-1.8,  2.0], // Rio Grande mid
+  [-3.6,  0.9], // Big Bend / Del Rio
+  [-4.0,  0.4], // El Paso (west)
+]
 
-/* Grid-line helper */
-function GridLines() {
-  const geo = useMemo(() => {
+// Grid network city nodes (world XZ)
+const NODES: [number, number][] = [
+  [-2.8, -2.5], // Amarillo
+  [-1.8, -1.8], // Lubbock
+  [-0.5, -1.4], // Wichita Falls
+  [ 1.5, -1.0], // Dallas
+  [ 2.3, -0.7], // Tyler / East TX
+  [ 2.8,  0.8], // Houston
+  [-2.5,  0.1], // Midland/Odessa
+  [ 0.5,  0.3], // Austin
+  [ 0.2,  1.6], // San Antonio
+  [ 1.5,  2.5], // Corpus Christi
+  [-1.2,  1.4], // Laredo
+]
+
+const CONNECTIONS: [number, number][] = [
+  [0, 1], [1, 2], [2, 3], [3, 4], [4, 5],
+  [1, 6], [6, 7], [3, 7], [5, 7],
+  [7, 8], [8, 9], [8, 10], [10, 6],
+]
+
+/* ── Solid extruded Texas platform ────────────────────────────────────────── */
+function TexasPlatform() {
+  const shape = useMemo(() => {
+    const s = new THREE.Shape()
+    s.moveTo(TX_VERTS[0][0], TX_VERTS[0][1])
+    for (let i = 1; i < TX_VERTS.length; i++) s.lineTo(TX_VERTS[i][0], TX_VERTS[i][1])
+    s.closePath()
+    return s
+  }, [])
+
+  const extrude = { depth: 0.55, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 2 }
+
+  return (
+    <group>
+      {/* Main dark-navy extruded body */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow>
+        <extrudeGeometry args={[shape, extrude]} />
+        <meshStandardMaterial color="#0d1e3e" roughness={0.3} metalness={0.5} />
+      </mesh>
+
+      {/* Top surface — dark teal with faint green emissive */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
+        <shapeGeometry args={[shape]} />
+        <meshStandardMaterial
+          color="#0e2e22"
+          roughness={0.75}
+          emissive="#00C853"
+          emissiveIntensity={0.06}
+        />
+      </mesh>
+
+      {/* Dark floor plane */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.57, 0]}>
+        <planeGeometry args={[13, 10]} />
+        <meshStandardMaterial color="#040d1a" roughness={1} />
+      </mesh>
+    </group>
+  )
+}
+
+/* ── Pulsing grid node ────────────────────────────────────────────────────── */
+function NodePulse({ x, z, phase }: { x: number; z: number; phase: number }) {
+  const outerRef = useRef<THREE.Mesh>(null)
+  const innerRef = useRef<THREE.Mesh>(null)
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime() + phase
+    if (outerRef.current) {
+      const s = 0.7 + Math.sin(t * 2.0) * 0.35
+      outerRef.current.scale.setScalar(s)
+      ;(outerRef.current.material as THREE.MeshBasicMaterial).opacity = 0.15 + Math.abs(Math.sin(t * 2.0)) * 0.2
+    }
+    if (innerRef.current) {
+      ;(innerRef.current.material as THREE.MeshBasicMaterial).opacity = 0.55 + Math.sin(t * 2.8) * 0.35
+    }
+  })
+
+  return (
+    <group position={[x, 0.03, z]}>
+      {/* Outer ring glow */}
+      <mesh ref={outerRef}>
+        <sphereGeometry args={[0.14, 8, 8]} />
+        <meshBasicMaterial color="#FFD700" transparent opacity={0.2} depthWrite={false} />
+      </mesh>
+      {/* Inner bright dot */}
+      <mesh ref={innerRef}>
+        <sphereGeometry args={[0.055, 8, 8]} />
+        <meshBasicMaterial color="#FFD700" transparent opacity={0.75} />
+      </mesh>
+    </group>
+  )
+}
+
+/* ── Yellow grid network ──────────────────────────────────────────────────── */
+function GridNetwork() {
+  const lineGeo = useMemo(() => {
     const pts: THREE.Vector3[] = []
-    const half = 4
-    const step = 0.6
-    for (let x = -half; x <= half; x += step) {
-      pts.push(new THREE.Vector3(x, 0, -half))
-      pts.push(new THREE.Vector3(x, 0,  half))
-    }
-    for (let z = -half; z <= half; z += step) {
-      pts.push(new THREE.Vector3(-half, 0, z))
-      pts.push(new THREE.Vector3( half, 0, z))
-    }
+    CONNECTIONS.forEach(([a, b]) => {
+      pts.push(new THREE.Vector3(NODES[a][0], 0.025, NODES[a][1]))
+      pts.push(new THREE.Vector3(NODES[b][0], 0.025, NODES[b][1]))
+    })
     const g = new THREE.BufferGeometry()
     g.setFromPoints(pts)
     return g
   }, [])
 
   return (
-    <lineSegments geometry={geo}>
-      <lineBasicMaterial color="#2979FF" transparent opacity={0.08} />
-    </lineSegments>
+    <group>
+      <lineSegments geometry={lineGeo}>
+        <lineBasicMaterial color="#FFD700" transparent opacity={0.5} />
+      </lineSegments>
+      {NODES.map(([x, z], i) => (
+        <NodePulse key={i} x={x} z={z} phase={i * 0.48} />
+      ))}
+    </group>
   )
 }
 
-/* Instanced terrain tiles */
-function TerrainTiles() {
-  const mesh = useRef<THREE.InstancedMesh>(null)
-
-  const { positions, heights } = useMemo(() => {
-    const cols  = 14
-    const rows  = 9
-    const gap   = 0.58
-    const offX  = -(cols - 1) * gap * 0.5
-    const offZ  = -(rows - 1) * gap * 0.5
-    const pos: [number, number, number][] = []
-    const h: number[] = []
-    // Rough Texas shape mask (wider left, narrower right bottom)
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const nx = c / (cols - 1)   // 0..1 left→right
-        const nz = r / (rows - 1)   // 0..1 top→bottom
-        // Texas-ish silhouette: rectangular upper half, narrowing lower right
-        const inShape =
-          (nz < 0.5) ||                           // upper half: full width
-          (nz < 0.75 && nx < 0.9) ||              // mid band
-          (nz >= 0.75 && nx < 0.65)               // lower: Panhandle+body, drop east
-        if (!inShape) continue
-        const x = offX + c * gap
-        const z = offZ + r * gap
-        const ht = Math.max(0.02, Math.abs(Math.sin(c * 0.8) * Math.cos(r * 0.9)) * 0.04)
-        pos.push([x, ht * 0.5, z])
-        h.push(ht)
-      }
-    }
-    return { positions: pos, heights: h }
-  }, [])
-
-  const dummy = useMemo(() => new THREE.Object3D(), [])
-
-  // Set instance matrices once
-  useMemo(() => {
-    if (!mesh.current) return
-    positions.forEach(([x, y, z], i) => {
-      dummy.position.set(x, y, z)
-      dummy.scale.set(0.52, heights[i] * 2 + 0.01, 0.52)
-      dummy.updateMatrix()
-      mesh.current!.setMatrixAt(i, dummy.matrix)
-    })
-    mesh.current.instanceMatrix.needsUpdate = true
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const refTick = useRef(0)
-  useFrame((_, delta) => {
-    refTick.current += delta * 0.4
-    if (!mesh.current) return
-    positions.forEach(([x, y, z], i) => {
-      const wave = Math.sin(refTick.current + x * 1.2 + z * 0.8) * 0.005
-      dummy.position.set(x, y + wave, z)
-      dummy.scale.set(0.52, heights[i] * 2 + 0.01, 0.52)
-      dummy.updateMatrix()
-      mesh.current!.setMatrixAt(i, dummy.matrix)
-    })
-    mesh.current.instanceMatrix.needsUpdate = true
-  })
+/* ── Mini city buildings / power towers ──────────────────────────────────── */
+function MiniBuildings() {
+  // [worldX, worldZ, height]
+  const towers: [number, number, number][] = [
+    [ 2.7,  0.7, 0.28], // Houston
+    [ 1.3, -0.9, 0.24], // Dallas
+    [-2.3,  0.1, 0.15], // Midland
+  ]
 
   return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, positions.length]} receiveShadow>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial
-        color="#E8F4FD"
-        roughness={0.9}
-        metalness={0.05}
-      />
-    </instancedMesh>
-  )
-}
-
-/* Central glow pulse */
-function CentrePulse() {
-  const mesh = useRef<THREE.Mesh>(null)
-  useFrame(({ clock }) => {
-    if (!mesh.current) return
-    const t = clock.getElapsedTime()
-    const mat = mesh.current.material as THREE.MeshBasicMaterial
-    mat.opacity = 0.06 + Math.sin(t * 1.6) * 0.04
-    mesh.current.scale.setScalar(1 + Math.sin(t * 1.0) * 0.08)
-  })
-  return (
-    <mesh ref={mesh} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0.5]}>
-      <circleGeometry args={[2.2, 48]} />
-      <meshBasicMaterial color="#00C853" transparent opacity={0.08} depthWrite={false} />
-    </mesh>
+    <>
+      {towers.map(([x, z, h], i) => (
+        <group key={i} position={[x, h / 2, z]}>
+          {/* Tower body */}
+          <mesh castShadow>
+            <boxGeometry args={[0.1, h, 0.1]} />
+            <meshStandardMaterial color="#162d52" emissive="#2979FF" emissiveIntensity={0.3} metalness={0.6} roughness={0.3} />
+          </mesh>
+          {/* Beacon */}
+          <mesh position={[0, h / 2 + 0.045, 0]}>
+            <sphereGeometry args={[0.028, 6, 6]} />
+            <meshBasicMaterial color="#2979FF" />
+          </mesh>
+          {/* Legs */}
+          {[[ 0.07, 0.07], [-0.07, -0.07], [ 0.07, -0.07], [-0.07, 0.07]].map(([lx, lz], j) => (
+            <mesh key={j} position={[lx, -h * 0.28, lz]} rotation={[0, 0, lx > 0 ? 0.45 : -0.45]}>
+              <boxGeometry args={[0.012, h * 0.55, 0.012]} />
+              <meshStandardMaterial color="#162d52" />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </>
   )
 }
 
 export default function TexasMap() {
   return (
-    <group position={[0, -0.6, 0]}>
-      {/* Base shadow plane */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
-        <planeGeometry args={[10, 7]} />
-        <meshStandardMaterial color="#EBF2FF" roughness={1} />
-      </mesh>
-
-      <TerrainTiles />
-      <GridLines />
-      <CentrePulse />
+    <group position={[0, -0.55, 0]}>
+      <TexasPlatform />
+      <GridNetwork />
+      <MiniBuildings />
     </group>
   )
 }
