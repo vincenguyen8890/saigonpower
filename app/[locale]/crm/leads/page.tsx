@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Search, Filter, PlusCircle } from 'lucide-react'
+import { Search, ChevronRight } from 'lucide-react'
 import LeadStatusBadge from '@/components/crm/LeadStatusBadge'
 import { getLeads } from '@/lib/supabase/queries'
 import { formatDate } from '@/lib/utils'
@@ -12,6 +12,21 @@ interface Props {
   searchParams: Promise<{ status?: string; service?: string; q?: string }>
 }
 
+const statusOptions = [
+  { value: 'all',       label: 'All Status'  },
+  { value: 'new',       label: 'New'          },
+  { value: 'contacted', label: 'Contacted'    },
+  { value: 'quoted',    label: 'Quoted'       },
+  { value: 'enrolled',  label: 'Enrolled'     },
+  { value: 'lost',      label: 'Lost'         },
+]
+
+const serviceOptions = [
+  { value: 'all',         label: 'All Types'   },
+  { value: 'residential', label: 'Residential' },
+  { value: 'commercial',  label: 'Commercial'  },
+]
+
 export default async function LeadsPage({ params, searchParams }: Props) {
   const { locale } = await params
   const { status, service, q } = await searchParams
@@ -19,148 +34,200 @@ export default async function LeadsPage({ params, searchParams }: Props) {
 
   const leads = await getLeads({ status, service, q })
 
-  const statusOptions = [
-    { value: 'all',       label: 'All Status'   },
-    { value: 'new',       label: 'New'           },
-    { value: 'contacted', label: 'Contacted'     },
-    { value: 'quoted',    label: 'Quoted'        },
-    { value: 'enrolled',  label: 'Enrolled'      },
-    { value: 'lost',      label: 'Lost'          },
-  ]
-  const serviceOptions = [
-    { value: 'all',         label: 'All Services' },
-    { value: 'residential', label: 'Residential'  },
-    { value: 'commercial',  label: 'Commercial'   },
-  ]
-
   const csvParams = new URLSearchParams()
   if (status)  csvParams.set('status', status)
   if (service) csvParams.set('service', service)
   if (q)       csvParams.set('q', q)
 
+  const hasFilters = (status && status !== 'all') || (service && service !== 'all') || !!q
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-4">
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Leads Management</h1>
-          <p className="text-gray-500 text-sm mt-1">{leads.length} leads</p>
+          <h1 className="text-base sm:text-lg font-bold text-[#0F172A]">Leads</h1>
+          <p className="text-xs text-slate-400 mt-0.5">{leads.length} lead{leads.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex items-center gap-2">
           <a
             href={`/api/crm/leads/export?${csvParams}`}
-            className="text-sm border border-gray-200 text-gray-600 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+            className="hidden sm:inline-flex items-center text-xs font-medium border border-slate-200 text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
           >
-            ↓ Export CSV
+            ↓ CSV
           </a>
           <ImportLeadsModal />
           <NewLeadModal locale={locale} />
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
-        <form className="flex flex-wrap gap-3 items-center">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      {/* ── Filter bar ── */}
+      <div className="bg-white rounded-xl border border-slate-100 shadow-[0_1px_3px_rgba(15,23,42,0.06)] p-3 sm:p-4">
+        <form className="flex flex-col sm:flex-row gap-2">
+          {/* Search full-width on mobile */}
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               name="q"
               defaultValue={q}
-              placeholder="Search name, email, phone..."
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-green"
+              placeholder="Name, email, phone, ZIP…"
+              className="w-full pl-8 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
             />
           </div>
-          <Filter size={14} className="text-gray-400" />
-          <select
-            name="status"
-            defaultValue={status || 'all'}
-            className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
-          >
-            {statusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          <select
-            name="service"
-            defaultValue={service || 'all'}
-            className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
-          >
-            {serviceOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          <button
-            type="submit"
-            className="bg-brand-greenDark text-white text-sm px-4 py-2 rounded-xl hover:bg-brand-green transition-colors"
-          >
-            Search
-          </button>
-          {(status || service || q) && (
-            <Link href={`/${locale}/crm/leads`} className="text-sm text-gray-400 hover:text-gray-600">
-              Clear
+
+          {/* Selects + submit row */}
+          <div className="flex gap-2">
+            <select
+              name="status"
+              defaultValue={status || 'all'}
+              className="flex-1 sm:flex-none border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] text-slate-700 min-w-0"
+            >
+              {statusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select
+              name="service"
+              defaultValue={service || 'all'}
+              className="flex-1 sm:flex-none border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] text-slate-700 min-w-0"
+            >
+              {serviceOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <button
+              type="submit"
+              className="px-4 py-2.5 text-sm font-semibold bg-[#00C853] hover:bg-[#00A846] text-white rounded-lg transition-colors flex-shrink-0 shadow-sm"
+            >
+              Go
+            </button>
+          </div>
+
+          {hasFilters && (
+            <Link
+              href={`/${locale}/crm/leads`}
+              className="text-xs text-slate-400 hover:text-slate-600 self-center sm:self-auto flex-shrink-0"
+            >
+              Clear filters
             </Link>
           )}
         </form>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* ── Results ── */}
+      <div className="bg-white rounded-xl border border-slate-100 shadow-[0_1px_3px_rgba(15,23,42,0.06)] overflow-hidden">
         {leads.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <p className="text-lg font-medium">No leads found</p>
+          <div className="py-16 text-center">
+            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Search size={20} className="text-slate-300" />
+            </div>
+            <p className="text-sm font-semibold text-slate-500">No leads found</p>
+            <p className="text-xs text-slate-400 mt-1">Try adjusting your filters</p>
+            {hasFilters && (
+              <Link href={`/${locale}/crm/leads`} className="mt-3 inline-block text-xs font-bold text-[#00C853]">
+                Clear filters
+              </Link>
+            )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="border-b border-gray-100 bg-gray-50/50">
-                <tr>
-                  {['Lead', 'Contact', 'Service', 'Lang', 'Status', 'Source', 'Date', ''].map((h, i) => (
-                    <th
-                      key={i}
-                      className={`text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-5 py-3 ${[3,4].includes(i) ? 'hidden lg:table-cell' : ''} ${[2,5].includes(i) ? 'hidden md:table-cell' : ''}`}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {leads.map(lead => (
-                  <tr key={lead.id} className="hover:bg-gray-50/60 transition-colors">
-                    <td className="px-5 py-4">
-                      <p className="text-sm font-semibold text-gray-900">{lead.name}</p>
-                      <p className="text-xs text-gray-400">ZIP: {lead.zip}</p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <p className="text-sm text-gray-700">{lead.phone}</p>
-                      <p className="text-xs text-gray-400 truncate max-w-[160px]">{lead.email}</p>
-                    </td>
-                    <td className="px-5 py-4 hidden md:table-cell">
-                      <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                        lead.service_type === 'commercial' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'
+          <>
+            {/* ── Mobile: card list ── */}
+            <div className="sm:hidden divide-y divide-slate-50">
+              {leads.map(lead => (
+                <Link
+                  key={lead.id}
+                  href={`/${locale}/crm/leads/${lead.id}`}
+                  className="flex items-center gap-3 px-4 py-4 active:bg-slate-50 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-[#EBF2FF] flex items-center justify-center flex-shrink-0">
+                    <span className="text-[14px] font-bold text-[#2979FF]">
+                      {lead.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[13px] font-semibold text-[#0F172A] truncate">{lead.name}</p>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold flex-shrink-0 ${
+                        lead.service_type === 'commercial'
+                          ? 'bg-[#EBF2FF] text-[#2979FF]'
+                          : 'bg-[#E8FFF1] text-[#00A846]'
                       }`}>
-                        {lead.service_type === 'commercial' ? 'Comm.' : 'Res.'}
+                        {lead.service_type === 'commercial' ? 'Comm' : 'Res'}
                       </span>
-                    </td>
-                    <td className="px-5 py-4 hidden lg:table-cell">
-                      <span className="text-xs text-gray-500 uppercase font-medium">{lead.preferred_language}</span>
-                    </td>
-                    <td className="px-5 py-4 hidden lg:table-cell">
-                      <LeadStatusBadge status={lead.status} />
-                    </td>
-                    <td className="px-5 py-4 hidden md:table-cell">
-                      <span className="text-xs text-gray-400 capitalize">{lead.source || '—'}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="text-xs text-gray-400">{formatDate(lead.created_at, locale)}</span>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <Link
-                        href={`/${locale}/crm/leads/${lead.id}`}
-                        className="text-xs bg-brand-greenDark text-white px-3 py-1.5 rounded-lg hover:bg-brand-green transition-colors font-medium"
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">{lead.phone}</p>
+                    <p className="text-[10px] text-slate-300 mt-0.5">{formatDate(lead.created_at, locale)}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <LeadStatusBadge status={lead.status} />
+                    <ChevronRight size={14} className="text-slate-300" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* ── Desktop: table ── */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b border-slate-50 bg-slate-50/40">
+                  <tr>
+                    {['Lead', 'Contact', 'Service', 'Status', 'Source', 'Date', ''].map((h, i) => (
+                      <th
+                        key={i}
+                        className={`text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider px-5 py-3 ${
+                          i === 4 ? 'hidden lg:table-cell' : ''
+                        } ${i === 5 ? 'hidden md:table-cell' : ''}`}
                       >
-                        View
-                      </Link>
-                    </td>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {leads.map(lead => (
+                    <tr key={lead.id} className="hover:bg-slate-50/60 transition-colors group">
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-[#EBF2FF] flex items-center justify-center flex-shrink-0">
+                            <span className="text-[12px] font-bold text-[#2979FF]">{lead.name.charAt(0).toUpperCase()}</span>
+                          </div>
+                          <div>
+                            <p className="text-[13px] font-semibold text-[#0F172A]">{lead.name}</p>
+                            <p className="text-[11px] text-slate-400">ZIP {lead.zip}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <p className="text-[13px] text-slate-600">{lead.phone}</p>
+                        <p className="text-[11px] text-slate-400 truncate max-w-[160px]">{lead.email}</p>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className={`text-[11px] px-2 py-0.5 rounded font-semibold ${
+                          lead.service_type === 'commercial'
+                            ? 'bg-[#EBF2FF] text-[#2979FF]'
+                            : 'bg-[#E8FFF1] text-[#00A846]'
+                        }`}>
+                          {lead.service_type === 'commercial' ? 'Comm.' : 'Res.'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5"><LeadStatusBadge status={lead.status} /></td>
+                      <td className="px-5 py-3.5 hidden lg:table-cell">
+                        <span className="text-[11px] text-slate-400 capitalize">{lead.source || '—'}</span>
+                      </td>
+                      <td className="px-5 py-3.5 hidden md:table-cell">
+                        <span className="text-[11px] text-slate-400">{formatDate(lead.created_at, locale)}</span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <Link
+                          href={`/${locale}/crm/leads/${lead.id}`}
+                          className="text-[11px] font-bold text-[#00C853] hover:text-[#00A846] bg-[#E8FFF1] px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
