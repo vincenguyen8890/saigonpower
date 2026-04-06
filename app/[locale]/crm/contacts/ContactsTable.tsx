@@ -41,7 +41,7 @@ const STATUS_STYLES: Record<string, string> = {
   contacted: 'bg-amber-50 text-amber-700',
   quoted:    'bg-purple-50 text-purple-700',
   enrolled:  'bg-green-50 text-green-700',
-  lost:      'bg-gray-100 text-gray-500',
+  lost:      'bg-red-100 text-red-600',
 }
 
 const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHTS', 'FREE WEEKENDS']
