@@ -459,10 +459,10 @@ export async function insertProvider(provider: Omit<import('@/data/mock-crm').Pr
 
 export async function updateProvider(id: string, updates: Partial<import('@/data/mock-crm').Provider>): Promise<void> {
   if (useMock()) return
+  const admin = adminClient()
+  if (!admin) throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured')
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = (adminClient() ?? await createClient()) as any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await db.from('crm_providers')
+  const { error } = await (admin.from('crm_providers') as any)
     .update({
       name:                    updates.name,
       short_name:              updates.short_name,
