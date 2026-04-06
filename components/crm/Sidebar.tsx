@@ -174,17 +174,25 @@ export default function Sidebar({
         {isAdmin && (
           <div className="mt-5">
             <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Admin</p>
-            <Link
-              href={`/${locale}/crm/settings`}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
-                pathname.startsWith(`/${locale}/crm/settings`)
-                  ? 'bg-[#E8FFF1] text-[#00A846]'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-            >
-              <Settings size={15} className="flex-shrink-0" />
-              Settings
-            </Link>
+            <div className="space-y-0.5">
+              {[
+                { href: `/${locale}/crm/users`,    label: 'Users',    icon: Users    },
+                { href: `/${locale}/crm/settings`, label: 'Settings', icon: Settings },
+              ].map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
+                    pathname.startsWith(href)
+                      ? 'bg-[#E8FFF1] text-[#00A846]'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                  }`}
+                >
+                  <Icon size={15} className="flex-shrink-0" />
+                  {label}
+                </Link>
+              ))}
+            </div>
           </div>
         )}
       </nav>
