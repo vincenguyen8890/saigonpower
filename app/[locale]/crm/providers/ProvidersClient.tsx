@@ -53,7 +53,7 @@ function ProviderModal({
           value={form[key] as string | number}
           onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
           placeholder={placeholder}
-          step={isCommission ? 'any' : undefined}
+          step={isCommission ? '0.0001' : undefined}
           min={type === 'number' ? '0' : undefined}
           className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green"
           required={['name', 'short_name'].includes(key as string)}
@@ -240,12 +240,12 @@ export default function ProvidersClient({ initialProviders, isAdmin }: Props) {
             <div className="grid grid-cols-2 gap-2 mb-4">
               <div className="bg-green-50 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">Res. Commission</p>
-                <p className="text-lg font-bold text-green-700">${p.commission_residential}</p>
+                <p className="text-lg font-bold text-green-700">${Number(p.commission_residential).toFixed(4).replace(/\.?0+$/, '') || '0'}</p>
               </div>
               <div className="bg-blue-50 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">Comm. Commission</p>
                 <p className="text-lg font-bold text-blue-700">
-                  {p.commission_commercial > 0 ? `$${p.commission_commercial}` : '—'}
+                  {p.commission_commercial > 0 ? `$${Number(p.commission_commercial).toFixed(4).replace(/\.?0+$/, '')}` : '—'}
                 </p>
               </div>
             </div>
@@ -289,8 +289,8 @@ export default function ProvidersClient({ initialProviders, isAdmin }: Props) {
               {active.map(p => (
                 <tr key={p.id}>
                   <td className="py-3 pr-6 font-medium text-gray-900">{p.name}</td>
-                  <td className="py-3 pr-6 text-green-700 font-semibold">${p.commission_residential}</td>
-                  <td className="py-3 pr-6 text-blue-700 font-semibold">{p.commission_commercial > 0 ? `$${p.commission_commercial}` : '—'}</td>
+                  <td className="py-3 pr-6 text-green-700 font-semibold">${Number(p.commission_residential).toFixed(4).replace(/\.?0+$/, '') || '0'}</td>
+                  <td className="py-3 pr-6 text-blue-700 font-semibold">{p.commission_commercial > 0 ? `$${Number(p.commission_commercial).toFixed(4).replace(/\.?0+$/, '')}` : '—'}</td>
                   <td className="py-3 pr-6 text-gray-500">{p.active_plans}</td>
                 </tr>
               ))}
