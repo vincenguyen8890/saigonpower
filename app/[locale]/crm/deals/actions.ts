@@ -8,9 +8,11 @@ function bust() {
   revalidatePath('/', 'layout')
 }
 
-export async function createDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated_at'>) {
-  await insertDeal(deal)
+export async function createDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated_at'>): Promise<{ error?: string }> {
+  const result = await insertDeal(deal)
+  if (!result) return { error: 'Failed to save deal. Check server logs.' }
   bust()
+  return {}
 }
 
 export async function updateDealAction(id: string, updates: Partial<Deal>) {

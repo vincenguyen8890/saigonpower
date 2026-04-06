@@ -14,6 +14,7 @@ const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHT
 export default function NewDealModal({ locale, leads, agents }: { locale: string; leads: Lead[]; agents: CRMAgent[] }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [submitError, setSubmitError] = useState('')
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -24,8 +25,9 @@ export default function NewDealModal({ locale, leads, agents }: { locale: string
     const assignedEmail = get('assigned_to') || null
     const selectedAgent = agents.find(a => a.email === assignedEmail)
 
+    setSubmitError('')
     startTransition(async () => {
-      await createDeal({
+      const res = await createDeal({
         title:               get('title'),
         lead_id:             get('lead_id') || null,
         value:               0,
@@ -48,6 +50,7 @@ export default function NewDealModal({ locale, leads, agents }: { locale: string
         product_type:        get('product_type') || null,
         usage_kwh:           Number(get('usage_kwh')) || null,
       })
+      if (res.error) { setSubmitError(res.error); return }
       setOpen(false)
       router.refresh()
     })
@@ -196,6 +199,12 @@ export default function NewDealModal({ locale, leads, agents }: { locale: string
                   </div>
                 </div>
               </div>
+
+              {submitError && (
+                <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                  {submitError}
+                </div>
+              )}
 
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setOpen(false)}

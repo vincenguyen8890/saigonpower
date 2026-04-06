@@ -289,9 +289,9 @@ export async function insertDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated
     const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('deals') as any).insert(deal).select().single()
-    if (error) throw error
+    if (error) { console.error('[insertDeal] Supabase error:', error); throw error }
     return data
-  } catch { return null }
+  } catch (e) { console.error('[insertDeal] caught:', e); return null }
 }
 
 export async function updateDeal(id: string, updates: Partial<Deal>): Promise<void> {
