@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { UserPlus, X, Loader2, Shield, UserCheck, Phone, Mail, Pencil, Trash2, ToggleLeft, ToggleRight, TrendingUp, Users, CheckCircle2, Briefcase } from 'lucide-react'
+import { UserPlus, X, Loader2, Shield, UserCheck, Phone, Mail, Pencil, Trash2, ToggleLeft, ToggleRight, TrendingUp, Users, CheckCircle2, Briefcase, DollarSign } from 'lucide-react'
 import { saveAgentAction, toggleAgentAction, deleteAgentAction } from './actions'
 import type { CRMAgent } from '@/lib/supabase/queries'
 
@@ -15,6 +15,23 @@ interface AgentStats {
 interface Props {
   agents: CRMAgent[]
   stats: AgentStats[]
+}
+
+const AGENT_TYPES = [
+  { value: 'inside_agent',    label: 'Inside Agent' },
+  { value: 'outside_agent',   label: 'Outside Agent' },
+  { value: 'realtor',         label: 'Realtor' },
+  { value: 'loan_officer',    label: 'Loan Officer' },
+  { value: 'insurance_agent', label: 'Insurance Agent' },
+]
+
+const REFERRAL_FEE: Record<string, number> = {
+  inside_agent: 5,
+}
+const DEFAULT_REFERRAL_FEE = 20
+
+function getReferralFee(agentType: string) {
+  return agentType ? (REFERRAL_FEE[agentType] ?? DEFAULT_REFERRAL_FEE) : null
 }
 
 const AVATAR_COLORS = [
@@ -86,9 +103,18 @@ function AgentModal({ agent, onClose }: { agent?: CRMAgent; onClose: () => void 
               <select value={form.agent_type} onChange={e => setForm(f => ({ ...f, agent_type: e.target.value }))}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green">
                 <option value="">— select type —</option>
-                <option value="inside_agent">Inside Agent</option>
-                <option value="outside_agent">Outside Agent</option>
+                {AGENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1">Referral Fee</label>
+              <div className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 text-gray-700 flex items-center gap-1.5">
+                <DollarSign size={13} className="text-green-600" />
+                {form.agent_type
+                  ? <span className="font-medium text-green-700">${getReferralFee(form.agent_type)} <span className="font-normal text-gray-400">per customer</span></span>
+                  : <span className="text-gray-400">Select type first</span>
+                }
+              </div>
             </div>
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1">Phone</label>
@@ -166,11 +192,17 @@ function AgentCard({ agent, agentStats }: { agent: CRMAgent; agentStats: AgentSt
           </div>
         </div>
 
-        {/* Agent type */}
+        {/* Agent type + referral fee */}
         {agent.agent_type && (
-          <div className="flex items-center gap-1.5 mb-3">
-            <Briefcase size={12} className="text-gray-400 flex-shrink-0" />
-            <span className="text-xs text-gray-500 capitalize">{agent.agent_type.replace(/_/g, ' ')}</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1.5">
+              <Briefcase size={12} className="text-gray-400 flex-shrink-0" />
+              <span className="text-xs text-gray-500 capitalize">{AGENT_TYPES.find(t => t.value === agent.agent_type)?.label ?? agent.agent_type.replace(/_/g, ' ')}</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs font-medium text-green-700">
+              <DollarSign size={11} />
+              <span>${getReferralFee(agent.agent_type)}/customer</span>
+            </div>
           </div>
         )}
 
