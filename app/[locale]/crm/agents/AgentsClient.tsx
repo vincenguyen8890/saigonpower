@@ -82,23 +82,12 @@ function AgentModal({ agent, onClose }: { agent?: CRMAgent; onClose: () => void 
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Role</label>
-              <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value as 'admin' | 'agent' }))}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green">
-                <option value="agent">Agent</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <div>
               <label className="text-xs font-medium text-gray-600 block mb-1">Agent Type</label>
               <select value={form.agent_type} onChange={e => setForm(f => ({ ...f, agent_type: e.target.value }))}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green">
                 <option value="">— select type —</option>
-                <option value="electricity_broker">Electricity Broker</option>
-                <option value="realtor">Realtor</option>
-                <option value="insurance_agent">Insurance Agent</option>
-                <option value="loan_officer">Loan Officer</option>
-                <option value="other">Other</option>
+                <option value="inside_agent">Inside Agent</option>
+                <option value="outside_agent">Outside Agent</option>
               </select>
             </div>
             <div>
