@@ -456,7 +456,20 @@ export async function updateProvider(id: string, updates: Partial<import('@/data
   if (useMock()) return
   const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('crm_providers') as any).update(updates).eq('id', id)
+  const { error } = await (supabase.from('crm_providers') as any)
+    .update({
+      name:                    updates.name,
+      short_name:              updates.short_name,
+      website:                 updates.website,
+      phone:                   updates.phone,
+      commission_residential:  Number(updates.commission_residential),
+      commission_commercial:   Number(updates.commission_commercial),
+      active_plans:            Number(updates.active_plans),
+      notes:                   updates.notes,
+      status:                  updates.status,
+    })
+    .eq('id', id)
+  if (error) throw error
 }
 
 export async function deleteProvider(id: string): Promise<void> {

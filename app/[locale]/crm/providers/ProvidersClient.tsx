@@ -43,19 +43,24 @@ function ProviderModal({
     })
   }
 
-  const field = (label: string, key: keyof Omit<typeof form, 'notes' | 'status'>, type = 'text', placeholder = '') => (
-    <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      <input
-        type={type}
-        value={form[key] as string | number}
-        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-        placeholder={placeholder}
-        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green"
-        required={['name', 'short_name'].includes(key as string)}
-      />
-    </div>
-  )
+  const field = (label: string, key: keyof Omit<typeof form, 'notes' | 'status'>, type = 'text', placeholder = '') => {
+    const isCommission = key === 'commission_residential' || key === 'commission_commercial'
+    return (
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+        <input
+          type={type}
+          value={form[key] as string | number}
+          onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+          placeholder={placeholder}
+          step={isCommission ? 'any' : undefined}
+          min={type === 'number' ? '0' : undefined}
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green"
+          required={['name', 'short_name'].includes(key as string)}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -127,6 +132,7 @@ export default function ProvidersClient({ initialProviders, isAdmin }: Props) {
   const [isPending, startTransition] = useTransition()
 
   function handleSave(saved: Provider) {
+    // Optimistically update UI
     setProviders(prev => {
       const idx = prev.findIndex(p => p.id === saved.id)
       if (idx !== -1) { const next = [...prev]; next[idx] = saved; return next }
@@ -135,8 +141,19 @@ export default function ProvidersClient({ initialProviders, isAdmin }: Props) {
     setEditing(null)
     startTransition(async () => {
       const result = await saveProviderAction(saved)
-      if (result && result.id !== saved.id) {
-        setProviders(prev => prev.map(p => p.id === saved.id ? result : p))
+      if (result.error) {
+        // Revert optimistic update on error
+        setProviders(prev => {
+          const idx = prev.findIndex(p => p.id === saved.id)
+          if (idx !== -1) { const next = [...prev]; next[idx] = saved; return next }
+          return prev
+        })
+        alert(`Save failed: ${result.error}`)
+        return
+      }
+      // For new providers, replace temp ID with real Supabase ID
+      if (result.data && result.data.id !== saved.id) {
+        setProviders(prev => prev.map(p => p.id === saved.id ? result.data! : p))
       }
     })
   }
