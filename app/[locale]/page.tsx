@@ -1,16 +1,11 @@
 import type { Metadata } from 'next'
 import Hero from '@/components/home/Hero'
-import TrustBar from '@/components/home/TrustBar'
-import DualPath from '@/components/home/DualPath'
-import WhoWeHelp from '@/components/home/WhoWeHelp'
+import ProblemSection from '@/components/home/ProblemSection'
+import SolutionSection from '@/components/home/SolutionSection'
+import SavingsImpact from '@/components/home/SavingsImpact'
 import HowItWorks from '@/components/home/HowItWorks'
-import FeaturedPlans from '@/components/home/FeaturedPlans'
-import RenewalBanner from '@/components/home/RenewalBanner'
-import Benefits from '@/components/home/Benefits'
 import GoogleReviews from '@/components/home/GoogleReviews'
-import FAQPreview from '@/components/home/FAQPreview'
 import FinalCTA from '@/components/home/FinalCTA'
-import MobileStickyBar from '@/components/home/MobileStickyBar'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -46,44 +41,26 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
       />
 
-      {/* 1. Hero — centered ZIP dominant */}
+      {/* 1. Hero — full-screen, cinematic entry */}
       <Hero />
 
-      {/* 2. Trust strip — immediately below fold */}
-      <TrustBar />
+      {/* 2. Problem — dark, "you're overpaying" impact moment */}
+      <ProblemSection />
 
-      {/* 3. Dual mode — self-compare vs agent-assisted */}
-      <DualPath />
+      {/* 3. Solution — "we handle it for you" */}
+      <SolutionSection />
 
-      {/* 4. Who we help — Nhà ở / Nail / Nhà hàng / Doanh nghiệp */}
-      <WhoWeHelp />
+      {/* 4. Savings Impact — big green number moment */}
+      <SavingsImpact />
 
-      {/* 5. How it works — 3 steps */}
+      {/* 5. How It Works — 3 simple steps */}
       <HowItWorks />
 
-      {/* 6. Featured plans — top 3 */}
-      <FeaturedPlans />
-
-      {/* 7. Renewal promise banner */}
-      <RenewalBanner />
-
-      {/* 8. Benefits + Energy Ogre comparison */}
-      <Benefits />
-
-      {/* 9. Google reviews */}
+      {/* 6. Social proof — stats + testimonials */}
       <GoogleReviews />
 
-      {/* 10. FAQ */}
-      <FAQPreview />
-
-      {/* 11. Final CTA */}
+      {/* 7. Final CTA — dark, "start saving today" */}
       <FinalCTA />
-
-      {/* 12. Mobile sticky bar — call + quote */}
-      <MobileStickyBar />
-
-      {/* Spacer for mobile sticky bar */}
-      <div className="h-16 sm:hidden" />
     </>
   )
 }

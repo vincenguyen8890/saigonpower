@@ -289,7 +289,21 @@ export async function insertDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated
     const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('deals') as any).insert(deal).select().single()
-    if (error) { console.error('[insertDeal] Supabase error:', error); throw error }
+    if (error) {
+      console.error('[insertDeal] error:', error.code, error.message)
+      // If schema cache error (columns not yet migrated), retry with base columns only
+      if (error.code === 'PGRST204') {
+        const { title, lead_id, value, stage, probability, expected_close,
+                provider, plan_name, service_type, notes, assigned_to } = deal
+        const base = { title, lead_id, value, stage, probability,
+                       expected_close, provider, plan_name, service_type, notes, assigned_to }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: d2, error: e2 } = await (supabase.from('deals') as any).insert(base).select().single()
+        if (e2) { console.error('[insertDeal] base retry failed:', e2.message); return null }
+        return d2
+      }
+      return null
+    }
     return data
   } catch (e) { console.error('[insertDeal] caught:', e); return null }
 }
