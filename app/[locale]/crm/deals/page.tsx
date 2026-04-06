@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { setRequestLocale } from 'next-intl/server'
-import { getDeals, getLeads, getCRMAgents } from '@/lib/supabase/queries'
+import { getDeals, getLeads, getCRMAgents, getProvidersFromDB } from '@/lib/supabase/queries'
 import { TrendingUp, DollarSign, Target, CheckCircle2 } from 'lucide-react'
 import { mockProviders } from '@/data/mock-crm'
 import NewDealModal from './NewDealModal'
@@ -26,10 +26,11 @@ export default async function DealsPage({ params, searchParams }: Props) {
   const { stage } = await searchParams
   setRequestLocale(locale)
 
-  const [deals, leads, agents] = await Promise.all([
+  const [deals, leads, agents, providers] = await Promise.all([
     getDeals(stage),
     getLeads(),
     getCRMAgents(),
+    getProvidersFromDB(),
   ])
 
   // Pipeline stats
@@ -49,7 +50,7 @@ export default async function DealsPage({ params, searchParams }: Props) {
           <h1 className="text-2xl font-bold text-gray-900">Deals & Opportunities</h1>
           <p className="text-gray-500 text-sm mt-1">{activeDeals.length} active deals · ${totalValue.toLocaleString()}/mo pipeline</p>
         </div>
-        <NewDealModal locale={locale} leads={leads} agents={agents} />
+        <NewDealModal locale={locale} leads={leads} agents={agents} providers={providers} />
       </div>
 
       {/* Stats */}

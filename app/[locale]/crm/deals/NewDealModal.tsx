@@ -7,11 +7,11 @@ import { createDeal } from './actions'
 import type { Lead } from '@/data/mock-crm'
 import type { Deal } from '@/lib/supabase/queries'
 import type { CRMAgent } from '@/lib/supabase/queries'
+import type { Provider } from '@/data/mock-crm'
 
-const PROVIDERS = ['Gexa Energy', 'TXU Energy', 'Reliant Energy', 'Green Mountain Energy', 'Cirro Energy', 'Payless Power', 'Budget Power', 'Pulse Power', '4Change Energy']
 const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHTS', 'FREE WEEKENDS']
 
-export default function NewDealModal({ locale, leads, agents }: { locale: string; leads: Lead[]; agents: CRMAgent[] }) {
+export default function NewDealModal({ locale, leads, agents, providers }: { locale: string; leads: Lead[]; agents: CRMAgent[]; providers: Provider[] }) {
   const [open, setOpen] = useState(false)
   const [isPending, setIsPending] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -129,7 +129,7 @@ export default function NewDealModal({ locale, leads, agents }: { locale: string
                     <label className={L}>Supplier</label>
                     <select name="provider" defaultValue="" className={C}>
                       <option value="">— Select —</option>
-                      {PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
+                      {providers.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                     </select>
                   </div>
                   <div>
