@@ -15,7 +15,7 @@ import type { CRMNotification } from './NotificationBell'
 interface NavItem {
   href: string
   label: string
-  icon: React.ElementType
+  icon: React.FC<{ size?: number; className?: string }>
 }
 
 interface NavGroup {

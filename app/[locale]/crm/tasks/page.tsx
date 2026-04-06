@@ -9,7 +9,7 @@ interface Props {
   searchParams: Promise<{ type?: string }>
 }
 
-const TYPE_ICONS: Record<string, React.ElementType> = {
+const TYPE_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
   call:    Phone,
   email:   Mail,
   meeting: Users,
@@ -84,7 +84,7 @@ export default async function TasksPage({ params, searchParams }: Props) {
     )
   }
 
-  function Group({ label, icon: GroupIcon, items, color }: { label: string; icon: React.ElementType; items: typeof activities; color: string }) {
+  function Group({ label, icon: GroupIcon, items, color }: { label: string; icon: React.FC<{ size?: number; className?: string }>; items: typeof activities; color: string }) {
     if (items.length === 0) return null
     return (
       <div className="mb-5">
