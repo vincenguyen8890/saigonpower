@@ -6,6 +6,7 @@ import { mockProviders } from '@/data/mock-crm'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
 import DealEditForm from './DealEditForm'
+import DeleteDealButton from './DeleteDealButton'
 
 interface Props {
   params: Promise<{ locale: string; id: string }>
@@ -69,7 +70,10 @@ export default async function DealDetailPage({ params }: Props) {
             <span className="text-xs text-gray-400">Updated {formatDate(deal.updated_at, locale)}</span>
           </div>
         </div>
-        <DealEditForm deal={deal} locale={locale} agents={agents} providers={providers} />
+        <div className="flex items-center gap-2">
+          <DealEditForm deal={deal} locale={locale} agents={agents} providers={providers} />
+          <DeleteDealButton dealId={deal.id} locale={locale} />
+        </div>
       </div>
 
       {/* Stage Progress */}

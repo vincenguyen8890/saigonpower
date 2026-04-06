@@ -329,6 +329,13 @@ export async function insertDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated
   } catch (e) { console.error('[insertDeal] caught:', e); return null }
 }
 
+export async function deleteDeal(id: string): Promise<void> {
+  if (useMock()) return
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('deals') as any).delete().eq('id', id)
+}
+
 export async function updateDeal(id: string, updates: Partial<Deal>): Promise<void> {
   if (useMock()) return
 

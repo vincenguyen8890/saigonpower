@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { insertDeal, updateDeal, insertActivity } from '@/lib/supabase/queries'
+import { insertDeal, updateDeal, deleteDeal, insertActivity } from '@/lib/supabase/queries'
 import type { Deal } from '@/lib/supabase/queries'
 
 function bust() {
@@ -28,6 +28,11 @@ export async function createDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated
 
 export async function updateDealAction(id: string, updates: Partial<Deal>) {
   await updateDeal(id, updates)
+  bust()
+}
+
+export async function deleteDealAction(id: string): Promise<void> {
+  await deleteDeal(id)
   bust()
 }
 
