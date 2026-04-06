@@ -57,6 +57,11 @@ export async function POST(req: NextRequest) {
           preferred_language: validLanguage    as 'vi' | 'en',
           status:             'new',
           source:             row.source?.trim()  || 'import',
+          referral_by:        null,
+          service_address:    null,
+          mailing_address:    null,
+          dob:                null,
+          anxh:               null,
           notes:              row.notes?.trim()   || null,
           assigned_to:        null,
         })

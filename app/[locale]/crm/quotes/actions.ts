@@ -43,6 +43,11 @@ export async function createQuoteAction(data: {
       preferred_language: data.preferred_language,
       status:             'new',
       source:             'crm',
+      referral_by:        null,
+      service_address:    null,
+      mailing_address:    null,
+      dob:                null,
+      anxh:               null,
       notes:              data.notes || null,
       assigned_to:        null,
     })
