@@ -20,17 +20,15 @@ export default function NewLeadModal({ locale }: { locale: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name:              get('name'),
-          email:             get('email') || undefined,
+          email:             get('email'),
           phone:             get('phone') || undefined,
           zip:               get('zip'),
           serviceType:       get('serviceType') || 'residential',
           preferredLanguage: get('preferredLanguage') || 'vi',
           source:            get('source') || 'manual',
           referral_by:       get('referral_by') || undefined,
-          service_address:   get('service_address') || undefined,
+          service_address:   get('service_address'),
           mailing_address:   get('mailing_address') || undefined,
-          dob:               get('dob') || undefined,
-          anxh:              get('anxh') || undefined,
           notes:             get('notes') || undefined,
         }),
       })
@@ -81,16 +79,8 @@ export default function NewLeadModal({ locale }: { locale: string }) {
                   <input name="zip" required maxLength={5} placeholder="77036" className={inputClass} />
                 </div>
                 <div className="col-span-2">
-                  <label className={labelClass}>Email</label>
-                  <input name="email" type="email" placeholder="email@example.com" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Date of Birth</label>
-                  <input name="dob" type="date" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>ANXH</label>
-                  <input name="anxh" placeholder="ANXH number" className={inputClass} />
+                  <label className={labelClass}>Email *</label>
+                  <input name="email" type="email" required placeholder="email@example.com" className={inputClass} />
                 </div>
               </div>
 
@@ -98,8 +88,8 @@ export default function NewLeadModal({ locale }: { locale: string }) {
               <p className={sectionClass}>Address</p>
               <div className="grid grid-cols-1 gap-3">
                 <div>
-                  <label className={labelClass}>Service Address</label>
-                  <input name="service_address" placeholder="123 Main St, Houston TX 77036" className={inputClass} />
+                  <label className={labelClass}>Service Address *</label>
+                  <input name="service_address" required placeholder="123 Main St, Houston TX 77036" className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Mailing Address</label>
