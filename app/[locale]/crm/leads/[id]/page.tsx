@@ -122,12 +122,57 @@ export default async function LeadDetailPage({ params }: Props) {
                   <p className="text-sm font-medium text-gray-900 uppercase">{lead.preferred_language}</p>
                 </div>
               </div>
+              {(lead as { dob?: string | null }).dob && (
+                <div className="flex items-start gap-3">
+                  <Calendar size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Date of Birth</p>
+                    <p className="text-sm font-medium text-gray-900">{(lead as { dob?: string | null }).dob}</p>
+                  </div>
+                </div>
+              )}
+              {(lead as { anxh?: string | null }).anxh && (
+                <div className="flex items-start gap-3">
+                  <FileText size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">ANXH</p>
+                    <p className="text-sm font-medium text-gray-900">{(lead as { anxh?: string | null }).anxh}</p>
+                  </div>
+                </div>
+              )}
+              {(lead as { service_address?: string | null }).service_address && (
+                <div className="flex items-start gap-3 sm:col-span-2">
+                  <MapPin size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Service Address</p>
+                    <p className="text-sm font-medium text-gray-900">{(lead as { service_address?: string | null }).service_address}</p>
+                  </div>
+                </div>
+              )}
+              {(lead as { mailing_address?: string | null }).mailing_address && (
+                <div className="flex items-start gap-3 sm:col-span-2">
+                  <MapPin size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Mailing Address</p>
+                    <p className="text-sm font-medium text-gray-900">{(lead as { mailing_address?: string | null }).mailing_address}</p>
+                  </div>
+                </div>
+              )}
               {lead.source && (
                 <div className="flex items-start gap-3">
                   <FileText size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs text-gray-400 mb-0.5">Source</p>
                     <p className="text-sm font-medium text-gray-900 capitalize">{lead.source}</p>
+                  </div>
+                </div>
+              )}
+              {(lead as { referral_by?: string | null }).referral_by && (
+                <div className="flex items-start gap-3">
+                  <User size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Referral By</p>
+                    <p className="text-sm font-medium text-gray-900">{(lead as { referral_by?: string | null }).referral_by}</p>
                   </div>
                 </div>
               )}

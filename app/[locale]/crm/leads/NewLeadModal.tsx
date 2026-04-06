@@ -24,8 +24,13 @@ export default function NewLeadModal({ locale }: { locale: string }) {
           phone:             get('phone') || undefined,
           zip:               get('zip'),
           serviceType:       get('serviceType') || 'residential',
-          preferredLanguage: get('preferredLanguage') || 'en',
+          preferredLanguage: get('preferredLanguage') || 'vi',
           source:            get('source') || 'manual',
+          referral_by:       get('referral_by') || undefined,
+          service_address:   get('service_address') || undefined,
+          mailing_address:   get('mailing_address') || undefined,
+          dob:               get('dob') || undefined,
+          anxh:              get('anxh') || undefined,
           notes:             get('notes') || undefined,
         }),
       })
@@ -36,6 +41,7 @@ export default function NewLeadModal({ locale }: { locale: string }) {
 
   const inputClass = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green'
   const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
+  const sectionClass = 'text-xs font-semibold text-gray-400 uppercase tracking-widest pt-1'
 
   return (
     <>
@@ -49,7 +55,7 @@ export default function NewLeadModal({ locale }: { locale: string }) {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="font-semibold text-gray-900">Add New Lead</h2>
               <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600">
@@ -57,7 +63,10 @@ export default function NewLeadModal({ locale }: { locale: string }) {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+
+              {/* CONTACT INFO */}
+              <p className={sectionClass}>Contact Info</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <label className={labelClass}>Full Name *</label>
@@ -75,6 +84,32 @@ export default function NewLeadModal({ locale }: { locale: string }) {
                   <label className={labelClass}>Email</label>
                   <input name="email" type="email" placeholder="email@example.com" className={inputClass} />
                 </div>
+                <div>
+                  <label className={labelClass}>Date of Birth</label>
+                  <input name="dob" type="date" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>ANXH</label>
+                  <input name="anxh" placeholder="ANXH number" className={inputClass} />
+                </div>
+              </div>
+
+              {/* ADDRESS */}
+              <p className={sectionClass}>Address</p>
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <label className={labelClass}>Service Address</label>
+                  <input name="service_address" placeholder="123 Main St, Houston TX 77036" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Mailing Address</label>
+                  <input name="mailing_address" placeholder="Same as service address if blank" className={inputClass} />
+                </div>
+              </div>
+
+              {/* SERVICE & SOURCE */}
+              <p className={sectionClass}>Service & Source</p>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Service Type</label>
                   <select name="serviceType" defaultValue="residential" className={inputClass}>
@@ -99,6 +134,10 @@ export default function NewLeadModal({ locale }: { locale: string }) {
                     <option value="google">Google</option>
                     <option value="website">Website</option>
                   </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Referral By</label>
+                  <input name="referral_by" placeholder="Referred by name" className={inputClass} />
                 </div>
                 <div className="col-span-2">
                   <label className={labelClass}>Notes</label>
