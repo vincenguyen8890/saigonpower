@@ -97,11 +97,31 @@ export async function deleteLead(id: string): Promise<void> {
 }
 
 export async function insertLead(lead: Omit<Lead, 'id' | 'created_at' | 'updated_at'>): Promise<Lead | null> {
-  const payload = { ...lead, customer_id: lead.customer_id ?? generateCustomerId() }
-  if (useMock()) return { ...payload, id: `lead-${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+  if (useMock()) {
+    const payload = { ...lead, customer_id: lead.customer_id ?? generateCustomerId(1) }
+    return { ...payload, id: `lead-${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+  }
 
   try {
     const supabase = await createClient()
+
+    // Generate sequential SGP-MMYYYY#### customer ID
+    let customerId = lead.customer_id
+    if (!customerId) {
+      const now  = new Date()
+      const mm   = String(now.getMonth() + 1).padStart(2, '0')
+      const yyyy = String(now.getFullYear())
+      const prefix = `SGP-${mm}${yyyy}`
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count } = await (supabase.from('leads') as any)
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', startOfMonth)
+      const seq = String((count ?? 0) + 1).padStart(4, '0')
+      customerId = `${prefix}${seq}`
+    }
+
+    const payload = { ...lead, customer_id: customerId }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('leads') as any)
       .insert(payload)

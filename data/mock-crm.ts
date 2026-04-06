@@ -20,11 +20,12 @@ export interface Lead {
   updated_at: string
 }
 
-export function generateCustomerId(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  let result = 'CUS-'
-  for (let i = 0; i < 6; i++) result += chars[Math.floor(Math.random() * chars.length)]
-  return result
+export function generateCustomerId(seq: number = 1): string {
+  const now = new Date()
+  const mm   = String(now.getMonth() + 1).padStart(2, '0')
+  const yyyy = String(now.getFullYear())
+  const num  = String(seq).padStart(4, '0')
+  return `SGP-${mm}${yyyy}${num}`
 }
 
 export interface QuoteRequest {
@@ -60,7 +61,7 @@ const daysAgo = (n: number) =>
 export const mockLeads: Lead[] = [
   {
     id: 'lead-001',
-    customer_id: 'CUS-LAN001',
+    customer_id: 'SGP-0420260001',
     name: 'Lan Nguyen',
     email: 'lan.nguyen@gmail.com',
     phone: '(832) 555-0101',
@@ -76,7 +77,7 @@ export const mockLeads: Lead[] = [
   },
   {
     id: 'lead-002',
-    customer_id: 'CUS-MIN002',
+    customer_id: 'SGP-0420260002',
     name: 'Minh Tran',
     email: 'mtran@nailsalon.com',
     phone: '(713) 555-0202',
@@ -92,7 +93,7 @@ export const mockLeads: Lead[] = [
   },
   {
     id: 'lead-003',
-    customer_id: 'CUS-MAI003',
+    customer_id: 'SGP-0420260003',
     name: 'Mai Pham',
     email: 'mai.pham@gmail.com',
     phone: '(832) 555-0303',
@@ -108,7 +109,7 @@ export const mockLeads: Lead[] = [
   },
   {
     id: 'lead-004',
-    customer_id: 'CUS-HUN004',
+    customer_id: 'SGP-0420260004',
     name: 'Hung Le',
     email: 'hung.le@yahoo.com',
     phone: '(281) 555-0404',
@@ -124,7 +125,7 @@ export const mockLeads: Lead[] = [
   },
   {
     id: 'lead-005',
-    customer_id: 'CUS-THA005',
+    customer_id: 'SGP-0420260005',
     name: 'Thanh Vo',
     email: 'thanh.vo@gmail.com',
     phone: '(713) 555-0505',
@@ -140,7 +141,7 @@ export const mockLeads: Lead[] = [
   },
   {
     id: 'lead-006',
-    customer_id: 'CUS-HOA006',
+    customer_id: 'SGP-0420260006',
     name: 'Hoa Nguyen Restaurant',
     email: 'hoa.restaurant@gmail.com',
     phone: '(832) 555-0606',
@@ -156,7 +157,7 @@ export const mockLeads: Lead[] = [
   },
   {
     id: 'lead-007',
-    customer_id: 'CUS-DAV007',
+    customer_id: 'SGP-0420260007',
     name: 'David Kim',
     email: 'd.kim@email.com',
     phone: '(281) 555-0707',
@@ -172,7 +173,7 @@ export const mockLeads: Lead[] = [
   },
   {
     id: 'lead-008',
-    customer_id: 'CUS-LIN008',
+    customer_id: 'SGP-0420260008',
     name: 'Linh Do',
     email: 'linh.do@gmail.com',
     phone: '(713) 555-0808',
