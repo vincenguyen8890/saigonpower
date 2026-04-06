@@ -87,15 +87,15 @@ function QuickDealModal({
         notes:               get('notes') || null,
         assigned_to:         get('assigned_to') || null,
         agent_code:          null,
-        service_address:     null,
-        esid:                null,
-        contract_start_date: null,
-        contract_end_date:   null,
+        service_address:     get('service_address') || null,
+        esid:                get('esid') || null,
+        contract_start_date: get('contract_start_date') || null,
+        contract_end_date:   get('contract_end_date') || null,
         rate_kwh:            Number(get('rate_kwh')) || null,
-        adder_kwh:           null,
+        adder_kwh:           Number(get('adder_kwh')) || null,
         term_months:         Number(get('term_months')) || null,
         product_type:        get('product_type') || null,
-        usage_kwh:           null,
+        usage_kwh:           Number(get('usage_kwh')) || null,
       })
       if (res.error) { setError(res.error); return }
       router.refresh()
@@ -119,20 +119,16 @@ function QuickDealModal({
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-          {/* Deal Title */}
-          <div>
-            <label className={L}>Deal Title *</label>
-            <input
-              name="title"
-              required
-              defaultValue={`${contact.name} – ${contact.service_type === 'commercial' ? 'Commercial' : 'Residential'}`}
-              className={C}
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
 
+          {/* Basic Info */}
           <div className="grid grid-cols-2 gap-3">
-            {/* Stage */}
+            <div className="col-span-2">
+              <label className={L}>Deal Title *</label>
+              <input name="title" required
+                defaultValue={`${contact.name} – ${contact.service_type === 'commercial' ? 'Commercial' : 'Residential'}`}
+                className={C} />
+            </div>
             <div>
               <label className={L}>Stage</label>
               <select name="stage" defaultValue="prospect" className={C}>
@@ -141,65 +137,99 @@ function QuickDealModal({
                 ))}
               </select>
             </div>
-
-            {/* Expected Close */}
             <div>
-              <label className={L}>Expected Close Date</label>
-              <input name="expected_close" type="date" className={C} />
-            </div>
-
-            {/* Supplier */}
-            <div>
-              <label className={L}>Supplier</label>
-              <select name="provider" defaultValue="" className={C}>
-                <option value="">— Select —</option>
-                {providers.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-              </select>
-            </div>
-
-            {/* Plan Name */}
-            <div>
-              <label className={L}>Plan Name</label>
-              <input name="plan_name" placeholder="e.g. Gexa Saver 12" className={C} />
-            </div>
-
-            {/* Product Type */}
-            <div>
-              <label className={L}>Product Type</label>
-              <select name="product_type" defaultValue="" className={C}>
-                <option value="">— Select —</option>
-                {PRODUCT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-
-            {/* Term */}
-            <div>
-              <label className={L}>Term (months)</label>
-              <input name="term_months" type="number" min="0" placeholder="12" className={C} />
-            </div>
-
-            {/* Rate */}
-            <div>
-              <label className={L}>Rate ($/kWh)</label>
-              <input name="rate_kwh" type="number" step="0.00001" min="0" placeholder="0.10900" className={C} />
-            </div>
-
-            {/* Sales Agent */}
-            <div>
-              <label className={L}>Sales Agent</label>
-              <select name="assigned_to" defaultValue="" className={C}>
-                <option value="">— Unassigned —</option>
-                {agents.filter(a => a.active).map(a => (
-                  <option key={a.id} value={a.email}>{a.name}</option>
-                ))}
-              </select>
+              <label className={L}>Service Type</label>
+              <input value={contact.service_type === 'commercial' ? 'Commercial' : 'Residential'} readOnly className={C + ' bg-gray-50'} />
+              <input type="hidden" name="service_type" value={contact.service_type} />
             </div>
           </div>
 
-          {/* Notes */}
+          {/* Contract Details */}
           <div>
-            <label className={L}>Notes</label>
-            <textarea name="notes" rows={2} className={C.replace('py-2.5','py-2') + ' resize-none'} placeholder="Additional notes..." />
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Contract Details</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={L}>Supplier</label>
+                <select name="provider" defaultValue="" className={C}>
+                  <option value="">— Select —</option>
+                  {providers.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={L}>Plan Name</label>
+                <input name="plan_name" placeholder="e.g. Gexa Saver 12" className={C} />
+              </div>
+              <div>
+                <label className={L}>Product Type</label>
+                <select name="product_type" defaultValue="" className={C}>
+                  <option value="">— Select —</option>
+                  {PRODUCT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={L}>Contract Term (months)</label>
+                <input name="term_months" type="number" min="0" placeholder="12" className={C} />
+              </div>
+              <div>
+                <label className={L}>Contract Rate ($/kWh)</label>
+                <input name="rate_kwh" type="number" step="0.00001" min="0" placeholder="0.109" className={C} />
+              </div>
+              <div>
+                <label className={L}>Adder ($/kWh)</label>
+                <input name="adder_kwh" type="number" step="0.001" min="0" placeholder="0.008" className={C} />
+              </div>
+              <div>
+                <label className={L}>Estimated Usage (kWh/mo)</label>
+                <input name="usage_kwh" type="number" min="0" placeholder="1200" className={C} />
+              </div>
+              <div>
+                <label className={L}>Expected Close Date</label>
+                <input name="expected_close" type="date" className={C} />
+              </div>
+              <div>
+                <label className={L}>Contract Start Date</label>
+                <input name="contract_start_date" type="date" className={C} />
+              </div>
+              <div>
+                <label className={L}>Contract End Date</label>
+                <input name="contract_end_date" type="date" className={C} />
+              </div>
+            </div>
+          </div>
+
+          {/* Property */}
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Property</p>
+            <div className="space-y-3">
+              <div>
+                <label className={L}>Service Address</label>
+                <input name="service_address" placeholder="123 Main St, Houston TX 77036" className={C} />
+              </div>
+              <div>
+                <label className={L}>ESI ID</label>
+                <input name="esid" placeholder="10089010238183693001" className={C} />
+              </div>
+            </div>
+          </div>
+
+          {/* Assignment */}
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Assignment</p>
+            <div className="space-y-3">
+              <div>
+                <label className={L}>Sales Agent</label>
+                <select name="assigned_to" defaultValue="" className={C}>
+                  <option value="">— Unassigned —</option>
+                  {agents.filter(a => a.active).map(a => (
+                    <option key={a.id} value={a.email}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={L}>Notes</label>
+                <textarea name="notes" rows={3} className={C.replace('py-2.5','py-2') + ' resize-none'} placeholder="Additional notes..." />
+              </div>
+            </div>
           </div>
 
           {error && (
@@ -212,8 +242,7 @@ function QuickDealModal({
               Cancel
             </button>
             <button type="submit" disabled={isPending}
-              className="flex-1 bg-brand-greenDark text-white py-2.5 rounded-xl text-sm hover:bg-brand-green transition-colors disabled:opacity-50 font-medium flex items-center justify-center gap-2">
-              <TrendingUp size={14} />
+              className="flex-1 bg-brand-greenDark text-white py-2.5 rounded-xl text-sm hover:bg-brand-green transition-colors disabled:opacity-50 font-medium">
               {isPending ? 'Creating...' : 'Create Deal'}
             </button>
           </div>
