@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, FileText, Settings,
   ShieldCheck, UserCheck, Zap, RefreshCw, Building2,
   TrendingUp, BarChart3, Bot, ListChecks, DollarSign,
-  Inbox, Contact2,
+  Inbox, Contact2, Sparkles,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import SignOutButton from './SignOutButton'
@@ -87,9 +87,10 @@ export default function Sidebar({
       ],
     },
     {
-      label: 'Automation',
+      label: 'Intelligence',
       items: [
-        { href: `/${locale}/crm/automation`, label: 'Automation', icon: Bot },
+        { href: `/${locale}/crm/ai`,         label: 'AI Manager',  icon: Sparkles },
+        { href: `/${locale}/crm/automation`, label: 'Automation',  icon: Bot      },
       ],
     },
   ]
