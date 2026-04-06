@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation'
 import { Pencil, X } from 'lucide-react'
 import { updateDealAction, runDealStageAutomation } from '../actions'
 import type { Deal, CRMAgent } from '@/lib/supabase/queries'
+import type { Provider } from '@/data/mock-crm'
 
-const PROVIDERS     = ['Gexa Energy', 'TXU Energy', 'Reliant Energy', 'Green Mountain Energy', 'Cirro Energy', 'Payless Power', 'Budget Power', 'Pulse Power', '4Change Energy']
 const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHTS', 'FREE WEEKENDS']
 
-export default function DealEditForm({ deal, locale, agents }: { deal: Deal; locale: string; agents: CRMAgent[] }) {
+export default function DealEditForm({ deal, locale, agents, providers }: { deal: Deal; locale: string; agents: CRMAgent[]; providers: Provider[] }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
@@ -103,7 +103,7 @@ export default function DealEditForm({ deal, locale, agents }: { deal: Deal; loc
                     <label className={L}>Supplier</label>
                     <select name="provider" defaultValue={deal.provider ?? ''} className={C}>
                       <option value="">— None —</option>
-                      {PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
+                      {providers.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                     </select>
                   </div>
                   <div>

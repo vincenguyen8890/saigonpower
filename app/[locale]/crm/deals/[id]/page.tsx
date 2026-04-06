@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, DollarSign, Target, Building2, User, TrendingUp, CheckCircle2, MapPin, Zap, Hash } from 'lucide-react'
-import { getDealById, getLeadById, getActivities, getCRMAgents } from '@/lib/supabase/queries'
+import { getDealById, getLeadById, getActivities, getCRMAgents, getProvidersFromDB } from '@/lib/supabase/queries'
 import { mockProviders } from '@/data/mock-crm'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
@@ -27,10 +27,11 @@ export default async function DealDetailPage({ params }: Props) {
   const deal = await getDealById(id)
   if (!deal) notFound()
 
-  const [lead, activities, agents] = await Promise.all([
+  const [lead, activities, agents, providers] = await Promise.all([
     deal.lead_id ? getLeadById(deal.lead_id) : Promise.resolve(null),
     deal.lead_id ? getActivities({ leadId: deal.lead_id, limit: 10 }) : getActivities({ limit: 10 }),
     getCRMAgents(),
+    getProvidersFromDB(),
   ])
 
   const provider = mockProviders.find(p => p.name === deal.provider)
@@ -68,7 +69,7 @@ export default async function DealDetailPage({ params }: Props) {
             <span className="text-xs text-gray-400">Updated {formatDate(deal.updated_at, locale)}</span>
           </div>
         </div>
-        <DealEditForm deal={deal} locale={locale} agents={agents} />
+        <DealEditForm deal={deal} locale={locale} agents={agents} providers={providers} />
       </div>
 
       {/* Stage Progress */}
