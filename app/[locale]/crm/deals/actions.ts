@@ -9,8 +9,19 @@ function bust() {
 }
 
 export async function createDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated_at'>): Promise<{ error?: string }> {
+  const url  = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? 'MISSING'
+  const key  = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'MISSING'
+  const mock = url.includes('placeholder') || url === 'MISSING'
+
+  console.log('[createDeal] url:', url.slice(0, 40), '| mock:', mock, '| key starts:', key.slice(0, 10))
+
   const result = await insertDeal(deal)
-  if (!result) return { error: 'Failed to save deal. Check server logs.' }
+
+  console.log('[createDeal] insertDeal result:', result ? 'OK id=' + (result as Deal).id : 'NULL')
+
+  if (!result) return {
+    error: `Save failed. mock=${mock} url=${url.slice(0, 40)} key=${key.slice(0, 10)}…`,
+  }
   bust()
   return {}
 }
