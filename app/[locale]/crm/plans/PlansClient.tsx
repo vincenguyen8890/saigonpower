@@ -6,12 +6,15 @@ import type { Plan } from '@/data/mock-crm'
 import PlanModal from './PlanModal'
 import { savePlanAction, deletePlanAction } from './actions'
 
+import type { Provider } from '@/data/mock-crm'
+
 interface Props {
   initialPlans: Plan[]
   isAdmin: boolean
+  providers: Provider[]
 }
 
-export default function PlansClient({ initialPlans, isAdmin }: Props) {
+export default function PlansClient({ initialPlans, isAdmin, providers: providerList }: Props) {
   const [plans, setPlans] = useState<Plan[]>(initialPlans)
   const [isPending, startTransition] = useTransition()
   const [editingPlan, setEditingPlan] = useState<Plan | null | 'new'>(null)
@@ -251,6 +254,7 @@ export default function PlansClient({ initialPlans, isAdmin }: Props) {
           plan={editingPlan === 'new' ? undefined : editingPlan}
           onClose={() => setEditingPlan(null)}
           onSave={handleSave}
+          providers={providerList}
         />
       )}
     </div>

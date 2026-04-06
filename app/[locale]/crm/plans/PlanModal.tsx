@@ -2,23 +2,21 @@
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
-import type { Plan } from '@/data/mock-crm'
-import { mockProviders } from '@/data/mock-crm'
+import type { Plan, Provider } from '@/data/mock-crm'
 
 interface Props {
   plan?: Plan
   onClose: () => void
   onSave: (plan: Plan) => void
+  providers: Provider[]
 }
 
-const PROVIDERS = mockProviders.filter(p => p.status === 'active')
-
-export default function PlanModal({ plan, onClose, onSave }: Props) {
+export default function PlanModal({ plan, onClose, onSave, providers }: Props) {
   const isEdit = !!plan
 
   const [form, setForm] = useState({
-    provider_id:      plan?.provider_id      ?? PROVIDERS[0]?.id ?? '',
-    provider_name:    plan?.provider_name    ?? PROVIDERS[0]?.name ?? '',
+    provider_id:      plan?.provider_id      ?? providers[0]?.id ?? '',
+    provider_name:    plan?.provider_name    ?? providers[0]?.name ?? '',
     name:             plan?.name             ?? '',
     rate_kwh:         plan?.rate_kwh         ?? 0.109,
     term_months:      plan?.term_months      ?? 12,
@@ -30,7 +28,7 @@ export default function PlanModal({ plan, onClose, onSave }: Props) {
   })
 
   function handleProviderChange(id: string) {
-    const prov = PROVIDERS.find(p => p.id === id)
+    const prov = providers.find(p => p.id === id)
     setForm(f => ({ ...f, provider_id: id, provider_name: prov?.name ?? '' }))
   }
 
@@ -74,7 +72,7 @@ export default function PlanModal({ plan, onClose, onSave }: Props) {
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green"
               required
             >
-              {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
 
