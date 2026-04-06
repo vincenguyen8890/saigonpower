@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { motion, useMotionValue, useSpring, useTransform, useInView, animate } from 'framer-motion'
 import { Phone, ArrowRight, MapPin, Zap, TrendingDown, CheckCircle2, Star } from 'lucide-react'
 import { isValidZip } from '@/lib/utils'
+
+const HeroScene = dynamic(() => import('@/components/3d/HeroScene'), { ssr: false })
 
 /* ── Animated counter ───────────────────────────────── */
 function CountUp({ to, prefix = '', suffix = '' }: { to: number; prefix?: string; suffix?: string }) {
@@ -261,14 +264,22 @@ export default function Hero() {
             </motion.div>
           </div>
 
-          {/* ── Right: 3D card ── */}
+          {/* ── Right: 3D scene (desktop) / static card (mobile) ── */}
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="hidden lg:flex justify-center items-center"
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="relative"
           >
-            <PlanCard />
+            {/* 3D canvas — hidden on mobile */}
+            <div className="hidden lg:block w-full h-[540px]">
+              <HeroScene />
+            </div>
+
+            {/* Static CSS card fallback — mobile only */}
+            <div className="lg:hidden flex justify-center items-center">
+              <PlanCard />
+            </div>
           </motion.div>
         </div>
       </div>
