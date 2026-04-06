@@ -483,7 +483,7 @@ export default function ContactsTable({ contacts, locale, currentUserEmail, agen
                             {contact.name}
                           </Link>
                           <p className="text-xs text-gray-400">
-                            {contact.customer_id ?? '—'} · ZIP {contact.zip}
+                            {contact.customer_id ?? '—'}
                           </p>
                         </div>
                       </div>
