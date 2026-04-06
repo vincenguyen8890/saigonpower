@@ -18,7 +18,7 @@ export default function PlanModal({ plan, onClose, onSave, providers }: Props) {
     provider_id:      plan?.provider_id      ?? providers[0]?.id ?? '',
     provider_name:    plan?.provider_name    ?? providers[0]?.name ?? '',
     name:             plan?.name             ?? '',
-    rate_kwh:         plan?.rate_kwh         ?? 0.109,
+    rate_kwh:         plan?.rate_kwh         ?? 0.10900,
     term_months:      plan?.term_months      ?? 12,
     service_type:     plan?.service_type     ?? ('residential' as Plan['service_type']),
     cancellation_fee: plan?.cancellation_fee ?? (null as number | null),
@@ -95,16 +95,16 @@ export default function PlanModal({ plan, onClose, onSave, providers }: Props) {
               <label className="block text-xs font-medium text-gray-600 mb-1">Rate ($/kWh)</label>
               <input
                 type="number"
-                step="0.001"
-                min="0.05"
-                max="0.50"
+                step="0.00001"
+                min="0.00001"
+                max="0.99999"
                 value={form.rate_kwh}
                 onChange={e => setForm(f => ({ ...f, rate_kwh: parseFloat(e.target.value) }))}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green"
                 required
               />
               <p className="text-xs text-gray-400 mt-1">
-                {form.rate_kwh ? `${(Number(form.rate_kwh) * 100).toFixed(2)}¢/kWh` : ''}
+                {form.rate_kwh ? `${(Number(form.rate_kwh) * 100).toFixed(5)}¢/kWh` : ''}
               </p>
             </div>
             <div>
