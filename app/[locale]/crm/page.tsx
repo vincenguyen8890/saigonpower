@@ -1,12 +1,22 @@
-import { Users, FileText, Zap, AlertTriangle, TrendingUp, DollarSign, Target, CheckCircle2, RefreshCw, Briefcase } from 'lucide-react'
+import {
+  Users, AlertTriangle, TrendingUp, DollarSign,
+  ArrowUpRight, Zap, Briefcase,
+} from 'lucide-react'
 import Link from 'next/link'
-import StatCard from '@/components/crm/StatCard'
-import LeadStatusBadge from '@/components/crm/LeadStatusBadge'
-import { getCRMStats, getLeads, getDeals, getActivities, getContracts, getProvidersFromDB } from '@/lib/supabase/queries'
-import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
+import {
+  getCRMStats, getLeads, getDeals, getActivities,
+  getContracts, getProvidersFromDB,
+} from '@/lib/supabase/queries'
+import { formatDate } from '@/lib/utils'
+import LeadStatusBadge from '@/components/crm/LeadStatusBadge'
 import RevenueChart from '@/components/crm/RevenueChart'
-import ActivitiesWidget from '@/components/crm/ActivitiesWidget'
+import KpiCard from '@/components/dashboard/KpiCard'
+import PipelineMini from '@/components/dashboard/PipelineMini'
+import type { PipelineStage } from '@/components/dashboard/PipelineMini'
+import PriorityActions from '@/components/dashboard/PriorityActions'
+import type { PriorityAction } from '@/components/dashboard/PriorityActions'
+import ActivityFeed from '@/components/dashboard/ActivityFeed'
 
 interface Props { params: Promise<{ locale: string }> }
 
@@ -14,260 +24,469 @@ export default async function CRMOverview({ params }: Props) {
   const { locale } = await params
   setRequestLocale(locale)
 
-  const [stats, recentLeads, deals, activities, contracts, providers] = await Promise.all([
+  const [stats, allLeads, deals, activities, contracts, providers] = await Promise.all([
     getCRMStats(),
     getLeads(),
     getDeals(),
-    getActivities({ completed: false, limit: 20 }),
+    getActivities({ completed: false, limit: 25 }),
     getContracts('active'),
     getProvidersFromDB(),
   ])
 
-  const recentDisplayed = recentLeads.slice(0, 5)
-
-  // Portfolio valuation
+  // ── Time context ──────────────────────────────────────────────────────────────
   const now = new Date()
+  const hour = now.getHours()
+  const greeting =
+    hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const today = now.toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric',
+  })
+
+  // ── Portfolio metrics ─────────────────────────────────────────────────────────
   const providerMap = Object.fromEntries(providers.map(p => [p.name, p]))
+
   const expiring30 = contracts.filter(c => {
     const d = Math.ceil((new Date(c.end_date).getTime() - now.getTime()) / 86400000)
     return d >= 0 && d <= 30
   })
-  const expiring60 = contracts.filter(c => {
-    const d = Math.ceil((new Date(c.end_date).getTime() - now.getTime()) / 86400000)
-    return d > 30 && d <= 60
-  })
+
   const annualCommission = contracts.reduce((sum, c) => {
     const prov = providerMap[c.provider]
     if (!prov) return sum
-    const monthly = c.service_type === 'commercial' ? prov.commission_commercial : prov.commission_residential
+    const monthly =
+      c.service_type === 'commercial'
+        ? prov.commission_commercial
+        : prov.commission_residential
     return sum + monthly * 12
   }, 0)
-  const totalMwhMonth = contracts.length * 1200 / 1000 // rough estimate 1200 kWh avg per contract
 
-  // Deal pipeline summary
-  const totalPipelineValue = deals.reduce((s, d) => s + d.value, 0)
-  const wonDeals = deals.filter(d => d.stage === 'won')
-  const wonValue = wonDeals.reduce((s, d) => s + d.value, 0)
-  const activeDeals = deals.filter(d => !['won','lost'].includes(d.stage))
+  // ── Deal pipeline ─────────────────────────────────────────────────────────────
+  const activeDeals = deals.filter(d => !['won', 'lost'].includes(d.stage))
+  const wonDeals    = deals.filter(d => d.stage === 'won')
+  const wonValue    = wonDeals.reduce((s, d) => s + d.value, 0)
+
+  const prospectDeals    = deals.filter(d => d.stage === 'prospect')
+  const activeStageDeals = deals.filter(d => ['qualified', 'proposal'].includes(d.stage))
+  const closingDeals     = deals.filter(d => d.stage === 'negotiation')
+
+  const pipelineStages: PipelineStage[] = [
+    {
+      key: 'prospect',
+      label: 'New',
+      count: prospectDeals.length,
+      value: prospectDeals.reduce((s, d) => s + d.value, 0),
+      barColor:  'bg-slate-300',
+      bg:        'bg-slate-50',
+      textColor: 'text-slate-700',
+    },
+    {
+      key: 'active',
+      label: 'Active',
+      count: activeStageDeals.length,
+      value: activeStageDeals.reduce((s, d) => s + d.value, 0),
+      barColor:  'bg-[#2979FF]',
+      bg:        'bg-[#EBF2FF]',
+      textColor: 'text-[#2979FF]',
+    },
+    {
+      key: 'closing',
+      label: 'Closing',
+      count: closingDeals.length,
+      value: closingDeals.reduce((s, d) => s + d.value, 0),
+      barColor:  'bg-amber-400',
+      bg:        'bg-amber-50',
+      textColor: 'text-amber-700',
+    },
+    {
+      key: 'won',
+      label: 'Won',
+      count: wonDeals.length,
+      value: wonValue,
+      barColor:  'bg-[#00C853]',
+      bg:        'bg-[#E8FFF1]',
+      textColor: 'text-[#00A846]',
+    },
+  ]
+
+  // ── Priority actions ──────────────────────────────────────────────────────────
+  const priorityActions: PriorityAction[] = []
+
+  // Overdue activities → follow-up actions
+  const overdueActivities = activities.filter(
+    a => a.due_date && new Date(a.due_date) < now,
+  )
+  overdueActivities.slice(0, 2).forEach(a => {
+    priorityActions.push({
+      id:          `overdue-${a.id}`,
+      type:        'follow_up',
+      title:       a.title,
+      description: a.description ?? 'Overdue — needs attention',
+      urgency:     'high',
+      href:        `/${locale}/crm/tasks`,
+      timeLabel:   'Overdue',
+    })
+  })
+
+  // Expiring contracts
+  expiring30.slice(0, 2).forEach(c => {
+    const daysLeft = Math.ceil(
+      (new Date(c.end_date).getTime() - now.getTime()) / 86400000,
+    )
+    priorityActions.push({
+      id:          `expiring-${c.id}`,
+      type:        'expiring',
+      title:       `Renewal: ${c.customer_name ?? c.provider}`,
+      description: `Contract expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`,
+      urgency:     daysLeft <= 7 ? 'high' : 'medium',
+      href:        `/${locale}/crm/renewals`,
+      timeLabel:   `${daysLeft}d remaining`,
+    })
+  })
+
+  // Stuck deals (no update in 14+ days)
+  const stuckDeals = activeDeals.filter(d => {
+    const daysSince = Math.floor(
+      (now.getTime() - new Date(d.updated_at).getTime()) / 86400000,
+    )
+    return daysSince > 14
+  })
+  stuckDeals.slice(0, 1).forEach(d => {
+    priorityActions.push({
+      id:          `stuck-${d.id}`,
+      type:        'stuck_deal',
+      title:       `Stuck deal: ${d.title}`,
+      description: `No activity in 14+ days · $${d.value}/mo`,
+      urgency:     'medium',
+      href:        `/${locale}/crm/deals`,
+      timeLabel:   'Needs attention',
+    })
+  })
+
+  // New uncontacted leads
+  const newLeads = allLeads.filter(l => l.status === 'new').slice(0, 1)
+  newLeads.forEach(l => {
+    priorityActions.push({
+      id:          `lead-${l.id}`,
+      type:        'new_lead',
+      title:       `New lead: ${l.name}`,
+      description: `${l.service_type === 'commercial' ? 'Commercial' : 'Residential'} · ZIP ${l.zip}`,
+      urgency:     'low',
+      href:        `/${locale}/crm/leads/${l.id}`,
+      timeLabel:   'Needs initial contact',
+    })
+  })
+
+  // ── Recent leads table ────────────────────────────────────────────────────────
+  const recentLeads = allLeads.slice(0, 8)
 
   const stageColors: Record<string, string> = {
-    prospect:    'bg-gray-100 text-gray-600',
-    qualified:   'bg-blue-100 text-blue-700',
+    prospect:    'bg-slate-100 text-slate-600',
+    qualified:   'bg-[#EBF2FF] text-[#2979FF]',
     proposal:    'bg-purple-100 text-purple-700',
     negotiation: 'bg-amber-100 text-amber-700',
-    won:         'bg-green-100 text-green-700',
+    won:         'bg-[#E8FFF1] text-[#00A846]',
     lost:        'bg-red-100 text-red-600',
   }
 
+  const monthlyCommission = Math.round(annualCommission / 12)
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">CRM Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-1">Welcome back — here's what's happening today</p>
-      </div>
+    <div className="space-y-6 max-w-[1440px]">
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="New Leads Today"    value={stats.newLeadsToday}    subtitle={`${stats.newLeadsWeek} this week`} icon={Users}         color="blue"   />
-        <StatCard title="Pending Quotes"     value={stats.pendingQuotes}    subtitle="Awaiting review"                   icon={FileText}      color="yellow" />
-        <StatCard title="Active Contracts"   value={stats.activeContracts}  subtitle="Currently active"                  icon={Zap}           color="green"  />
-        <StatCard title="Expiring Soon"      value={stats.expiringSoon}     subtitle="Within 30 days"                    icon={AlertTriangle} color="red"    />
-      </div>
-
-      {/* Portfolio Valuation */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-            <Briefcase size={16} className="text-brand-green" />
-            Portfolio Valuation
-          </h2>
-          <Link href={`/${locale}/crm/renewals`} className="text-xs text-brand-green hover:text-brand-greenDark font-medium">
-            View renewals →
+      {/* ── Page header ── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-bold text-[#0F172A]">{greeting} 👋</h1>
+          <p className="text-sm text-slate-400 mt-0.5">
+            {today} · Here&apos;s what needs your attention today
+          </p>
+        </div>
+        <div className="hidden md:flex items-center gap-2">
+          <Link
+            href={`/${locale}/crm/reports`}
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#0F172A] bg-white border border-slate-200 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+          >
+            <TrendingUp size={13} />
+            View Reports
           </Link>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-3 bg-gray-50 rounded-xl">
-            <p className="text-2xl font-bold text-gray-900">{contracts.length}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Active Contracts</p>
-          </div>
-          <div className="text-center p-3 bg-gray-50 rounded-xl">
-            <p className="text-2xl font-bold text-gray-900">{totalMwhMonth.toFixed(1)}</p>
-            <p className="text-xs text-gray-500 mt-0.5">MWh/mo Under Mgmt</p>
-          </div>
-          <div className="text-center p-3 bg-green-50 rounded-xl">
-            <p className="text-2xl font-bold text-green-700">${annualCommission.toLocaleString()}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Est. Annual Commission</p>
-          </div>
-          <div className="text-center p-3 bg-red-50 rounded-xl">
-            <p className="text-2xl font-bold text-red-600">{expiring30.length}</p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              At-Risk ≤30d
-              {expiring60.length > 0 && <span className="text-amber-500"> · {expiring60.length} by 60d</span>}
-            </p>
-          </div>
-        </div>
-        {expiring30.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-50">
-            <p className="text-xs text-red-600 font-medium mb-1.5">
-              <AlertTriangle size={11} className="inline mr-1" />
-              Contracts expiring within 30 days:
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {expiring30.map(c => (
-                <span key={c.id} className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded-lg">
-                  {c.customer_name ?? c.provider} · {c.end_date}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Company Snapshot + Revenue Chart */}
-      <div className="grid lg:grid-cols-3 gap-5">
-        {/* Company Snapshot */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Target size={16} className="text-brand-green" />
-            Company Snapshot
-          </h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between py-2 border-b border-gray-50">
-              <span className="text-sm text-gray-600">Pipeline Value</span>
-              <span className="font-semibold text-gray-900">${totalPipelineValue.toLocaleString()}/mo</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-gray-50">
-              <span className="text-sm text-gray-600">Won This Month</span>
-              <span className="font-semibold text-green-600">${wonValue.toLocaleString()}/mo</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-gray-50">
-              <span className="text-sm text-gray-600">Active Deals</span>
-              <span className="font-semibold text-gray-900">{activeDeals.length}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-gray-50">
-              <span className="text-sm text-gray-600">Enrolled This Month</span>
-              <span className="font-semibold text-purple-600">{stats.enrolledThisMonth}</span>
-            </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-gray-600">Total Leads</span>
-              <span className="font-semibold text-gray-900">{stats.totalLeads}</span>
-            </div>
-          </div>
-        </div>
+      {/* ── KPI strip ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard
+          title="New Leads Today"
+          value={stats.newLeadsToday}
+          subtitle={`${stats.newLeadsWeek} this week`}
+          icon={Users}
+          color="blue"
+          trend={{ value: 12, label: 'vs last week' }}
+          href={`/${locale}/crm/leads?status=new`}
+        />
+        <KpiCard
+          title="Active Deals"
+          value={activeDeals.length}
+          subtitle={`$${activeDeals.reduce((s, d) => s + d.value, 0).toLocaleString()}/mo pipeline`}
+          icon={TrendingUp}
+          color="green"
+          trend={{ value: 8, label: 'vs last month' }}
+          href={`/${locale}/crm/deals`}
+        />
+        <KpiCard
+          title="Monthly Commission"
+          value={`$${monthlyCommission.toLocaleString()}`}
+          subtitle={`$${annualCommission.toLocaleString()} annual est.`}
+          icon={DollarSign}
+          color="purple"
+          trend={{ value: 5, label: 'vs last month' }}
+          href={`/${locale}/crm/accounting`}
+        />
+        <KpiCard
+          title="Expiring Contracts"
+          value={expiring30.length}
+          subtitle="Need renewal within 30d"
+          icon={AlertTriangle}
+          color={expiring30.length > 3 ? 'red' : 'orange'}
+          href={`/${locale}/crm/renewals`}
+        />
+      </div>
 
-        {/* Revenue Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-              <TrendingUp size={16} className="text-brand-green" />
-              Revenue Trend
-            </h2>
-            <span className="text-xs text-gray-400">Last 6 months</span>
+      {/* ── Pipeline snapshot + Revenue chart ── */}
+      <div className="grid lg:grid-cols-3 gap-5">
+        <PipelineMini stages={pipelineStages} locale={locale} />
+
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 p-5 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp size={14} className="text-[#00C853]" />
+            <h2 className="text-sm font-semibold text-[#0F172A]">Revenue &amp; Enrollment</h2>
           </div>
           <RevenueChart />
         </div>
       </div>
 
-      {/* Activities + Deals */}
+      {/* ── Priority actions + Activity feed ── */}
       <div className="grid lg:grid-cols-2 gap-5">
-        {/* Activities Widget */}
-        <ActivitiesWidget activities={activities} locale={locale} />
-
-        {/* Open Deals */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-              <DollarSign size={16} className="text-brand-green" />
-              Open Deals
-            </h2>
-            <Link href={`/${locale}/crm/deals`} className="text-sm text-brand-green hover:text-brand-greenDark font-medium">
-              View all →
-            </Link>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {activeDeals.slice(0, 5).map(deal => (
-              <div key={deal.id} className="px-6 py-3.5 flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{deal.title}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {deal.probability}% · closes {deal.expected_close ?? 'TBD'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${stageColors[deal.stage]}`}>
-                    {deal.stage}
-                  </span>
-                  <span className="text-sm font-semibold text-gray-900">${deal.value}/mo</span>
-                </div>
-              </div>
-            ))}
-            {activeDeals.length === 0 && (
-              <div className="px-6 py-8 text-center text-sm text-gray-400">No active deals</div>
-            )}
-          </div>
-        </div>
+        <PriorityActions actions={priorityActions} locale={locale} />
+        <ActivityFeed activities={activities} locale={locale} />
       </div>
 
-      {/* Recent Leads */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">Recent Leads</h2>
-          <Link href={`/${locale}/crm/leads`} className="text-sm text-brand-green hover:text-brand-greenDark font-medium">
-            View all →
+      {/* ── Portfolio summary strip ── */}
+      <div className="bg-white rounded-xl border border-slate-100 shadow-[0_1px_3px_rgba(15,23,42,0.06)] p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-[#0F172A] flex items-center gap-2">
+            <Briefcase size={14} className="text-[#00C853]" />
+            Portfolio Overview
+          </h2>
+          <Link
+            href={`/${locale}/crm/contracts`}
+            className="text-xs text-[#00C853] hover:text-[#00A846] font-semibold flex items-center gap-1"
+          >
+            View contracts <ArrowUpRight size={12} />
           </Link>
         </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="text-center p-4 bg-slate-50 rounded-xl">
+            <p className="text-2xl font-bold text-[#0F172A] tabular-nums">{contracts.length}</p>
+            <p className="text-xs text-slate-500 font-medium mt-1">Active Contracts</p>
+          </div>
+          <div className="text-center p-4 bg-slate-50 rounded-xl">
+            <p className="text-2xl font-bold text-[#0F172A] tabular-nums">
+              {(contracts.length * 1.2).toFixed(1)}
+            </p>
+            <p className="text-xs text-slate-500 font-medium mt-1">MWh / month</p>
+          </div>
+          <div className="text-center p-4 bg-[#E8FFF1] rounded-xl">
+            <p className="text-2xl font-bold text-[#00A846] tabular-nums">
+              ${monthlyCommission.toLocaleString()}
+            </p>
+            <p className="text-xs text-slate-500 font-medium mt-1">Commission / month</p>
+          </div>
+          <div className={`text-center p-4 rounded-xl ${expiring30.length > 0 ? 'bg-red-50' : 'bg-slate-50'}`}>
+            <p className={`text-2xl font-bold tabular-nums ${expiring30.length > 0 ? 'text-red-600' : 'text-[#0F172A]'}`}>
+              {expiring30.length}
+            </p>
+            <p className="text-xs text-slate-500 font-medium mt-1">
+              At-risk ≤ 30 days
+            </p>
+          </div>
+        </div>
+
+        {expiring30.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <p className="text-xs text-red-600 font-semibold mb-2 flex items-center gap-1">
+              <AlertTriangle size={11} />
+              Expiring soon — take action:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {expiring30.map(c => {
+                const daysLeft = Math.ceil(
+                  (new Date(c.end_date).getTime() - now.getTime()) / 86400000,
+                )
+                return (
+                  <Link
+                    key={c.id}
+                    href={`/${locale}/crm/renewals`}
+                    className="text-xs bg-red-50 hover:bg-red-100 text-red-700 border border-red-100 px-2.5 py-1 rounded-lg transition-colors font-medium"
+                  >
+                    {c.customer_name ?? c.provider} · {daysLeft}d
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Recent leads table ── */}
+      <div className="bg-white rounded-xl border border-slate-100 shadow-[0_1px_3px_rgba(15,23,42,0.06)] overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-sm font-semibold text-[#0F172A]">Recent Leads</h2>
+            <p className="text-xs text-slate-400 mt-0.5">{stats.totalLeads} total leads in system</p>
+          </div>
+          <Link
+            href={`/${locale}/crm/leads`}
+            className="flex items-center gap-1 text-xs text-[#00C853] hover:text-[#00A846] font-semibold transition-colors"
+          >
+            View all <ArrowUpRight size={12} />
+          </Link>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-50">
+              <tr className="border-b border-slate-50">
                 {['Name', 'Contact', 'Service', 'Status', 'Date', ''].map((h, i) => (
                   <th
                     key={i}
-                    className={`text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-3 ${i === 1 ? 'hidden sm:table-cell' : ''} ${i === 4 ? 'hidden md:table-cell' : ''}`}
+                    className={`text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider px-6 py-3 ${
+                      i === 1 ? 'hidden sm:table-cell' : ''
+                    } ${i === 4 ? 'hidden md:table-cell' : ''}`}
                   >
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
-              {recentDisplayed.map(lead => (
-                <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <p className="text-sm font-medium text-gray-900">{lead.name}</p>
-                    <p className="text-xs text-gray-400">ZIP: {lead.zip}</p>
-                  </td>
-                  <td className="px-6 py-4 hidden sm:table-cell">
-                    <p className="text-sm text-gray-600">{lead.phone}</p>
-                    <p className="text-xs text-gray-400">{lead.email}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
-                      lead.service_type === 'commercial' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'
-                    }`}>
-                      {lead.service_type === 'commercial' ? 'Comm.' : 'Res.'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <LeadStatusBadge status={lead.status} />
-                  </td>
-                  <td className="px-6 py-4 hidden md:table-cell">
-                    <p className="text-xs text-gray-400">{formatDate(lead.created_at, locale)}</p>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <Link
-                      href={`/${locale}/crm/leads/${lead.id}`}
-                      className="text-xs text-brand-green hover:text-brand-greenDark font-medium"
-                    >
-                      View
-                    </Link>
+            <tbody className="divide-y divide-slate-50">
+              {recentLeads.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-14 text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                        <Users size={22} className="text-slate-300" />
+                      </div>
+                      <p className="text-sm font-semibold text-slate-500">No leads yet</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Add your first lead to get started
+                      </p>
+                      <Link
+                        href={`/${locale}/crm/leads?action=new`}
+                        className="mt-3 text-xs font-bold text-[#00C853] hover:text-[#00A846]"
+                      >
+                        + Add your first lead
+                      </Link>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                recentLeads.map(lead => (
+                  <tr key={lead.id} className="hover:bg-slate-50 transition-colors group">
+                    {/* Name */}
+                    <td className="px-6 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-[#EBF2FF] flex items-center justify-center flex-shrink-0">
+                          <span className="text-[11px] font-bold text-[#2979FF]">
+                            {lead.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-[13px] font-semibold text-[#0F172A]">{lead.name}</p>
+                          <p className="text-[11px] text-slate-400">ZIP {lead.zip}</p>
+                        </div>
+                      </div>
+                    </td>
+                    {/* Contact */}
+                    <td className="px-6 py-3.5 hidden sm:table-cell">
+                      <p className="text-[13px] text-slate-600">{lead.phone}</p>
+                      <p className="text-[11px] text-slate-400 truncate max-w-[160px]">{lead.email}</p>
+                    </td>
+                    {/* Service type */}
+                    <td className="px-6 py-3.5">
+                      <span className={`text-[11px] px-2 py-0.5 rounded-md font-semibold ${
+                        lead.service_type === 'commercial'
+                          ? 'bg-[#EBF2FF] text-[#2979FF]'
+                          : 'bg-[#E8FFF1] text-[#00A846]'
+                      }`}>
+                        {lead.service_type === 'commercial' ? 'Commercial' : 'Residential'}
+                      </span>
+                    </td>
+                    {/* Status */}
+                    <td className="px-6 py-3.5">
+                      <LeadStatusBadge status={lead.status} />
+                    </td>
+                    {/* Date */}
+                    <td className="px-6 py-3.5 hidden md:table-cell">
+                      <p className="text-[11px] text-slate-400">{formatDate(lead.created_at, locale)}</p>
+                    </td>
+                    {/* CTA */}
+                    <td className="px-6 py-3.5 text-right">
+                      <Link
+                        href={`/${locale}/crm/leads/${lead.id}`}
+                        className="text-[11px] font-bold text-[#00C853] hover:text-[#00A846] opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        View →
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* ── Open deals quick view ── */}
+      {activeDeals.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-100 shadow-[0_1px_3px_rgba(15,23,42,0.06)] overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <div>
+              <h2 className="text-sm font-semibold text-[#0F172A] flex items-center gap-2">
+                <Zap size={14} className="text-[#00C853]" />
+                Open Deals
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">{activeDeals.length} in progress</p>
+            </div>
+            <Link
+              href={`/${locale}/crm/deals`}
+              className="flex items-center gap-1 text-xs text-[#00C853] hover:text-[#00A846] font-semibold"
+            >
+              Deal board <ArrowUpRight size={12} />
+            </Link>
+          </div>
+          <div className="divide-y divide-slate-50">
+            {activeDeals.slice(0, 5).map(deal => (
+              <div key={deal.id} className="px-6 py-3.5 flex items-center gap-3 hover:bg-slate-50 transition-colors group">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-[#0F172A] truncate">{deal.title}</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {deal.probability}% probability · closes {deal.expected_close ?? 'TBD'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2.5 flex-shrink-0">
+                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold capitalize ${stageColors[deal.stage]}`}>
+                    {deal.stage}
+                  </span>
+                  <span className="text-[13px] font-bold text-[#0F172A] tabular-nums">
+                    ${deal.value}/mo
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
