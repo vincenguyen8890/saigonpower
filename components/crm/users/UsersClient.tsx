@@ -343,7 +343,7 @@ export default function UsersClient({ agents: initial, currentEmail }: UsersClie
         </div>
 
         {/* Stats strip */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           {[
             { label: 'Total Users', value: agents.length, bg: 'bg-white', text: 'text-[#0F172A]' },
             { label: 'Admins',      value: adminCount,    bg: 'bg-amber-50', text: 'text-amber-700' },

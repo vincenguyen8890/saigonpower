@@ -49,7 +49,7 @@ export default function PipelineMini({ stages, locale }: PipelineMiniProps) {
       </div>
 
       {/* Stage grid */}
-      <div className="grid grid-cols-4 gap-2 flex-1">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-1">
         {stages.map(s => (
           <div key={s.key} className={`${s.bg} rounded-lg p-3 text-center flex flex-col items-center justify-center`}>
             <p className={`text-xl font-bold ${s.textColor} tabular-nums`}>{s.count}</p>

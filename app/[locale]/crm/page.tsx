@@ -284,7 +284,7 @@ export default async function CRMOverview({ params }: Props) {
             View contracts <ArrowUpRight size={12} />
           </Link>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div className="text-center p-4 bg-slate-50 rounded-xl">
             <p className="text-2xl font-bold text-[#0F172A] tabular-nums">{contracts.length}</p>
             <p className="text-xs text-slate-500 font-medium mt-1">Active Contracts</p>

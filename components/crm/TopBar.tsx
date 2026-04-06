@@ -53,7 +53,7 @@ export default function TopBar({ locale, email, isAdmin, notifications }: TopBar
   }, [])
 
   return (
-    <header className="h-14 bg-white border-b border-slate-100 flex items-center gap-3 px-6 flex-shrink-0">
+    <header className="hidden lg:flex h-14 bg-white border-b border-slate-100 items-center gap-3 px-6 flex-shrink-0">
       {/* Page label */}
       <div className="hidden md:block w-32 flex-shrink-0">
         <p className="text-sm font-semibold text-[#0F172A]">{pageTitle}</p>

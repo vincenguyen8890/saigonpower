@@ -86,7 +86,7 @@ export default function RevenueChart() {
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Metric toggle */}
           <div className="flex bg-slate-50 rounded-lg p-0.5 gap-0.5">
             {metrics.map(m => (

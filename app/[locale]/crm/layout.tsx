@@ -114,7 +114,7 @@ export default async function CRMLayout({ children, params }: Props) {
           notifications={notifications}
         />
         <main className="flex-1 overflow-y-auto">
-          <div className="p-5 lg:p-6">
+          <div className="p-4 lg:p-6">
             {children}
           </div>
         </main>
