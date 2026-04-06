@@ -289,6 +289,20 @@ export async function getDeals(stage?: string): Promise<Deal[]> {
   } catch { return mockDeals }
 }
 
+export async function getDealsByLead(leadId: string): Promise<Deal[]> {
+  if (useMock()) return mockDeals.filter(d => d.lead_id === leadId)
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('deals') as any)
+      .select('*')
+      .eq('lead_id', leadId)
+      .order('updated_at', { ascending: false })
+    if (error) throw error
+    return data ?? []
+  } catch { return [] }
+}
+
 export async function insertDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated_at'>): Promise<Deal | null> {
   if (useMock()) return { ...deal, id: `d-${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
 

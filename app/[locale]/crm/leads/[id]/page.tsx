@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Phone, Mail, MapPin, Globe, User, FileText, Calendar, CheckCircle2, Clock, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Phone, Mail, MapPin, Globe, User, FileText, Calendar, CheckCircle2, Clock, RefreshCw, TrendingUp } from 'lucide-react'
 import LeadStatusBadge from '@/components/crm/LeadStatusBadge'
 import LeadStatusSelect from '@/components/crm/LeadStatusSelect'
-import { getLeadById, getQuotesByLead, getActivities } from '@/lib/supabase/queries'
+import { getLeadById, getQuotesByLead, getActivities, getDealsByLead } from '@/lib/supabase/queries'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
 import NotesFormComponent from './NotesForm'
@@ -30,10 +30,11 @@ export default async function LeadDetailPage({ params }: Props) {
   const { locale, id } = await params
   setRequestLocale(locale)
 
-  const [lead, quotes, activities] = await Promise.all([
+  const [lead, quotes, activities, deals] = await Promise.all([
     getLeadById(id),
     getQuotesByLead(id),
     getActivities({ leadId: id, limit: 20 }),
+    getDealsByLead(id),
   ])
   if (!lead) notFound()
 
@@ -135,6 +136,60 @@ export default async function LeadDetailPage({ params }: Props) {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Linked Deals */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <TrendingUp size={16} className="text-brand-green" />
+                Deals
+                {deals.length > 0 && (
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                    {deals.length}
+                  </span>
+                )}
+              </h2>
+              <Link
+                href={`/${locale}/crm/deals`}
+                className="text-xs text-brand-green hover:text-brand-greenDark font-medium"
+              >
+                View all deals →
+              </Link>
+            </div>
+            {deals.length === 0 ? (
+              <p className="text-sm text-gray-400 py-2 text-center">No deals yet</p>
+            ) : (
+              <div className="space-y-2">
+                {deals.map(deal => {
+                  const stageColors: Record<string, string> = {
+                    prospect: 'bg-gray-100 text-gray-600',
+                    qualified: 'bg-blue-100 text-blue-700',
+                    proposal: 'bg-purple-100 text-purple-700',
+                    negotiation: 'bg-amber-100 text-amber-700',
+                    won: 'bg-green-100 text-green-700',
+                    lost: 'bg-red-100 text-red-600',
+                  }
+                  return (
+                    <Link
+                      key={deal.id}
+                      href={`/${locale}/crm/deals/${deal.id}`}
+                      className="flex items-center justify-between p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors group"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-brand-greenDark">{deal.title}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{deal.provider ?? '—'} {deal.plan_name ? `· ${deal.plan_name}` : ''}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${stageColors[deal.stage] ?? stageColors.prospect}`}>
+                          {deal.stage}
+                        </span>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Activities */}
