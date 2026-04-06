@@ -10,6 +10,7 @@ import {
   TrendingUp, BarChart3, Bot, ListChecks, DollarSign, Inbox, Contact2,
 } from 'lucide-react'
 import NotificationBell from './NotificationBell'
+import SignOutButton from './SignOutButton'
 import type { CRMNotification } from './NotificationBell'
 
 interface NavItem {
@@ -208,13 +209,7 @@ export default function MobileNavDrawer({ locale, email, isAdmin, notifications 
               </div>
               <p className="text-white text-xs font-medium truncate">{email}</p>
             </div>
-            <form action="/api/auth/signout" method="POST">
-              <input type="hidden" name="locale" value={locale} />
-              <button type="submit" className="mt-1 flex items-center gap-1.5 text-green-300 hover:text-white text-xs transition-colors">
-                <LogOut size={13} />
-                Sign Out
-              </button>
-            </form>
+            <SignOutButton locale={locale} />
           </div>
         </div>
       </div>

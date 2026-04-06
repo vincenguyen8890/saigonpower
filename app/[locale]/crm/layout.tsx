@@ -12,6 +12,7 @@ import type { Metadata } from 'next'
 import { getLeads, getContracts, getActivities } from '@/lib/supabase/queries'
 import NotificationBell from '@/components/crm/NotificationBell'
 import MobileNavDrawer from '@/components/crm/MobileNavDrawer'
+import SignOutButton from '@/components/crm/SignOutButton'
 import type { CRMNotification } from '@/components/crm/NotificationBell'
 
 interface Props {
@@ -216,16 +217,7 @@ export default async function CRMLayout({ children, params }: Props) {
               </div>
               <p className="text-white text-xs font-medium truncate">{email}</p>
             </div>
-            <form action="/api/auth/signout" method="POST">
-              <input type="hidden" name="locale" value={locale} />
-              <button
-                type="submit"
-                className="mt-1 flex items-center gap-1.5 text-green-300 hover:text-white text-xs transition-colors"
-              >
-                <LogOut size={13} />
-                Sign Out
-              </button>
-            </form>
+            <SignOutButton locale={locale} />
           </div>
         </div>
       </aside>
