@@ -36,6 +36,7 @@ export default function DealEditForm({ deal, locale, agents, providers }: { deal
         rate_kwh:            Number(get('rate_kwh'))    || null,
         adder_kwh:           Number(get('adder_kwh'))   || null,
         term_months:         Number(get('term_months')) || null,
+        service_order:       get('service_order')        || null,
         product_type:        get('product_type')        || null,
         usage_kwh:           Number(get('usage_kwh'))   || null,
       })
@@ -109,6 +110,16 @@ export default function DealEditForm({ deal, locale, agents, providers }: { deal
                   <div>
                     <label className={L}>Plan Name</label>
                     <input name="plan_name" defaultValue={deal.plan_name ?? ''} className={C} />
+                  </div>
+                  <div>
+                    <label className={L}>Service Order</label>
+                    <select name="service_order" defaultValue={(deal as { service_order?: string | null }).service_order ?? ''} className={C}>
+                      <option value="">— Select —</option>
+                      <option value="Switch">Switch</option>
+                      <option value="MVI">MVI</option>
+                      <option value="PMVI">PMVI</option>
+                      <option value="Renewal">Renewal</option>
+                    </select>
                   </div>
                   <div>
                     <label className={L}>Product Type</label>

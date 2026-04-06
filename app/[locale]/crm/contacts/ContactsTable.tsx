@@ -88,6 +88,7 @@ function QuickDealModal({
         service_type:        (contact.service_type as 'residential' | 'commercial') || null,
         notes:               get('notes') || null,
         assigned_to:         get('assigned_to') || null,
+        service_order:       get('service_order') || null,
         agent_code:          null,
         service_address:     get('service_address') || null,
         esid:                get('esid') || null,
@@ -160,6 +161,16 @@ function QuickDealModal({
               <div>
                 <label className={L}>Plan Name</label>
                 <input name="plan_name" placeholder="e.g. Gexa Saver 12" className={C} />
+              </div>
+              <div>
+                <label className={L}>Service Order</label>
+                <select name="service_order" defaultValue="" className={C}>
+                  <option value="">— Select —</option>
+                  <option value="Switch">Switch</option>
+                  <option value="MVI">MVI</option>
+                  <option value="PMVI">PMVI</option>
+                  <option value="Renewal">Renewal</option>
+                </select>
               </div>
               <div>
                 <label className={L}>Product Type</label>

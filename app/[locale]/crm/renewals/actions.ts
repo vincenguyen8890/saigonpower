@@ -27,6 +27,7 @@ export async function startRenewalAction(params: {
     service_type:        serviceType,
     notes:               `Renewal from contract ${contractId}. Current rate: ${currentRate ? `${(currentRate * 100).toFixed(1)}¢/kWh` : 'N/A'} with ${provider}.`,
     assigned_to:         null,
+    service_order:       'Renewal',
     agent_code:          null,
     service_address:     null,
     esid:                null,

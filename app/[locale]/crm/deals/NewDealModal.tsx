@@ -42,6 +42,7 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
         notes:               get('notes') || null,
         assigned_to:         assignedEmail,
         agent_code:          selectedAgent?.id ?? null,
+        service_order:       get('service_order') || null,
         service_address:     get('service_address') || null,
         esid:                get('esid') || null,
         contract_start_date: get('contract_start_date') || null,
@@ -125,6 +126,16 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Contract Details</p>
                 <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={L}>Service Order</label>
+                    <select name="service_order" defaultValue="" className={C}>
+                      <option value="">— Select —</option>
+                      <option value="Switch">Switch</option>
+                      <option value="MVI">MVI</option>
+                      <option value="PMVI">PMVI</option>
+                      <option value="Renewal">Renewal</option>
+                    </select>
+                  </div>
                   <div>
                     <label className={L}>Supplier</label>
                     <select name="provider" defaultValue="" className={C}>
