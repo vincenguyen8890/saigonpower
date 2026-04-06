@@ -6,7 +6,7 @@
 
 import { createClient } from './server'
 import {
-  mockLeads, mockQuotes, mockCRMStats, mockPlans, mockProviders,
+  mockLeads, mockQuotes, mockCRMStats, mockPlans, mockProviders, generateCustomerId,
   type Lead, type QuoteRequest, type LeadStatus, type CRMStats, type Plan, type Provider,
 } from '@/data/mock-crm'
 
@@ -97,13 +97,14 @@ export async function deleteLead(id: string): Promise<void> {
 }
 
 export async function insertLead(lead: Omit<Lead, 'id' | 'created_at' | 'updated_at'>): Promise<Lead | null> {
-  if (useMock()) return { ...lead, id: `lead-${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+  const payload = { ...lead, customer_id: lead.customer_id ?? generateCustomerId() }
+  if (useMock()) return { ...payload, id: `lead-${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
 
   try {
     const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('leads') as any)
-      .insert(lead)
+      .insert(payload)
       .select()
       .single()
     if (error) throw error

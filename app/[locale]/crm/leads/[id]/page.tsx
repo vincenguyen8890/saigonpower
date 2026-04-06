@@ -54,7 +54,12 @@ export default async function LeadDetailPage({ params }: Props) {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{lead.name}</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-bold text-gray-900">{lead.name}</h1>
+            {lead.customer_id && (
+              <span className="text-xs font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded-lg">{lead.customer_id}</span>
+            )}
+          </div>
           <div className="flex items-center gap-3 mt-2">
             <LeadStatusBadge status={lead.status} />
             <span className={`text-xs px-2 py-0.5 rounded font-medium ${

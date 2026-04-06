@@ -34,6 +34,7 @@ export async function createQuoteAction(data: {
   try {
     // Create linked lead first
     const lead = await insertLead({
+      customer_id:        null,
       name:               data.name,
       email:              data.email || '',
       phone:              data.phone || '',

@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
 
       try {
         const result = await insertLead({
+          customer_id:        null,
           name:               row.name.trim(),
           email:              row.email?.trim()  ?? '',
           phone:              row.phone?.trim()  ?? '',
