@@ -1,3 +1,4 @@
+import React from 'react'
 import { setRequestLocale } from 'next-intl/server'
 import { getSession } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
@@ -22,14 +23,14 @@ export default async function SettingsPage({ params }: Props) {
 
   const sections: {
     sectionKey: string
-    icon: typeof Settings
+    icon: React.ReactNode
     title: string
     description: string
     fields: SettingsField[]
   }[] = [
     {
       sectionKey: 'team',
-      icon: Users,
+      icon: <Users size={15} className="text-slate-500" />,
       title: 'Team & Agents',
       description: 'Manage agent accounts, roles, and assignments.',
       fields: [
@@ -58,7 +59,7 @@ export default async function SettingsPage({ params }: Props) {
     },
     {
       sectionKey: 'notifications',
-      icon: Bell,
+      icon: <Bell size={15} className="text-slate-500" />,
       title: 'Notifications',
       description: 'Configure when and how alerts are sent.',
       fields: [
@@ -94,7 +95,7 @@ export default async function SettingsPage({ params }: Props) {
     },
     {
       sectionKey: 'automation',
-      icon: Zap,
+      icon: <Zap size={15} className="text-slate-500" />,
       title: 'Automation',
       description: 'Global toggles for workflow automation rules.',
       fields: [
@@ -127,7 +128,7 @@ export default async function SettingsPage({ params }: Props) {
     },
     {
       sectionKey: 'security',
-      icon: Shield,
+      icon: <Shield size={15} className="text-slate-500" />,
       title: 'Security',
       description: 'Auth and access control configuration.',
       fields: [
@@ -154,7 +155,7 @@ export default async function SettingsPage({ params }: Props) {
     },
     {
       sectionKey: 'integrations',
-      icon: Database,
+      icon: <Database size={15} className="text-slate-500" />,
       title: 'Data & Integrations',
       description: 'Connection status for third-party services.',
       fields: [

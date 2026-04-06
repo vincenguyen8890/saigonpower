@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import type { LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Check, Loader2, AlertCircle } from 'lucide-react'
 import { saveSettings } from '@/app/[locale]/crm/settings/actions'
 
@@ -14,7 +14,7 @@ export interface SettingsField {
 }
 
 interface SettingsSectionProps {
-  icon: LucideIcon
+  icon: ReactNode
   title: string
   description: string
   fields: SettingsField[]
@@ -22,7 +22,7 @@ interface SettingsSectionProps {
 }
 
 export default function SettingsSection({
-  icon: Icon,
+  icon,
   title,
   description,
   fields,
@@ -68,7 +68,7 @@ export default function SettingsSection({
       <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-white rounded-lg border border-slate-100 flex items-center justify-center shadow-sm">
-            <Icon size={15} className="text-slate-500" />
+            {icon}
           </div>
           <div>
             <p className="text-sm font-semibold text-[#0F172A]">{title}</p>
