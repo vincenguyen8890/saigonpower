@@ -2,14 +2,20 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, Download, SlidersHorizontal, UserPlus, Mail, Phone, ChevronLeft, ChevronRight, X } from 'lucide-react'
-import type { Lead } from '@/lib/supabase/queries'
+import { useRouter } from 'next/navigation'
+import { Search, Download, SlidersHorizontal, UserPlus, Mail, Phone, ChevronLeft, ChevronRight, X, PlusCircle, TrendingUp } from 'lucide-react'
+import type { Lead, CRMAgent } from '@/lib/supabase/queries'
+import type { Provider } from '@/data/mock-crm'
 import { formatDate } from '@/lib/utils'
+import { createDeal } from '../deals/actions'
+import type { Deal } from '@/lib/supabase/queries'
 
 interface Props {
   contacts: Lead[]
   locale: string
   currentUserEmail: string
+  agents: CRMAgent[]
+  providers: Provider[]
 }
 
 const AVATAR_COLORS = [
@@ -38,26 +44,201 @@ const STATUS_STYLES: Record<string, string> = {
   lost:      'bg-gray-100 text-gray-500',
 }
 
-const PER_PAGE = 50
+const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHTS', 'FREE WEEKENDS']
 
+const PER_PAGE = 50
 type View = 'all' | 'mine' | 'unassigned'
 
-export default function ContactsTable({ contacts, locale, currentUserEmail }: Props) {
-  const [view,       setView]       = useState<View>('all')
-  const [search,     setSearch]     = useState('')
-  const [selected,   setSelected]   = useState<Set<string>>(new Set())
-  const [page,       setPage]       = useState(1)
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [showFilters, setShowFilters] = useState(false)
+// ─── Quick Deal Modal ─────────────────────────────────────────────────────────
+function QuickDealModal({
+  contact, locale, agents, providers, onClose,
+}: {
+  contact: Lead
+  locale: string
+  agents: CRMAgent[]
+  providers: Provider[]
+  onClose: () => void
+}) {
+  const router = useRouter()
+  const [isPending, setIsPending] = useState(false)
+  const [error, setError] = useState('')
 
-  // Filter by view
+  const C = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green'
+  const L = 'block text-xs font-medium text-gray-600 mb-1'
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const form = e.currentTarget
+    const get = (name: string) => (form.elements.namedItem(name) as HTMLInputElement)?.value ?? ''
+
+    setError('')
+    setIsPending(true)
+    try {
+      const res = await createDeal({
+        title:               get('title'),
+        lead_id:             contact.id,
+        value:               0,
+        stage:               get('stage') as Deal['stage'],
+        probability:         50,
+        expected_close:      get('expected_close') || null,
+        provider:            get('provider') || null,
+        plan_name:           get('plan_name') || null,
+        service_type:        (contact.service_type as 'residential' | 'commercial') || null,
+        notes:               get('notes') || null,
+        assigned_to:         get('assigned_to') || null,
+        agent_code:          null,
+        service_address:     null,
+        esid:                null,
+        contract_start_date: null,
+        contract_end_date:   null,
+        rate_kwh:            Number(get('rate_kwh')) || null,
+        adder_kwh:           null,
+        term_months:         Number(get('term_months')) || null,
+        product_type:        get('product_type') || null,
+        usage_kwh:           null,
+      })
+      if (res.error) { setError(res.error); return }
+      router.refresh()
+      onClose()
+      router.push(`/${locale}/crm/deals`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unexpected error.')
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+          <div>
+            <h2 className="font-semibold text-gray-900">New Deal</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Customer: <span className="font-medium text-gray-600">{contact.name}</span></p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+          {/* Deal Title */}
+          <div>
+            <label className={L}>Deal Title *</label>
+            <input
+              name="title"
+              required
+              defaultValue={`${contact.name} – ${contact.service_type === 'commercial' ? 'Commercial' : 'Residential'}`}
+              className={C}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Stage */}
+            <div>
+              <label className={L}>Stage</label>
+              <select name="stage" defaultValue="prospect" className={C}>
+                {['prospect','qualified','proposal','negotiation','won','lost'].map(s => (
+                  <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Expected Close */}
+            <div>
+              <label className={L}>Expected Close Date</label>
+              <input name="expected_close" type="date" className={C} />
+            </div>
+
+            {/* Supplier */}
+            <div>
+              <label className={L}>Supplier</label>
+              <select name="provider" defaultValue="" className={C}>
+                <option value="">— Select —</option>
+                {providers.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              </select>
+            </div>
+
+            {/* Plan Name */}
+            <div>
+              <label className={L}>Plan Name</label>
+              <input name="plan_name" placeholder="e.g. Gexa Saver 12" className={C} />
+            </div>
+
+            {/* Product Type */}
+            <div>
+              <label className={L}>Product Type</label>
+              <select name="product_type" defaultValue="" className={C}>
+                <option value="">— Select —</option>
+                {PRODUCT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+
+            {/* Term */}
+            <div>
+              <label className={L}>Term (months)</label>
+              <input name="term_months" type="number" min="0" placeholder="12" className={C} />
+            </div>
+
+            {/* Rate */}
+            <div>
+              <label className={L}>Rate ($/kWh)</label>
+              <input name="rate_kwh" type="number" step="0.00001" min="0" placeholder="0.10900" className={C} />
+            </div>
+
+            {/* Sales Agent */}
+            <div>
+              <label className={L}>Sales Agent</label>
+              <select name="assigned_to" defaultValue="" className={C}>
+                <option value="">— Unassigned —</option>
+                {agents.filter(a => a.active).map(a => (
+                  <option key={a.id} value={a.email}>{a.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className={L}>Notes</label>
+            <textarea name="notes" rows={2} className={C.replace('py-2.5','py-2') + ' resize-none'} placeholder="Additional notes..." />
+          </div>
+
+          {error && (
+            <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+              Cancel
+            </button>
+            <button type="submit" disabled={isPending}
+              className="flex-1 bg-brand-greenDark text-white py-2.5 rounded-xl text-sm hover:bg-brand-green transition-colors disabled:opacity-50 font-medium flex items-center justify-center gap-2">
+              <TrendingUp size={14} />
+              {isPending ? 'Creating...' : 'Create Deal'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Table ───────────────────────────────────────────────────────────────
+export default function ContactsTable({ contacts, locale, currentUserEmail, agents, providers }: Props) {
+  const [view,         setView]         = useState<View>('all')
+  const [search,       setSearch]       = useState('')
+  const [selected,     setSelected]     = useState<Set<string>>(new Set())
+  const [page,         setPage]         = useState(1)
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [showFilters,  setShowFilters]  = useState(false)
+  const [dealContact,  setDealContact]  = useState<Lead | null>(null)
+
   const byView = useMemo(() => {
     if (view === 'mine')       return contacts.filter(c => c.assigned_to === currentUserEmail)
     if (view === 'unassigned') return contacts.filter(c => !c.assigned_to)
     return contacts
   }, [contacts, view, currentUserEmail])
 
-  // Filter by search + status
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
     return byView.filter(c => {
@@ -72,12 +253,10 @@ export default function ContactsTable({ contacts, locale, currentUserEmail }: Pr
     })
   }, [byView, search, statusFilter])
 
-  // Paginate
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const pageStart  = (page - 1) * PER_PAGE
   const pageRows   = filtered.slice(pageStart, pageStart + PER_PAGE)
 
-  // Selection helpers
   const allPageSelected = pageRows.length > 0 && pageRows.every(r => selected.has(r.id))
   function toggleAll() {
     if (allPageSelected) {
@@ -103,15 +282,15 @@ export default function ContactsTable({ contacts, locale, currentUserEmail }: Pr
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{filtered.length.toLocaleString()} contacts</p>
+          <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
+          <p className="text-gray-500 text-sm mt-0.5">{filtered.length.toLocaleString()} customers</p>
         </div>
         <Link
           href={`/${locale}/crm/leads`}
           className="flex items-center gap-2 bg-brand-greenDark text-white text-sm px-4 py-2.5 rounded-xl hover:bg-brand-green transition-colors font-medium"
         >
           <UserPlus size={15} />
-          Add Contact
+          Add Customer
         </Link>
       </div>
 
@@ -127,7 +306,7 @@ export default function ContactsTable({ contacts, locale, currentUserEmail }: Pr
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {v === 'all' ? 'All contacts' : v === 'mine' ? 'My contacts' : 'Unassigned contacts'}
+            {v === 'all' ? 'All customers' : v === 'mine' ? 'My customers' : 'Unassigned'}
             <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full font-medium ${
               view === v ? 'bg-brand-greenDark text-white' : 'bg-gray-100 text-gray-500'
             }`}>
@@ -139,13 +318,12 @@ export default function ContactsTable({ contacts, locale, currentUserEmail }: Pr
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
-            placeholder="Search contacts..."
+            placeholder="Search customers..."
             className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-green bg-white"
           />
           {search && (
@@ -155,7 +333,6 @@ export default function ContactsTable({ contacts, locale, currentUserEmail }: Pr
           )}
         </div>
 
-        {/* Filter toggle */}
         <button
           onClick={() => setShowFilters(v => !v)}
           className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl border transition-colors ${
@@ -185,7 +362,7 @@ export default function ContactsTable({ contacts, locale, currentUserEmail }: Pr
       {/* Expanded filters */}
       {showFilters && (
         <div className="bg-white border border-gray-200 rounded-xl p-3 mb-3 flex flex-wrap gap-2 items-center">
-          <span className="text-xs font-medium text-gray-500">Lead Status:</span>
+          <span className="text-xs font-medium text-gray-500">Status:</span>
           {statusOptions.map(s => (
             <button
               key={s}
@@ -223,14 +400,14 @@ export default function ContactsTable({ contacts, locale, currentUserEmail }: Pr
                     {h}
                   </th>
                 ))}
-                <th className="px-4 py-3 w-16" />
+                <th className="px-4 py-3 w-24 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {pageRows.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="text-center py-16 text-gray-400 text-sm">
-                    No contacts found
+                    No customers found
                   </td>
                 </tr>
               ) : pageRows.map(contact => {
@@ -252,7 +429,7 @@ export default function ContactsTable({ contacts, locale, currentUserEmail }: Pr
                       />
                     </td>
 
-                    {/* Name + avatar */}
+                    {/* Name */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <div className={`w-8 h-8 rounded-full ${avatarBg} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
@@ -273,16 +450,11 @@ export default function ContactsTable({ contacts, locale, currentUserEmail }: Pr
                     {/* Email */}
                     <td className="px-4 py-3 hidden md:table-cell">
                       {contact.email ? (
-                        <a
-                          href={`mailto:${contact.email}`}
-                          className="flex items-center gap-1 text-sm text-blue-600 hover:underline max-w-[180px] truncate group/email"
-                        >
+                        <a href={`mailto:${contact.email}`} className="flex items-center gap-1 text-sm text-blue-600 hover:underline max-w-[180px] truncate group/email">
                           <span className="truncate">{contact.email}</span>
                           <Mail size={11} className="opacity-0 group-hover/email:opacity-100 flex-shrink-0 transition-opacity" />
                         </a>
-                      ) : (
-                        <span className="text-gray-300 text-sm">—</span>
-                      )}
+                      ) : <span className="text-gray-300 text-sm">—</span>}
                     </td>
 
                     {/* Phone */}
@@ -292,9 +464,7 @@ export default function ContactsTable({ contacts, locale, currentUserEmail }: Pr
                           <Phone size={11} className="flex-shrink-0" />
                           {contact.phone}
                         </a>
-                      ) : (
-                        <span className="text-gray-300 text-sm">—</span>
-                      )}
+                      ) : <span className="text-gray-300 text-sm">—</span>}
                     </td>
 
                     {/* ZIP */}
@@ -325,12 +495,22 @@ export default function ContactsTable({ contacts, locale, currentUserEmail }: Pr
 
                     {/* Actions */}
                     <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/${locale}/crm/leads/${contact.id}`}
-                        className="text-xs text-brand-green opacity-0 group-hover:opacity-100 hover:text-brand-greenDark font-medium transition-opacity"
-                      >
-                        View
-                      </Link>
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => setDealContact(contact)}
+                          className="flex items-center gap-1 text-xs bg-brand-greenDark text-white px-2.5 py-1.5 rounded-lg hover:bg-brand-green transition-colors font-medium"
+                          title="Create deal from this customer"
+                        >
+                          <PlusCircle size={11} />
+                          Deal
+                        </button>
+                        <Link
+                          href={`/${locale}/crm/leads/${contact.id}`}
+                          className="text-xs text-brand-green hover:text-brand-greenDark font-medium"
+                        >
+                          View
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -366,6 +546,17 @@ export default function ContactsTable({ contacts, locale, currentUserEmail }: Pr
           </span>
         </div>
       </div>
+
+      {/* Quick Deal Modal */}
+      {dealContact && (
+        <QuickDealModal
+          contact={dealContact}
+          locale={locale}
+          agents={agents}
+          providers={providers}
+          onClose={() => setDealContact(null)}
+        />
+      )}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { setRequestLocale } from 'next-intl/server'
-import { getLeads } from '@/lib/supabase/queries'
+import { getLeads, getCRMAgents, getProvidersFromDB } from '@/lib/supabase/queries'
 import { getSession } from '@/lib/auth/session'
 import ContactsTable from './ContactsTable'
 
@@ -9,9 +9,11 @@ export default async function ContactsPage({ params }: Props) {
   const { locale } = await params
   setRequestLocale(locale)
 
-  const [contacts, session] = await Promise.all([
+  const [contacts, session, agents, providers] = await Promise.all([
     getLeads(),
     getSession(),
+    getCRMAgents(),
+    getProvidersFromDB(),
   ])
 
   return (
@@ -19,6 +21,8 @@ export default async function ContactsPage({ params }: Props) {
       contacts={contacts}
       locale={locale}
       currentUserEmail={session?.email ?? ''}
+      agents={agents}
+      providers={providers}
     />
   )
 }

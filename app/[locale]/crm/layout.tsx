@@ -98,7 +98,7 @@ export default async function CRMLayout({ children, params }: Props) {
     {
       label: 'People',
       items: [
-        { href: `/${locale}/crm/contacts`,    label: 'Contacts',         icon: Contact2        },
+        { href: `/${locale}/crm/contacts`,    label: 'Customers',        icon: Contact2        },
         { href: `/${locale}/crm/agents`,      label: 'Sales Agents',     icon: Users           },
       ],
     },
