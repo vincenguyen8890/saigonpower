@@ -5,32 +5,25 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Approximate Texas outline in local XY space.
-   After mesh rotation [-PI/2, 0, 0]:  shape X → world X,  shape Y → world Z
+   Light-theme Texas map: white/pale-blue extruded platform with green grid
 ───────────────────────────────────────────────────────────────────────────── */
+
+// Texas outline — Shape XY → after rotation[-PI/2]: shape X=worldX, shape Y=worldZ
 const TX_VERTS: [number, number][] = [
-  [-4.0, -3.0], // NW panhandle
-  [-0.8, -3.0], // Panhandle NE
-  [-0.8, -1.9], // Panhandle bottom (OK border join)
-  [ 3.2, -1.9], // NE corner (Red River)
-  [ 3.6, -0.4], // E border
-  [ 3.3,  1.2], // SE coast (Sabine)
-  [ 2.8,  2.2], // Gulf coast turn
-  [ 1.8,  3.0], // Corpus area
-  [ 0.6,  3.2], // South tip (Brownsville)
-  [-0.4,  2.8], // Rio Grande
-  [-1.8,  2.0], // Rio Grande mid
-  [-3.6,  0.9], // Big Bend / Del Rio
-  [-4.0,  0.4], // El Paso (west)
+  [-4.0, -3.0], [-0.8, -3.0], [-0.8, -1.9],
+  [ 3.2, -1.9], [ 3.6, -0.4], [ 3.3,  1.2],
+  [ 2.8,  2.2], [ 1.8,  3.0], [ 0.6,  3.2],
+  [-0.4,  2.8], [-1.8,  2.0], [-3.6,  0.9],
+  [-4.0,  0.4],
 ]
 
-// Grid network city nodes (world XZ)
+// Grid network nodes in world XZ (Texas cities)
 const NODES: [number, number][] = [
   [-2.8, -2.5], // Amarillo
   [-1.8, -1.8], // Lubbock
   [-0.5, -1.4], // Wichita Falls
   [ 1.5, -1.0], // Dallas
-  [ 2.3, -0.7], // Tyler / East TX
+  [ 2.3, -0.7], // East TX
   [ 2.8,  0.8], // Houston
   [-2.5,  0.1], // Midland/Odessa
   [ 0.5,  0.3], // Austin
@@ -45,7 +38,7 @@ const CONNECTIONS: [number, number][] = [
   [7, 8], [8, 9], [8, 10], [10, 6],
 ]
 
-/* ── Solid extruded Texas platform ────────────────────────────────────────── */
+/* ── Solid extruded Texas platform ─────────────────── */
 function TexasPlatform() {
   const shape = useMemo(() => {
     const s = new THREE.Shape()
@@ -55,37 +48,32 @@ function TexasPlatform() {
     return s
   }, [])
 
-  const extrude = { depth: 0.55, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 2 }
+  const extrude = { depth: 0.5, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 3 }
 
   return (
     <group>
-      {/* Main dark-navy extruded body */}
+      {/* Main body — light gray-blue, like a 3D-printed map */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow>
         <extrudeGeometry args={[shape, extrude]} />
-        <meshStandardMaterial color="#0d1e3e" roughness={0.3} metalness={0.5} />
+        <meshStandardMaterial color="#D8E8F4" roughness={0.5} metalness={0.05} />
       </mesh>
 
-      {/* Top surface — dark teal with faint green emissive */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
+      {/* Top surface — slightly lighter */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.004, 0]}>
         <shapeGeometry args={[shape]} />
-        <meshStandardMaterial
-          color="#0e2e22"
-          roughness={0.75}
-          emissive="#00C853"
-          emissiveIntensity={0.06}
-        />
+        <meshStandardMaterial color="#EAF3FA" roughness={0.65} />
       </mesh>
 
-      {/* Dark floor plane */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.57, 0]}>
+      {/* Soft shadow / base plane */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.52, 0]} receiveShadow>
         <planeGeometry args={[13, 10]} />
-        <meshStandardMaterial color="#040d1a" roughness={1} />
+        <shadowMaterial opacity={0.08} />
       </mesh>
     </group>
   )
 }
 
-/* ── Pulsing grid node ────────────────────────────────────────────────────── */
+/* ── Pulsing green node ────────────────────────────── */
 function NodePulse({ x, z, phase }: { x: number; z: number; phase: number }) {
   const outerRef = useRef<THREE.Mesh>(null)
   const innerRef = useRef<THREE.Mesh>(null)
@@ -93,38 +81,35 @@ function NodePulse({ x, z, phase }: { x: number; z: number; phase: number }) {
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime() + phase
     if (outerRef.current) {
-      const s = 0.7 + Math.sin(t * 2.0) * 0.35
-      outerRef.current.scale.setScalar(s)
-      ;(outerRef.current.material as THREE.MeshBasicMaterial).opacity = 0.15 + Math.abs(Math.sin(t * 2.0)) * 0.2
+      outerRef.current.scale.setScalar(0.7 + Math.abs(Math.sin(t * 1.8)) * 0.45)
+      ;(outerRef.current.material as THREE.MeshBasicMaterial).opacity = 0.12 + Math.abs(Math.sin(t * 1.8)) * 0.18
     }
     if (innerRef.current) {
-      ;(innerRef.current.material as THREE.MeshBasicMaterial).opacity = 0.55 + Math.sin(t * 2.8) * 0.35
+      ;(innerRef.current.material as THREE.MeshBasicMaterial).opacity = 0.55 + Math.sin(t * 2.6) * 0.35
     }
   })
 
   return (
     <group position={[x, 0.03, z]}>
-      {/* Outer ring glow */}
       <mesh ref={outerRef}>
-        <sphereGeometry args={[0.14, 8, 8]} />
-        <meshBasicMaterial color="#FFD700" transparent opacity={0.2} depthWrite={false} />
+        <sphereGeometry args={[0.13, 8, 8]} />
+        <meshBasicMaterial color="#00C853" transparent opacity={0.18} depthWrite={false} />
       </mesh>
-      {/* Inner bright dot */}
       <mesh ref={innerRef}>
         <sphereGeometry args={[0.055, 8, 8]} />
-        <meshBasicMaterial color="#FFD700" transparent opacity={0.75} />
+        <meshBasicMaterial color="#00C853" transparent opacity={0.7} />
       </mesh>
     </group>
   )
 }
 
-/* ── Yellow grid network ──────────────────────────────────────────────────── */
+/* ── Green grid lines ────────────────────────────────── */
 function GridNetwork() {
   const lineGeo = useMemo(() => {
     const pts: THREE.Vector3[] = []
     CONNECTIONS.forEach(([a, b]) => {
-      pts.push(new THREE.Vector3(NODES[a][0], 0.025, NODES[a][1]))
-      pts.push(new THREE.Vector3(NODES[b][0], 0.025, NODES[b][1]))
+      pts.push(new THREE.Vector3(NODES[a][0], 0.022, NODES[a][1]))
+      pts.push(new THREE.Vector3(NODES[b][0], 0.022, NODES[b][1]))
     })
     const g = new THREE.BufferGeometry()
     g.setFromPoints(pts)
@@ -134,48 +119,57 @@ function GridNetwork() {
   return (
     <group>
       <lineSegments geometry={lineGeo}>
-        <lineBasicMaterial color="#FFD700" transparent opacity={0.5} />
+        <lineBasicMaterial color="#00C853" transparent opacity={0.45} />
       </lineSegments>
       {NODES.map(([x, z], i) => (
-        <NodePulse key={i} x={x} z={z} phase={i * 0.48} />
+        <NodePulse key={i} x={x} z={z} phase={i * 0.5} />
       ))}
     </group>
   )
 }
 
-/* ── Mini city buildings / power towers ──────────────────────────────────── */
-function MiniBuildings() {
-  // [worldX, worldZ, height]
-  const towers: [number, number, number][] = [
-    [ 2.7,  0.7, 0.28], // Houston
-    [ 1.3, -0.9, 0.24], // Dallas
-    [-2.3,  0.1, 0.15], // Midland
-  ]
+/* ── Energy button puck (south of Texas, centre) ─── */
+function EnergyButton() {
+  const ringRef = useRef<THREE.Mesh>(null)
+  const glowRef = useRef<THREE.Mesh>(null)
+  const innerRef = useRef<THREE.Mesh>(null)
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    if (ringRef.current)  ringRef.current.rotation.z  = t * 0.8
+    if (glowRef.current)  (glowRef.current.material as THREE.MeshBasicMaterial).opacity = 0.18 + Math.sin(t * 2.0) * 0.1
+    if (innerRef.current) innerRef.current.scale.setScalar(1 + Math.sin(t * 2.5) * 0.06)
+  })
 
   return (
-    <>
-      {towers.map(([x, z, h], i) => (
-        <group key={i} position={[x, h / 2, z]}>
-          {/* Tower body */}
-          <mesh castShadow>
-            <boxGeometry args={[0.1, h, 0.1]} />
-            <meshStandardMaterial color="#162d52" emissive="#2979FF" emissiveIntensity={0.3} metalness={0.6} roughness={0.3} />
-          </mesh>
-          {/* Beacon */}
-          <mesh position={[0, h / 2 + 0.045, 0]}>
-            <sphereGeometry args={[0.028, 6, 6]} />
-            <meshBasicMaterial color="#2979FF" />
-          </mesh>
-          {/* Legs */}
-          {[[ 0.07, 0.07], [-0.07, -0.07], [ 0.07, -0.07], [-0.07, 0.07]].map(([lx, lz], j) => (
-            <mesh key={j} position={[lx, -h * 0.28, lz]} rotation={[0, 0, lx > 0 ? 0.45 : -0.45]}>
-              <boxGeometry args={[0.012, h * 0.55, 0.012]} />
-              <meshStandardMaterial color="#162d52" />
-            </mesh>
-          ))}
-        </group>
-      ))}
-    </>
+    <group position={[0.4, 0.05, 2.5]}>
+      {/* Base disc */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.38, 0.42, 0.06, 32]} />
+        <meshStandardMaterial color="#1a3a2a" metalness={0.6} roughness={0.3} />
+      </mesh>
+
+      {/* Green glow disc */}
+      <mesh ref={glowRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}>
+        <circleGeometry args={[0.45, 32]} />
+        <meshBasicMaterial color="#00C853" transparent opacity={0.22} depthWrite={false} />
+      </mesh>
+
+      {/* Outer orbital ring */}
+      <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, 0]}>
+        <ringGeometry args={[0.5, 0.54, 48]} />
+        <meshBasicMaterial color="#2979FF" transparent opacity={0.75} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Inner lightning glow */}
+      <mesh ref={innerRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.08, 0]}>
+        <circleGeometry args={[0.28, 24]} />
+        <meshBasicMaterial color="#00C853" transparent opacity={0.45} depthWrite={false} />
+      </mesh>
+
+      {/* Point light for glow effect */}
+      <pointLight position={[0, 0.3, 0]} intensity={0.9} color="#00C853" distance={3} />
+    </group>
   )
 }
 
@@ -184,7 +178,7 @@ export default function TexasMap() {
     <group position={[0, -0.55, 0]}>
       <TexasPlatform />
       <GridNetwork />
-      <MiniBuildings />
+      <EnergyButton />
     </group>
   )
 }

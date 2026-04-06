@@ -6,159 +6,207 @@ import { Html } from '@react-three/drei'
 import * as THREE from 'three'
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Floating plan cards — styled to match reference design
+   Three floating plan cards matching the reference:
+   • Centre: "Your Savings $87/tháng" (large focal card)
+   • Top-right: "Best Plan $112/tháng Tiết kiệm $87"
+   • Mid-right: "Current Plan $199/tháng Bạn đang trả cao hơn"
 ───────────────────────────────────────────────────────────────────────────── */
 
-interface CardData {
-  position: [number, number, number]
-  price: number
-  label: string
-  subLabel?: string
-  isBest: boolean
-  floatOffset: number
-  floatSpeed: number
-}
-
-const CARDS: CardData[] = [
-  {
-    position:    [-3.0, 1.5, 0.6],
-    price:       210,
-    label:       'Plan A',
-    subLabel:    'TXU Energy',
-    isBest:      false,
-    floatOffset: 0,
-    floatSpeed:  0.85,
-  },
-  {
-    position:    [0, 2.7, 0.6],
-    price:       123,
-    label:       'Best Plan',
-    subLabel:    'Lowest Rate!',
-    isBest:      true,
-    floatOffset: Math.PI / 2,
-    floatSpeed:  1.0,
-  },
-  {
-    position:    [3.0, 1.5, 0.6],
-    price:       180,
-    label:       'Plan B',
-    subLabel:    'Reliant Energy',
-    isBest:      false,
-    floatOffset: Math.PI,
-    floatSpeed:  0.75,
-  },
-]
-
-function SingleCard({ data }: { data: CardData }) {
+/* ── Centre Savings Card ───────────────────────────── */
+function SavingsCard() {
   const groupRef = useRef<THREE.Group>(null)
-  const [hovered, setHovered] = useState(false)
-  const baseY = data.position[1]
+  const baseY = 1.9
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return
-    const t = clock.getElapsedTime()
-    groupRef.current.position.y = baseY + Math.sin(t * data.floatSpeed + data.floatOffset) * 0.07
-    const target = data.isBest ? (hovered ? 1.12 : 1.06) : (hovered ? 1.06 : 1.0)
-    groupRef.current.scale.lerp(new THREE.Vector3(target, target, target), 0.1)
+    groupRef.current.position.y = baseY + Math.sin(clock.getElapsedTime() * 0.9) * 0.06
+  })
+
+  return (
+    <group ref={groupRef} position={[0.3, baseY, 1.2]}>
+      <Html center distanceFactor={6} occlude={false}>
+        <div style={{
+          width: '168px',
+          borderRadius: '20px',
+          background: 'white',
+          border: '1.5px solid #E2E8F0',
+          boxShadow: '0 16px 48px rgba(0,0,0,0.14), 0 4px 12px rgba(0,200,83,0.12)',
+          padding: '18px 16px',
+        }}>
+          {/* Header */}
+          <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748B', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '10px' }}>
+            Your Savings
+          </div>
+          {/* Big amount */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', marginBottom: '10px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 900, color: '#00C853' }}>$</span>
+            <span style={{ fontSize: '42px', fontWeight: 900, color: '#00C853', lineHeight: 1 }}>87</span>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#94A3B8', marginLeft: '2px' }}>/tháng</span>
+          </div>
+          {/* Status */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+            <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#00C853', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <span style={{ fontSize: '10px', color: '#64748B', fontWeight: 600 }}>Đã tìm được gói tốt hơn</span>
+          </div>
+          {/* Progress bar */}
+          <div style={{ height: '6px', background: '#E2E8F0', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ width: '70%', height: '100%', background: 'linear-gradient(90deg, #00C853, #2979FF)', borderRadius: '3px' }} />
+          </div>
+        </div>
+      </Html>
+    </group>
+  )
+}
+
+/* ── Best Plan Card (top-right) ────────────────────── */
+function BestPlanCard() {
+  const groupRef = useRef<THREE.Group>(null)
+  const [hovered, setHovered] = useState(false)
+  const baseY = 2.5
+
+  useFrame(({ clock }) => {
+    if (!groupRef.current) return
+    groupRef.current.position.y = baseY + Math.sin(clock.getElapsedTime() * 1.1 + 1.0) * 0.06
+    const t = hovered ? 1.06 : 1.0
+    groupRef.current.scale.lerp(new THREE.Vector3(t, t, t), 0.1)
   })
 
   return (
     <group
       ref={groupRef}
-      position={[data.position[0], baseY, data.position[2]]}
+      position={[3.2, baseY, -0.4]}
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
     >
       <Html center distanceFactor={6} occlude={false} style={{ pointerEvents: 'auto' }}>
-        {data.isBest ? (
-          /* ── Best plan card — vivid green ──────────────────── */
+        <div style={{
+          width: '138px',
+          borderRadius: '16px',
+          background: 'white',
+          border: '1.5px solid #E2E8F0',
+          boxShadow: hovered
+            ? '0 16px 40px rgba(41,121,255,0.2)'
+            : '0 8px 28px rgba(0,0,0,0.1)',
+          overflow: 'hidden',
+          cursor: 'pointer',
+          transition: 'box-shadow 0.25s ease',
+        }}>
+          {/* Blue header */}
           <div style={{
-            width: '148px',
-            borderRadius: '16px',
-            background: 'linear-gradient(145deg, #00C853 0%, #00A846 100%)',
-            border: '2px solid rgba(255,255,255,0.35)',
-            boxShadow: '0 16px 48px rgba(0,200,83,0.5), 0 0 0 1px rgba(0,200,83,0.3)',
-            padding: '16px 14px',
-            textAlign: 'center',
-            cursor: 'pointer',
+            background: 'linear-gradient(135deg, #2979FF, #1A5FCC)',
+            padding: '8px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
           }}>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.08em', marginBottom: '8px', textTransform: 'uppercase' }}>
-              {data.label}
+            <span style={{ fontSize: '10px', fontWeight: 800, color: 'white', letterSpacing: '0.04em' }}>Best Plan</span>
+            <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '1px', marginBottom: '8px' }}>
-              <span style={{ fontSize: '15px', fontWeight: 900, color: 'white' }}>$</span>
-              <span style={{ fontSize: '36px', fontWeight: 900, color: 'white', lineHeight: 1 }}>{data.price}</span>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>/mo</span>
+          </div>
+          {/* Body */}
+          <div style={{ padding: '12px' }}>
+            <div style={{ fontSize: '9px', color: '#94A3B8', marginBottom: '4px' }}>Gói tốt nhất</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '1px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 900, color: '#0F172A' }}>$</span>
+              <span style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', lineHeight: 1 }}>112</span>
+              <span style={{ fontSize: '9px', color: '#94A3B8', marginLeft: '2px' }}>/tháng</span>
             </div>
             <div style={{
-              background: 'rgba(255,255,255,0.22)',
+              display: 'inline-block',
+              background: '#EDF9F2',
+              color: '#00A846',
               borderRadius: '20px',
-              padding: '4px 10px',
+              padding: '3px 8px',
               fontSize: '9px',
-              fontWeight: 800,
-              color: 'white',
-              letterSpacing: '0.04em',
-              border: '1px solid rgba(255,255,255,0.3)',
+              fontWeight: 700,
+              border: '1px solid #A3F0C4',
             }}>
-              {data.subLabel}
+              Tiết kiệm $87
             </div>
           </div>
-        ) : (
-          /* ── Regular plan card — glassy white ─────────────── */
-          <div style={{
-            width: '120px',
-            borderRadius: '14px',
-            background: 'rgba(255,255,255,0.12)',
-            backdropFilter: 'blur(16px)',
-            border: '1.5px solid rgba(255,255,255,0.3)',
-            boxShadow: hovered
-              ? '0 12px 32px rgba(41,121,255,0.25)'
-              : '0 8px 24px rgba(0,0,0,0.35)',
-            padding: '14px 12px',
-            textAlign: 'center',
-            transition: 'box-shadow 0.25s ease',
-            cursor: 'pointer',
-          }}>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.06em', marginBottom: '6px', textTransform: 'uppercase' }}>
-              {data.label}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '1px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 900, color: 'white' }}>$</span>
-              <span style={{ fontSize: '28px', fontWeight: 900, color: 'white', lineHeight: 1 }}>{data.price}</span>
-            </div>
-            <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)', marginTop: '3px' }}>/month</div>
-          </div>
-        )}
+        </div>
       </Html>
-
-      {/* Green glow halo for best plan */}
-      {data.isBest && <BestGlow />}
     </group>
   )
 }
 
-function BestGlow() {
-  const meshRef = useRef<THREE.Mesh>(null)
+/* ── Current Plan Card (mid-right) ────────────────── */
+function CurrentPlanCard() {
+  const groupRef = useRef<THREE.Group>(null)
+  const [hovered, setHovered] = useState(false)
+  const baseY = 1.3
+
   useFrame(({ clock }) => {
-    if (!meshRef.current) return
-    const t = clock.getElapsedTime()
-    ;(meshRef.current.material as THREE.MeshBasicMaterial).opacity = 0.07 + Math.sin(t * 1.8) * 0.05
-    meshRef.current.scale.setScalar(1 + Math.sin(t * 1.2) * 0.1)
+    if (!groupRef.current) return
+    groupRef.current.position.y = baseY + Math.sin(clock.getElapsedTime() * 0.85 + 2.2) * 0.055
+    const t = hovered ? 1.05 : 1.0
+    groupRef.current.scale.lerp(new THREE.Vector3(t, t, t), 0.1)
   })
+
   return (
-    <mesh ref={meshRef} position={[0, 0, -0.15]}>
-      <planeGeometry args={[1.6, 1.1]} />
-      <meshBasicMaterial color="#00C853" transparent opacity={0.1} depthWrite={false} side={THREE.DoubleSide} />
-    </mesh>
+    <group
+      ref={groupRef}
+      position={[3.4, baseY, 1.3]}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+    >
+      <Html center distanceFactor={6} occlude={false} style={{ pointerEvents: 'auto' }}>
+        <div style={{
+          width: '138px',
+          borderRadius: '16px',
+          background: 'white',
+          border: '1.5px solid #E2E8F0',
+          boxShadow: hovered
+            ? '0 12px 32px rgba(0,0,0,0.12)'
+            : '0 6px 20px rgba(0,0,0,0.08)',
+          overflow: 'hidden',
+          cursor: 'pointer',
+          transition: 'box-shadow 0.25s ease',
+        }}>
+          {/* Gray header */}
+          <div style={{
+            background: '#F1F5F9',
+            padding: '8px 12px',
+            borderBottom: '1px solid #E2E8F0',
+          }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748B' }}>Current Plan</span>
+          </div>
+          {/* Body */}
+          <div style={{ padding: '12px' }}>
+            <div style={{ fontSize: '9px', color: '#94A3B8', marginBottom: '4px' }}>Gói hiện tại</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '1px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 900, color: '#0F172A' }}>$</span>
+              <span style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', lineHeight: 1 }}>199</span>
+              <span style={{ fontSize: '9px', color: '#94A3B8', marginLeft: '2px' }}>/tháng</span>
+            </div>
+            <div style={{
+              display: 'inline-block',
+              background: '#FFF7F0',
+              color: '#C2410C',
+              borderRadius: '20px',
+              padding: '3px 8px',
+              fontSize: '9px',
+              fontWeight: 700,
+              border: '1px solid #FDBA74',
+            }}>
+              Bạn đang trả cao hơn
+            </div>
+          </div>
+        </div>
+      </Html>
+    </group>
   )
 }
 
 export default function PlanCards() {
   return (
     <>
-      {CARDS.map((card, i) => (
-        <SingleCard key={i} data={card} />
-      ))}
+      <SavingsCard />
+      <BestPlanCard />
+      <CurrentPlanCard />
     </>
   )
 }

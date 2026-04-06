@@ -126,7 +126,7 @@ function Sparkles() {
   const matRef = useRef<THREE.PointsMaterial>(null)
   useFrame(({ clock }) => {
     if (matRef.current) {
-      matRef.current.opacity = 0.28 + Math.sin(clock.getElapsedTime() * 0.5) * 0.14
+      matRef.current.opacity = 0.20 + Math.sin(clock.getElapsedTime() * 0.5) * 0.10
     }
   })
 
@@ -134,10 +134,10 @@ function Sparkles() {
     <points geometry={geo}>
       <pointsMaterial
         ref={matRef}
-        color="#FFD700"
-        size={0.055}
+        color="#F59E0B"
+        size={0.045}
         transparent
-        opacity={0.35}
+        opacity={0.22}
         sizeAttenuation
         depthWrite={false}
       />
@@ -184,26 +184,26 @@ function BlueSpark() {
 
 /* ── Ring definitions ──────────────────────────────────────────────────────── */
 const RINGS: RingDef[] = [
-  // Left-tilt blue ring
+  // Blue ring (left tilt)
   {
-    rx: 5.8, rz: 3.5, tiltX:  0.42, tiltZ:  0.05, yOffset: 0.6,
-    color: '#2979FF', dotColor: '#93c5fd',
-    opacity: 0.55, tubeRadius: 0.024,
+    rx: 5.8, rz: 3.5, tiltX:  0.42, tiltZ:  0.05, yOffset: 0.5,
+    color: '#2979FF', dotColor: '#2979FF',
+    opacity: 0.40, tubeRadius: 0.020,
     dotSpeed: 0.22, dotDelay: 0.0, dotSize: 0.065, shimmerSpeed: 0.5,
   },
-  // Right-tilt green ring
+  // Yellow-gold ring (right tilt) — matches reference image
   {
-    rx: 6.2, rz: 3.8, tiltX: -0.32, tiltZ:  0.18, yOffset: 0.4,
-    color: '#00C853', dotColor: '#FFD700',
-    opacity: 0.42, tubeRadius: 0.022,
-    dotSpeed: 0.18, dotDelay: 0.55, dotSize: 0.065, shimmerSpeed: 0.65,
+    rx: 6.2, rz: 4.0, tiltX: -0.30, tiltZ:  0.18, yOffset: 0.3,
+    color: '#F59E0B', dotColor: '#F59E0B',
+    opacity: 0.55, tubeRadius: 0.022,
+    dotSpeed: 0.18, dotDelay: 0.55, dotSize: 0.070, shimmerSpeed: 0.65,
   },
-  // Flatter golden ring
+  // Cyan thin ring
   {
-    rx: 5.3, rz: 3.2, tiltX:  0.55, tiltZ: -0.22, yOffset: 0.2,
-    color: '#FFD700', dotColor: '#FFD700',
-    opacity: 0.28, tubeRadius: 0.016,
-    dotSpeed: 0.30, dotDelay: 0.35, dotSize: 0.050, shimmerSpeed: 0.8,
+    rx: 5.3, rz: 3.2, tiltX:  0.52, tiltZ: -0.20, yOffset: 0.15,
+    color: '#06B6D4', dotColor: '#06B6D4',
+    opacity: 0.30, tubeRadius: 0.013,
+    dotSpeed: 0.30, dotDelay: 0.35, dotSize: 0.048, shimmerSpeed: 0.8,
   },
 ]
 

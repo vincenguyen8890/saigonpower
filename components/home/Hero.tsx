@@ -2,22 +2,25 @@
 
 import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { useTranslations, useLocale } from 'next-intl'
+import { useLocale } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
-import { motion, useMotionValue, useSpring, useTransform, useInView, animate } from 'framer-motion'
-import { Phone, ArrowRight, MapPin, Zap, TrendingDown, CheckCircle2, Star } from 'lucide-react'
+import { motion, useInView, animate } from 'framer-motion'
+import {
+  MapPin, ArrowRight, CheckCircle2, Star,
+  FileText, Cpu, Zap, Users, DollarSign, Clock, ListChecks,
+} from 'lucide-react'
 import { isValidZip } from '@/lib/utils'
 
 const HeroScene = dynamic(() => import('@/components/3d/HeroScene'), { ssr: false })
 
-/* ── Animated counter ───────────────────────────────── */
+/* ── Animated counter ─────────────────────────────── */
 function CountUp({ to, prefix = '', suffix = '' }: { to: number; prefix?: string; suffix?: string }) {
   const ref = useRef<HTMLSpanElement>(null)
   const inView = useInView(ref, { once: true })
   useEffect(() => {
     if (!inView || !ref.current) return
     const ctrl = animate(0, to, {
-      duration: 1.6, ease: 'easeOut',
+      duration: 1.4, ease: 'easeOut',
       onUpdate(v) { if (ref.current) ref.current.textContent = prefix + Math.round(v) + suffix },
     })
     return ctrl.stop
@@ -25,127 +28,8 @@ function CountUp({ to, prefix = '', suffix = '' }: { to: number; prefix?: string
   return <span ref={ref}>{prefix}0{suffix}</span>
 }
 
-/* ── 3D floating plan card ──────────────────────────── */
-function PlanCard() {
-  const cardRef = useRef<HTMLDivElement>(null)
-  const mx = useMotionValue(0)
-  const my = useMotionValue(0)
-  const xS = useSpring(mx, { stiffness: 120, damping: 25 })
-  const yS = useSpring(my, { stiffness: 120, damping: 25 })
-  const rotX = useTransform(yS, [-140, 140], [10, -10])
-  const rotY = useTransform(xS, [-140, 140], [-10, 10])
-
-  const onMove = (e: React.MouseEvent) => {
-    const r = cardRef.current?.getBoundingClientRect()
-    if (!r) return
-    mx.set(e.clientX - r.left - r.width / 2)
-    my.set(e.clientY - r.top - r.height / 2)
-  }
-  const onLeave = () => { mx.set(0); my.set(0) }
-
-  return (
-    <div ref={cardRef} onMouseMove={onMove} onMouseLeave={onLeave}
-      className="relative" style={{ perspective: '1000px' }}>
-
-      {/* Soft glow behind the card */}
-      <div className="absolute -inset-10 bg-white/15 rounded-full blur-3xl pointer-events-none" />
-
-      <motion.div style={{ rotateX: rotX, rotateY: rotY, transformStyle: 'preserve-3d' }}
-        className="relative bg-white rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.18)] p-6 w-[300px] border border-white/60">
-
-        {/* Card header */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
-            <span className="text-brand-green text-xs font-bold uppercase tracking-wider">Best Match</span>
-          </div>
-          <span className="badge-green">#1 Pick</span>
-        </div>
-
-        {/* Provider */}
-        <div className="mb-3" style={{ transform: 'translateZ(16px)' }}>
-          <div className="text-brand-muted text-xs mb-0.5">Gexa Energy · Fixed 12mo</div>
-          <div className="text-brand-dark font-bold text-lg">Gexa Saver 12</div>
-        </div>
-
-        {/* Rate */}
-        <div className="flex items-end gap-1 mb-5" style={{ transform: 'translateZ(24px)' }}>
-          <span className="text-5xl font-black text-brand-dark leading-none">10.9</span>
-          <div className="mb-1">
-            <div className="text-brand-green text-base font-black">¢</div>
-            <div className="text-brand-muted text-xs">/kWh</div>
-          </div>
-        </div>
-
-        {/* Savings comparison */}
-        <div className="bg-brand-greenLight border border-brand-greenBorder rounded-2xl p-4 mb-4"
-          style={{ transform: 'translateZ(14px)' }}>
-          <div className="flex items-center gap-1.5 mb-3">
-            <TrendingDown size={13} className="text-brand-green" />
-            <span className="text-brand-green text-xs font-bold">vs. market average</span>
-          </div>
-          <div className="space-y-2">
-            {[
-              { label: 'This plan', val: '10.9¢', pct: '65%', color: 'bg-brand-green' },
-              { label: 'Market avg', val: '14.2¢', pct: '85%', color: 'bg-surface-border' },
-            ].map(({ label, val, pct, color }) => (
-              <div key={label}>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-brand-muted">{label}</span>
-                  <span className={`font-bold ${label === 'This plan' ? 'text-brand-green' : 'text-brand-muted'}`}>{val}</span>
-                </div>
-                <div className="h-2 bg-surface-border rounded-full overflow-hidden">
-                  <div className={`h-full ${color} rounded-full`} style={{ width: pct }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom row */}
-        <div className="flex items-center justify-between" style={{ transform: 'translateZ(20px)' }}>
-          <div className="flex items-center gap-1 text-brand-muted text-xs">
-            <CheckCircle2 size={11} className="text-brand-green" />
-            <span>No cancel fee</span>
-          </div>
-          <div className="bg-brand-green text-white text-xs font-black px-3 py-1.5 rounded-xl shadow-green">
-            Save $89/mo
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Floating badges */}
-      <motion.div animate={{ y: [0, -7, 0] }} transition={{ duration: 3, repeat: Infinity }}
-        className="absolute -top-4 -right-6 bg-white rounded-xl px-3 py-2 shadow-card border border-surface-border">
-        <div className="flex items-center gap-1.5">
-          <Zap size={12} className="text-brand-blue fill-brand-blue" />
-          <span className="text-brand-dark text-xs font-bold">50+ Plans</span>
-        </div>
-      </motion.div>
-
-      <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 3.5, repeat: Infinity, delay: 0.8 }}
-        className="absolute -bottom-4 -left-6 bg-white rounded-xl px-3 py-2 shadow-card border border-surface-border">
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
-          <span className="text-brand-dark text-xs font-bold">Live Rates</span>
-        </div>
-      </motion.div>
-    </div>
-  )
-}
-
-/* ── Fade-up animation variant ──────────────────────── */
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  show: (i: number) => ({
-    opacity: 1, y: 0,
-    transition: { duration: 0.65, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] },
-  }),
-}
-
-/* ── Main Hero ──────────────────────────────────────── */
+/* ── Main Hero ─────────────────────────────────────── */
 export default function Hero() {
-  const t = useTranslations('hero')
   const locale = useLocale()
   const router = useRouter()
   const [zip, setZip] = useState('')
@@ -154,150 +38,226 @@ export default function Hero() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isValidZip(zip)) { setError(t('zipError')); return }
+    if (!isValidZip(zip)) { setError(isVi ? 'Vui lòng nhập mã ZIP hợp lệ (5 chữ số)' : 'Please enter a valid 5-digit ZIP'); return }
     setError('')
     router.push({ pathname: '/compare', query: { zip } } as Parameters<typeof router.push>[0])
   }
 
+  const steps = isVi ? [
+    { Icon: FileText,  bg: 'bg-blue-50',  ic: 'text-brand-blue',  title: 'Tải hóa đơn',     desc: 'Chụp hoặc upload bill dễ dàng' },
+    { Icon: Cpu,       bg: 'bg-blue-50',  ic: 'text-brand-blue',  title: 'AI phân tích',     desc: 'Hệ thống so sánh 50+ nhà cung cấp' },
+    { Icon: Zap,       bg: 'bg-green-50', ic: 'text-brand-green', title: 'Tự động chuyển',   desc: 'Chúng tôi lo mọi thứ trong 24h' },
+  ] : [
+    { Icon: FileText,  bg: 'bg-blue-50',  ic: 'text-brand-blue',  title: 'Upload Bill',      desc: 'Photo or upload your bill easily' },
+    { Icon: Cpu,       bg: 'bg-blue-50',  ic: 'text-brand-blue',  title: 'AI Analysis',      desc: 'Compare 50+ providers instantly' },
+    { Icon: Zap,       bg: 'bg-green-50', ic: 'text-brand-green', title: 'Auto Switch',       desc: 'We handle everything in 24h' },
+  ]
+
+  const stats = isVi ? [
+    { Icon: ListChecks, n: 50,  suffix: '+',     label: 'Gói điện được so sánh' },
+    { Icon: Users,      n: 500, suffix: '+',     label: 'Gia đình đã tiết kiệm' },
+    { Icon: DollarSign, n: 150, prefix: '$',     label: 'Trung bình tiết kiệm/tháng' },
+    { Icon: Clock,      n: 24,  suffix: 'h',     label: 'Hoàn tất chuyển đổi' },
+  ] : [
+    { Icon: ListChecks, n: 50,  suffix: '+',     label: 'Plans compared' },
+    { Icon: Users,      n: 500, suffix: '+',     label: 'Families saved' },
+    { Icon: DollarSign, n: 150, prefix: '$',     label: 'Avg saved / month' },
+    { Icon: Clock,      n: 24,  suffix: 'h',     label: 'Switch completed' },
+  ]
+
   return (
-    <section className="relative min-h-screen bg-hero-gradient overflow-hidden flex items-center">
-      {/* Subtle mesh overlay for depth */}
-      <div className="absolute inset-0 opacity-[0.06]"
-        style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
+    <section className="relative overflow-hidden"
+      style={{ background: 'linear-gradient(150deg, #EBF4FD 0%, #F8FAFC 45%, #EEF8F0 100%)' }}>
 
-      {/* Light vignette at bottom so content transitions to white */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
+      {/* Background glow blobs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-20 right-[5%] w-[520px] h-[520px] rounded-full opacity-40"
+          style={{ background: 'radial-gradient(circle, #BFDBFE 0%, transparent 70%)' }} />
+        <div className="absolute bottom-0 right-[15%] w-[400px] h-[400px] rounded-full opacity-35"
+          style={{ background: 'radial-gradient(circle, #BBF7D0 0%, transparent 70%)' }} />
+      </div>
 
-      <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-4">
 
-          {/* ── Left: Copy + Form ── */}
-          <div>
+        {/* ── Main two-column grid ──────────────────── */}
+        <div className="grid lg:grid-cols-[1fr_1.3fr] gap-8 items-center">
+
+          {/* LEFT: copy */}
+          <div className="space-y-5 py-4">
+
             {/* Social proof badge */}
-            <motion.div custom={0} variants={fadeUp} initial="hidden" animate="show"
-              className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-4 py-2 mb-7">
-              <div className="flex gap-0.5">
-                {[...Array(5)].map((_, i) => <Star key={i} size={11} className="text-yellow-300 fill-yellow-300" />)}
-              </div>
-              <span className="text-white text-sm font-semibold">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm">
+              <Star size={13} className="text-yellow-400 fill-yellow-400" />
+              <span className="text-sm font-semibold text-gray-800">
                 {isVi ? '500+ gia đình đã tiết kiệm' : '500+ families already saving'}
               </span>
             </motion.div>
 
             {/* Headline */}
-            <motion.h1 custom={1} variants={fadeUp} initial="hidden" animate="show"
-              className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-[1.03] tracking-tight mb-5">
+            <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.08 }}
+              className="text-5xl sm:text-6xl font-black text-gray-900 leading-[1.05] tracking-tight">
               {isVi ? (
-                <>So sánh<br /><span className="text-yellow-300">giá điện Texas</span><br />trong 30 giây</>
+                <>Giảm hóa đơn điện<br />
+                  <span className="text-brand-green">20–40%</span>{' '}
+                  <span className="text-brand-blue">mỗi tháng</span>
+                </>
               ) : (
-                <>Compare<br /><span className="text-yellow-300">Texas electricity</span><br />in 30 seconds</>
+                <>Cut your electricity<br />
+                  <span className="text-brand-green">20–40%</span>{' '}
+                  <span className="text-brand-blue">every month</span>
+                </>
               )}
             </motion.h1>
 
-            {/* Sub */}
-            <motion.p custom={2} variants={fadeUp} initial="hidden" animate="show"
-              className="text-white/80 text-lg sm:text-xl mb-10 max-w-lg leading-relaxed">
+            {/* Subtext */}
+            <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 }}
+              className="text-gray-600 text-lg leading-relaxed max-w-[420px]">
               {isVi
-                ? 'Miễn phí – Không phí ẩn – Hỗ trợ tiếng Việt. So sánh 50+ gói điện trong vài giây.'
-                : 'Free – No hidden fees – Vietnamese support. Compare 50+ plans in seconds.'}
+                ? 'Saigon Power tự động tìm và chuyển sang gói điện rẻ nhất cho bạn tại Texas — không cần làm gì.'
+                : 'Saigon Power automatically finds and switches to the cheapest plan for you in Texas — no effort needed.'}
             </motion.p>
 
+            {/* Trust checkmarks */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex flex-wrap gap-x-6 gap-y-2">
+              {(isVi
+                ? ['Phục vụ Houston & toàn Texas', 'Không tiết kiệm = không tính phí']
+                : ['Serving Houston & all Texas', 'No savings = no charge']
+              ).map(item => (
+                <div key={item} className="flex items-center gap-2">
+                  <CheckCircle2 size={15} className="text-brand-green flex-shrink-0" />
+                  <span className="text-gray-700 text-sm font-medium">{item}</span>
+                </div>
+              ))}
+            </motion.div>
+
             {/* ZIP form */}
-            <motion.form custom={3} variants={fadeUp} initial="hidden" animate="show"
-              onSubmit={handleSubmit} className="mb-5">
-              <div className="flex flex-col sm:flex-row gap-3">
+            <motion.form initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.25 }}
+              onSubmit={handleSubmit}>
+              <div className="flex flex-col sm:flex-row gap-3 max-w-[460px]">
                 <div className="flex-1 relative">
-                  <MapPin size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                  <MapPin size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   <input
                     type="text" inputMode="numeric"
                     value={zip}
                     onChange={e => { setZip(e.target.value.replace(/\D/g, '')); setError('') }}
-                    placeholder={isVi ? 'Nhập mã ZIP của bạn...' : 'Enter your ZIP code...'}
+                    placeholder={isVi ? 'Nhập ZIP code của bạn' : 'Enter your ZIP code'}
                     maxLength={5}
-                    className="w-full pl-11 pr-4 py-4 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/40 text-base font-medium focus:outline-none focus:ring-2 focus:ring-white/60 focus:border-white/60 transition-all"
+                    className="w-full pl-10 pr-4 py-[14px] rounded-2xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-green/25 focus:border-brand-green shadow-sm transition-all"
                   />
                 </div>
                 <button type="submit"
-                  className="sm:shrink-0 bg-white hover:bg-white/90 text-brand-green font-black py-4 px-8 rounded-2xl text-base transition-all flex items-center justify-center gap-2 whitespace-nowrap shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:-translate-y-0.5">
-                  {isVi ? 'So Sánh Ngay' : 'Compare Now'} <ArrowRight size={18} />
+                  className="sm:shrink-0 bg-brand-green hover:bg-brand-greenDark text-white font-bold py-[14px] px-6 rounded-2xl text-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap shadow-[0_4px_16px_rgba(0,200,83,0.35)] hover:-translate-y-0.5 active:translate-y-0">
+                  {isVi ? 'Kiểm tra tiết kiệm' : 'Check savings'} <ArrowRight size={15} />
                 </button>
               </div>
-              {error && <p className="mt-2 text-yellow-300 text-sm font-medium">{error}</p>}
+              {error && <p className="mt-2 text-red-500 text-xs font-medium">{error}</p>}
             </motion.form>
 
-            {/* Trust micro-copy */}
-            <motion.div custom={4} variants={fadeUp} initial="hidden" animate="show"
-              className="flex flex-wrap items-center gap-4 mb-12">
-              <a href="tel:+18329379999"
-                className="flex items-center gap-1.5 text-white/70 hover:text-white transition-colors text-sm">
-                <Phone size={13} className="text-yellow-300" />
-                <span className="font-semibold">(832) 937-9999</span>
-              </a>
-              <div className="w-px h-4 bg-white/20" />
-              {[
-                isVi ? 'Miễn phí' : 'Always free',
-                isVi ? 'Không ràng buộc' : 'No commitment',
-                isVi ? 'Tiếng Việt' : 'VI support',
-              ].map(item => (
-                <span key={item} className="flex items-center gap-1 text-white/60 text-xs font-medium">
-                  <CheckCircle2 size={11} className="text-yellow-300" />
-                  {item}
-                </span>
-              ))}
-            </motion.div>
-
-            {/* Stats */}
-            <motion.div custom={5} variants={fadeUp} initial="hidden" animate="show"
-              className="grid grid-cols-3 gap-3 max-w-sm">
-              {[
-                { n: 50, s: '+', label: isVi ? 'Gói điện' : 'Plans' },
-                { n: 300, prefix: '$', s: '+', label: isVi ? 'Tiết kiệm/năm' : 'Avg saved/yr' },
-                { n: 500, s: '+', label: isVi ? 'Khách hàng' : 'Customers' },
-              ].map(({ n, prefix, s, label }) => (
-                <div key={label} className="bg-white/15 backdrop-blur-sm border border-white/20 rounded-2xl py-3 px-2 text-center">
-                  <div className="text-2xl font-black text-white">
-                    <CountUp to={n} prefix={prefix} suffix={s} />
+            {/* Customer avatars */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.32 }}
+              className="flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {[
+                  ['AN', 'from-blue-400 to-cyan-400'],
+                  ['TH', 'from-purple-400 to-pink-400'],
+                  ['MN', 'from-amber-400 to-orange-400'],
+                  ['BL', 'from-green-400 to-teal-400'],
+                ].map(([initials, grad], i) => (
+                  <div key={i}
+                    className={`w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br ${grad} flex items-center justify-center text-white text-[10px] font-bold`}>
+                    {initials}
                   </div>
-                  <div className="text-white/60 text-xs mt-0.5">{label}</div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <span className="text-gray-600 text-sm font-medium">
+                {isVi ? '500+ khách hàng đã tin tưởng' : '500+ customers trust us'}
+              </span>
             </motion.div>
           </div>
 
-          {/* ── Right: 3D scene (desktop) / static card (mobile) ── */}
+          {/* RIGHT: 3D scene */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="relative"
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.9, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="relative hidden lg:block h-[590px]"
           >
-            {/* 3D canvas — hidden on mobile */}
-            <div className="hidden lg:block w-full h-[540px] rounded-3xl overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.4)]">
-              <HeroScene />
-            </div>
-
-            {/* Static CSS card fallback — mobile only */}
-            <div className="lg:hidden flex justify-center items-center">
-              <PlanCard />
-            </div>
+            <HeroScene />
           </motion.div>
         </div>
-      </div>
 
-      {/* Scroll indicator */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-        <div className="w-5 h-9 border-2 border-white/30 rounded-full flex items-start justify-center p-1.5">
-          <motion.div animate={{ y: [0, 12, 0] }} transition={{ duration: 1.5, repeat: Infinity }}
-            className="w-1 h-2 bg-white/60 rounded-full" />
-        </div>
-      </motion.div>
+        {/* ── How it works strip ───────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.4 }}
+          className="mt-6 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm px-6 py-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-4 gap-x-0">
+            {steps.map((step, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${step.bg}`}>
+                  <step.Icon size={22} className={step.ic} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-gray-900 text-sm">{step.title}</div>
+                  <div className="text-gray-500 text-xs mt-0.5 leading-snug">{step.desc}</div>
+                </div>
+                {i < 2 && (
+                  <ArrowRight size={16} className="text-gray-300 flex-shrink-0 hidden sm:block" />
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
 
-      {/* Bottom wave */}
-      <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
-        <svg viewBox="0 0 1440 60" fill="none" className="w-full">
-          <path d="M0 60L1440 60L1440 15C1200 55 960 -5 720 15C480 35 240 -5 0 15L0 60Z" fill="white" />
-        </svg>
+        {/* ── Stats + Testimonial row ─────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="mt-4 grid lg:grid-cols-[1fr_auto] gap-6 items-center pb-6">
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {stats.map(({ Icon, n, suffix, prefix, label }) => (
+              <div key={label} className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-50 border border-green-100 flex items-center justify-center flex-shrink-0">
+                  <Icon size={17} className="text-brand-green" />
+                </div>
+                <div>
+                  <div className="text-xl font-black text-gray-900 leading-none">
+                    <CountUp to={n} prefix={prefix ?? ''} suffix={suffix ?? ''} />
+                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5 leading-snug">{label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Testimonial card */}
+          <div className="hidden lg:block w-[290px] bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex gap-0.5 mb-3">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={13} className="text-yellow-400 fill-yellow-400" />
+              ))}
+            </div>
+            <p className="text-gray-700 text-sm leading-relaxed">
+              {isVi
+                ? <>"Saigon Power giúp gia đình tôi tiết kiệm <span className="text-brand-green font-bold">$123/tháng</span>. Quá dễ!"</>
+                : <>"Saigon Power saved my family <span className="text-brand-green font-bold">$123/month</span>. So easy!"</>
+              }
+            </p>
+            <div className="flex items-center gap-3 mt-4">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-teal-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                AM
+              </div>
+              <div>
+                <div className="font-semibold text-gray-900 text-sm">Anh Minh</div>
+                <div className="text-gray-400 text-xs">Houston, TX</div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   )
