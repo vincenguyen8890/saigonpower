@@ -5,6 +5,12 @@
  */
 
 import { createClient } from './server'
+import { createAdminClient } from './admin'
+
+function adminClient() {
+  try { return createAdminClient() } catch { return null }
+}
+
 import {
   mockLeads, mockQuotes, mockCRMStats, mockPlans, mockProviders, generateCustomerId,
   type Lead, type QuoteRequest, type LeadStatus, type CRMStats, type Plan, type Provider,
@@ -82,18 +88,17 @@ export async function getLeadById(id: string): Promise<Lead | null> {
 }
 
 export async function updateLead(id: string, updates: Partial<Lead>): Promise<void> {
-  if (useMock()) return // mock — no persistence
-
-  const supabase = await createClient()
+  if (useMock()) return
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('leads') as any).update(updates).eq('id', id)
+  const db = (adminClient() ?? await createClient()) as any
+  await db.from('leads').update(updates).eq('id', id)
 }
 
 export async function deleteLead(id: string): Promise<void> {
   if (useMock()) return
-  const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('leads') as any).delete().eq('id', id)
+  const db = (adminClient() ?? await createClient()) as any
+  await db.from('leads').delete().eq('id', id)
 }
 
 export async function insertLead(lead: Omit<Lead, 'id' | 'created_at' | 'updated_at'>): Promise<Lead | null> {
@@ -103,7 +108,8 @@ export async function insertLead(lead: Omit<Lead, 'id' | 'created_at' | 'updated
   }
 
   try {
-    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = (adminClient() ?? await createClient()) as any
 
     // Generate sequential SGP-MMYYYY#### customer ID
     let customerId = lead.customer_id
@@ -113,8 +119,7 @@ export async function insertLead(lead: Omit<Lead, 'id' | 'created_at' | 'updated
       const yyyy = String(now.getFullYear())
       const prefix = `SGP-${mm}${yyyy}`
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { count } = await (supabase.from('leads') as any)
+      const { count } = await supabase.from('leads')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', startOfMonth)
       const seq = String((count ?? 0) + 1).padStart(4, '0')
@@ -122,8 +127,7 @@ export async function insertLead(lead: Omit<Lead, 'id' | 'created_at' | 'updated
     }
 
     const payload = { ...lead, customer_id: customerId }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('leads') as any)
+    const { data, error } = await supabase.from('leads')
       .insert(payload)
       .select()
       .single()
@@ -234,10 +238,9 @@ export async function insertActivity(activity: Omit<Activity, 'id' | 'created_at
   if (useMock()) return { ...activity, id: `act-${Date.now()}`, created_at: new Date().toISOString(), completed_at: null }
 
   try {
-    const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('activities') as any)
-      .insert(activity).select().single()
+    const db = (adminClient() ?? await createClient()) as any
+    const { data, error } = await db.from('activities').insert(activity).select().single()
     if (error) throw error
     return data
   } catch { return null }
@@ -245,10 +248,9 @@ export async function insertActivity(activity: Omit<Activity, 'id' | 'created_at
 
 export async function completeActivity(id: string): Promise<void> {
   if (useMock()) return
-
-  const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('activities') as any)
+  const db = (adminClient() ?? await createClient()) as any
+  await db.from('activities')
     .update({ completed: true, completed_at: new Date().toISOString() })
     .eq('id', id)
 }
@@ -329,19 +331,17 @@ export async function insertDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated
   if (useMock()) return { ...deal, id: `d-${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
 
   try {
-    const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('deals') as any).insert(deal).select().single()
+    const supabase = (adminClient() ?? await createClient()) as any
+    const { data, error } = await supabase.from('deals').insert(deal).select().single()
     if (error) {
       console.error('[insertDeal] error:', error.code, error.message)
-      // If schema cache error (columns not yet migrated), retry with base columns only
       if (error.code === 'PGRST204') {
         const { title, lead_id, value, stage, probability, expected_close,
                 provider, plan_name, service_type, notes, assigned_to } = deal
         const base = { title, lead_id, value, stage, probability,
                        expected_close, provider, plan_name, service_type, notes, assigned_to }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: d2, error: e2 } = await (supabase.from('deals') as any).insert(base).select().single()
+        const { data: d2, error: e2 } = await supabase.from('deals').insert(base).select().single()
         if (e2) { console.error('[insertDeal] base retry failed:', e2.message); return null }
         return d2
       }
@@ -353,17 +353,18 @@ export async function insertDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated
 
 export async function deleteDeal(id: string): Promise<void> {
   if (useMock()) return
-  const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('deals') as any).delete().eq('id', id)
+  const db = (adminClient() ?? await createClient()) as any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await db.from('deals').delete().eq('id', id)
 }
 
 export async function updateDeal(id: string, updates: Partial<Deal>): Promise<void> {
   if (useMock()) return
-
-  const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('deals') as any).update(updates).eq('id', id)
+  const db = (adminClient() ?? await createClient()) as any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await db.from('deals').update(updates).eq('id', id)
 }
 
 export async function getDealById(id: string): Promise<Deal | null> {
@@ -398,9 +399,10 @@ export async function insertPlan(plan: Omit<Plan, 'id'>): Promise<Plan | null> {
     return newPlan
   }
   try {
-    const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('crm_plans') as any).insert(plan).select().single()
+  const db = (adminClient() ?? await createClient()) as any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await db.from('crm_plans').insert(plan).select().single()
     if (error) throw error
     return data
   } catch { return null }
@@ -412,9 +414,10 @@ export async function updatePlan(id: string, updates: Partial<Plan>): Promise<vo
     if (idx !== -1) Object.assign(mockPlans[idx], updates)
     return
   }
-  const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('crm_plans') as any).update(updates).eq('id', id)
+  const db = (adminClient() ?? await createClient()) as any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await db.from('crm_plans').update(updates).eq('id', id)
 }
 
 export async function deletePlan(id: string): Promise<void> {
@@ -423,9 +426,10 @@ export async function deletePlan(id: string): Promise<void> {
     if (idx !== -1) mockPlans.splice(idx, 1)
     return
   }
-  const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('crm_plans') as any).delete().eq('id', id)
+  const db = (adminClient() ?? await createClient()) as any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await db.from('crm_plans').delete().eq('id', id)
 }
 
 // ─── Providers ────────────────────────────────────────────────────────────────
@@ -444,9 +448,10 @@ export async function getProvidersFromDB(): Promise<import('@/data/mock-crm').Pr
 export async function insertProvider(provider: Omit<import('@/data/mock-crm').Provider, 'id'>): Promise<import('@/data/mock-crm').Provider | null> {
   if (useMock()) return { ...provider, id: `prv-${Date.now()}` }
   try {
-    const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('crm_providers') as any).insert(provider).select().single()
+  const db = (adminClient() ?? await createClient()) as any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await db.from('crm_providers').insert(provider).select().single()
     if (error) throw error
     return data
   } catch { return null }
@@ -454,9 +459,10 @@ export async function insertProvider(provider: Omit<import('@/data/mock-crm').Pr
 
 export async function updateProvider(id: string, updates: Partial<import('@/data/mock-crm').Provider>): Promise<void> {
   if (useMock()) return
-  const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('crm_providers') as any)
+  const db = (adminClient() ?? await createClient()) as any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await db.from('crm_providers')
     .update({
       name:                    updates.name,
       short_name:              updates.short_name,
@@ -474,9 +480,10 @@ export async function updateProvider(id: string, updates: Partial<import('@/data
 
 export async function deleteProvider(id: string): Promise<void> {
   if (useMock()) return
-  const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('crm_providers') as any).delete().eq('id', id)
+  const db = (adminClient() ?? await createClient()) as any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await db.from('crm_providers').delete().eq('id', id)
 }
 
 // ─── Contracts ────────────────────────────────────────────────────────────────
