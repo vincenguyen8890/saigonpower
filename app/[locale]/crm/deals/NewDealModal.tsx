@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { PlusCircle, X } from 'lucide-react'
 import { createDeal } from './actions'
@@ -13,20 +13,22 @@ const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHT
 
 export default function NewDealModal({ locale, leads, agents }: { locale: string; leads: Lead[]; agents: CRMAgent[] }) {
   const [open, setOpen] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  const [isPending, setIsPending] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = e.currentTarget
-    const get  = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).value
+    const get  = (name: string) => (form.elements.namedItem(name) as HTMLInputElement)?.value ?? ''
 
     const assignedEmail = get('assigned_to') || null
     const selectedAgent = agents.find(a => a.email === assignedEmail)
 
     setSubmitError('')
-    startTransition(async () => {
+    setIsPending(true)
+
+    try {
       const res = await createDeal({
         title:               get('title'),
         lead_id:             get('lead_id') || null,
@@ -50,10 +52,17 @@ export default function NewDealModal({ locale, leads, agents }: { locale: string
         product_type:        get('product_type') || null,
         usage_kwh:           Number(get('usage_kwh')) || null,
       })
-      if (res.error) { setSubmitError(res.error); return }
-      setOpen(false)
-      router.refresh()
-    })
+      if (res.error) {
+        setSubmitError(res.error)
+      } else {
+        setOpen(false)
+        router.refresh()
+      }
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Unexpected error. Please try again.')
+    } finally {
+      setIsPending(false)
+    }
   }
 
   const C = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green'
