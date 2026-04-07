@@ -176,6 +176,7 @@ export default function DealEditForm({ deal, locale, agents, providers }: { deal
                       <option value="18">18 Months</option>
                       <option value="24">24 Months</option>
                       <option value="36">36 Months</option>
+                      <option value="48">48 Months</option>
                       <option value="60">60 Months</option>
                       <option value="mtm">Month to Month</option>
                     </select>
