@@ -18,11 +18,22 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
   const [isPending, setIsPending] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [selectedFlags, setSelectedFlags] = useState<string[]>([])
+  const [term, setTerm] = useState<string>('12')
+  const [contractStart, setContractStart] = useState<string>('')
   const router = useRouter()
 
   function toggleFlag(flag: string) {
     setSelectedFlags(prev => prev.includes(flag) ? prev.filter(f => f !== flag) : [...prev, flag])
   }
+
+  function calcEndDate(start: string, months: string): string {
+    if (!start || months === 'mtm') return ''
+    const d = new Date(start)
+    d.setMonth(d.getMonth() + parseInt(months))
+    return d.toISOString().split('T')[0]
+  }
+
+  const computedEndDate = calcEndDate(contractStart, term)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -52,11 +63,11 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
         service_order:       get('service_order') || null,
         service_address:     get('service_address') || null,
         esid:                get('esid') || null,
-        contract_start_date: get('contract_start_date') || null,
-        contract_end_date:   get('contract_end_date') || null,
+        contract_start_date: contractStart || null,
+        contract_end_date:   term === 'mtm' ? (get('contract_end_date') || null) : (computedEndDate || null),
         rate_kwh:            Number(get('rate_kwh')) || null,
         adder_kwh:           Number(get('adder_kwh')) || null,
-        term_months:         Number(get('term_months')) || null,
+        term_months:         term === 'mtm' ? null : Number(term) || null,
         product_type:        get('product_type') || null,
         usage_kwh:           Number(get('usage_kwh')) || null,
         flags:               selectedFlags.length > 0 ? selectedFlags : null,
@@ -182,8 +193,16 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
                     </select>
                   </div>
                   <div>
-                    <label className={L}>Contract Term (months)</label>
-                    <input name="term_months" type="number" min="0" placeholder="12" className={C} />
+                    <label className={L}>Contract Term</label>
+                    <select name="term_months" value={term} onChange={e => setTerm(e.target.value)} className={C}>
+                      <option value="3">3 Months</option>
+                      <option value="6">6 Months</option>
+                      <option value="12">12 Months</option>
+                      <option value="18">18 Months</option>
+                      <option value="24">24 Months</option>
+                      <option value="36">36 Months</option>
+                      <option value="mtm">Month to Month</option>
+                    </select>
                   </div>
                   <div>
                     <label className={L}>Contract Rate ($/kWh)</label>
@@ -203,11 +222,27 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
                   </div>
                   <div>
                     <label className={L}>Contract Start Date</label>
-                    <input name="contract_start_date" type="date" className={C} />
+                    <input
+                      name="contract_start_date"
+                      type="date"
+                      value={contractStart}
+                      onChange={e => setContractStart(e.target.value)}
+                      className={C}
+                    />
                   </div>
                   <div>
                     <label className={L}>Contract End Date</label>
-                    <input name="contract_end_date" type="date" className={C} />
+                    {term === 'mtm' ? (
+                      <input name="contract_end_date" type="date" className={C} />
+                    ) : (
+                      <input
+                        name="contract_end_date"
+                        type="date"
+                        value={computedEndDate}
+                        readOnly
+                        className={C + ' bg-gray-50 text-gray-500 cursor-default'}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
