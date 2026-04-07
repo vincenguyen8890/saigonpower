@@ -14,7 +14,7 @@ function useMock() {
 
 export async function updateUserRole(
   id: string,
-  role: 'admin' | 'agent',
+  role: 'admin' | 'office_manager' | 'csr' | 'agent',
 ): Promise<{ ok: boolean; error?: string }> {
   const session = await getSession()
   if (!session || session.role !== 'admin') return { ok: false, error: 'Unauthorized' }
@@ -56,7 +56,7 @@ export async function inviteUser(data: {
   name: string
   email: string
   phone: string
-  role: 'admin' | 'agent'
+  role: 'admin' | 'office_manager' | 'csr' | 'agent'
   agent_type: string
 }): Promise<{ ok: boolean; error?: string }> {
   const session = await getSession()

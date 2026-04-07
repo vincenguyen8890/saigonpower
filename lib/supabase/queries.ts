@@ -713,7 +713,7 @@ export interface CRMAgent {
   id: string
   name: string
   email: string
-  role: 'admin' | 'agent'
+  role: 'admin' | 'office_manager' | 'csr' | 'agent'
   agent_type: string | null
   phone: string | null
   active: boolean

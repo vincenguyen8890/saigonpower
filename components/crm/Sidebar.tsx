@@ -7,16 +7,19 @@ import {
   LayoutDashboard, Users, FileText, Settings,
   ShieldCheck, UserCheck, Zap, RefreshCw, Building2,
   TrendingUp, BarChart3, Bot, ListChecks, DollarSign,
-  Inbox, Contact2, Sparkles, Landmark,
+  Inbox, Contact2, Sparkles, Landmark, Headset, BriefcaseBusiness,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import SignOutButton from './SignOutButton'
+import { can, isAdmin, ROLE_LABELS, ROLE_COLORS } from '@/lib/auth/permissions'
+import type { CRMRole } from '@/lib/auth/permissions'
 
 interface NavItem {
   href: string
   label: string
   icon: LucideIcon
   badge?: number
+  requireFeature?: Parameters<typeof can>[1]
 }
 
 interface NavGroup {
@@ -27,7 +30,8 @@ interface NavGroup {
 interface SidebarProps {
   locale: string
   email: string
-  isAdmin: boolean
+  role: CRMRole
+  name?: string
   newLeadsCount?: number
   expiringCount?: number
 }
@@ -35,11 +39,21 @@ interface SidebarProps {
 export default function Sidebar({
   locale,
   email,
-  isAdmin,
+  role,
+  name,
   newLeadsCount = 0,
   expiringCount = 0,
 }: SidebarProps) {
   const pathname = usePathname()
+  const rc = ROLE_COLORS[role]
+
+  const roleIcon = role === 'admin'
+    ? <ShieldCheck size={10} />
+    : role === 'office_manager'
+    ? <BriefcaseBusiness size={10} />
+    : role === 'csr'
+    ? <Headset size={10} />
+    : <UserCheck size={10} />
 
   const navGroups: NavGroup[] = [
     {
@@ -52,7 +66,7 @@ export default function Sidebar({
       label: 'People',
       items: [
         { href: `/${locale}/crm/contacts`, label: 'Customers',    icon: Contact2 },
-        { href: `/${locale}/crm/agents`,   label: 'Sales Agents', icon: Users    },
+        { href: `/${locale}/crm/agents`,   label: 'Sales Agents', icon: Users,    requireFeature: 'agents' },
       ],
     },
     {
@@ -63,7 +77,7 @@ export default function Sidebar({
         { href: `/${locale}/crm/accounts`, label: 'Accounts',    icon: Landmark    },
         { href: `/${locale}/crm/tasks`,    label: 'Work Queue',  icon: ListChecks  },
         { href: `/${locale}/crm/proposals`,label: 'Proposals',   icon: FileText    },
-        { href: `/${locale}/crm/rfp`,      label: 'Rate RFPs',   icon: Inbox       },
+        { href: `/${locale}/crm/rfp`,      label: 'Rate RFPs',   icon: Inbox,      requireFeature: 'rfp' },
       ],
     },
     {
@@ -76,22 +90,22 @@ export default function Sidebar({
     {
       label: 'Catalog',
       items: [
-        { href: `/${locale}/crm/providers`, label: 'Providers', icon: Building2 },
-        { href: `/${locale}/crm/plans`,     label: 'Plans',     icon: Zap       },
+        { href: `/${locale}/crm/providers`, label: 'Providers', icon: Building2, requireFeature: 'providers' },
+        { href: `/${locale}/crm/plans`,     label: 'Plans',     icon: Zap,       requireFeature: 'plans'     },
       ],
     },
     {
       label: 'Analytics',
       items: [
-        { href: `/${locale}/crm/reports`,    label: 'Reports',    icon: BarChart3  },
-        { href: `/${locale}/crm/accounting`, label: 'Accounting', icon: DollarSign },
+        { href: `/${locale}/crm/reports`,    label: 'Reports',    icon: BarChart3,  requireFeature: 'reports'    },
+        { href: `/${locale}/crm/accounting`, label: 'Accounting', icon: DollarSign, requireFeature: 'accounting' },
       ],
     },
     {
       label: 'Intelligence',
       items: [
-        { href: `/${locale}/crm/ai`,         label: 'AI Manager',  icon: Sparkles },
-        { href: `/${locale}/crm/automation`, label: 'Automation',  icon: Bot      },
+        { href: `/${locale}/crm/ai`,         label: 'AI Manager',  icon: Sparkles, requireFeature: 'ai_manager' },
+        { href: `/${locale}/crm/automation`, label: 'Automation',  icon: Bot,      requireFeature: 'automation' },
       ],
     },
   ]
@@ -105,16 +119,10 @@ export default function Sidebar({
 
   return (
     <aside className="hidden lg:flex w-60 bg-white border-r border-slate-100 flex-col flex-shrink-0">
-      {/* Logo — same height as TopBar */}
+      {/* Logo */}
       <div className="flex items-center gap-3 px-5 h-14 border-b border-slate-100 flex-shrink-0">
         <div className="w-7 h-7 rounded-md overflow-hidden flex-shrink-0 ring-1 ring-slate-100">
-          <Image
-            src="/sg-power-logo.jpg"
-            alt="Saigon Power"
-            width={28}
-            height={28}
-            className="object-cover w-full h-full"
-          />
+          <Image src="/sg-power-logo.jpg" alt="Saigon Power" width={28} height={28} className="object-cover w-full h-full" />
         </div>
         <div>
           <p className="text-[#0F172A] font-bold text-sm leading-none">Saigon Power</p>
@@ -124,56 +132,54 @@ export default function Sidebar({
 
       {/* Role chip */}
       <div className="px-4 py-3">
-        <span className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-semibold ${
-          isAdmin
-            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-            : 'bg-[#E8FFF1] text-[#00A846] border border-[#A3F0C4]'
-        }`}>
-          {isAdmin ? <ShieldCheck size={10} /> : <UserCheck size={10} />}
-          {isAdmin ? 'Administrator' : 'Sales Agent'}
+        <span className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-semibold border ${rc.bg} ${rc.text} ${rc.border}`}>
+          {roleIcon}
+          {ROLE_LABELS[role]}
         </span>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 px-3 pb-3 overflow-y-auto">
-        {navGroups.map((group, gi) => (
-          <div key={gi} className={gi > 0 ? 'mt-5' : ''}>
-            {group.label && (
-              <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                {group.label}
-              </p>
-            )}
-            <div className="space-y-0.5">
-              {group.items.map(({ href, label, icon: Icon, badge }) => {
-                const active = isActive(href)
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
-                      active
-                        ? 'bg-[#E8FFF1] text-[#00A846]'
-                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-                    }`}
-                  >
-                    <Icon
-                      size={15}
-                      className={`flex-shrink-0 ${active ? 'text-[#00C853]' : ''}`}
-                    />
-                    <span className="flex-1 truncate">{label}</span>
-                    {badge != null && badge > 0 && (
-                      <span className="text-[10px] bg-[#FF6D00] text-white px-1.5 py-0.5 rounded-full font-bold min-w-[18px] text-center leading-none">
-                        {badge > 99 ? '99+' : badge}
-                      </span>
-                    )}
-                  </Link>
-                )
-              })}
+        {navGroups.map((group, gi) => {
+          const visible = group.items.filter(
+            item => !item.requireFeature || can(role, item.requireFeature)
+          )
+          if (visible.length === 0) return null
+          return (
+            <div key={gi} className={gi > 0 ? 'mt-5' : ''}>
+              {group.label && (
+                <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                  {group.label}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {visible.map(({ href, label, icon: Icon, badge }) => {
+                  const active = isActive(href)
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
+                        active ? 'bg-[#E8FFF1] text-[#00A846]' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                      }`}
+                    >
+                      <Icon size={15} className={`flex-shrink-0 ${active ? 'text-[#00C853]' : ''}`} />
+                      <span className="flex-1 truncate">{label}</span>
+                      {badge != null && badge > 0 && (
+                        <span className="text-[10px] bg-[#FF6D00] text-white px-1.5 py-0.5 rounded-full font-bold min-w-[18px] text-center leading-none">
+                          {badge > 99 ? '99+' : badge}
+                        </span>
+                      )}
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
 
-        {isAdmin && (
+        {/* Admin-only section */}
+        {can(role, 'users') && (
           <div className="mt-5">
             <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Admin</p>
             <div className="space-y-0.5">
@@ -185,9 +191,7 @@ export default function Sidebar({
                   key={href}
                   href={href}
                   className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
-                    pathname.startsWith(href)
-                      ? 'bg-[#E8FFF1] text-[#00A846]'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                    pathname.startsWith(href) ? 'bg-[#E8FFF1] text-[#00A846]' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                   }`}
                 >
                   <Icon size={15} className="flex-shrink-0" />
@@ -202,14 +206,12 @@ export default function Sidebar({
       {/* User footer */}
       <div className="px-4 py-4 border-t border-slate-100">
         <div className="flex items-center gap-2.5 mb-3">
-          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-            isAdmin ? 'bg-amber-100 text-amber-700' : 'bg-[#E8FFF1] text-[#00A846]'
-          }`}>
-            {email.charAt(0).toUpperCase()}
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${rc.bg} ${rc.text}`}>
+            {(name || email).charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold text-slate-700 truncate">{email}</p>
-            <p className="text-[10px] text-slate-400">{isAdmin ? 'Admin' : 'Agent'}</p>
+            <p className="text-[12px] font-semibold text-slate-700 truncate">{name || email}</p>
+            <p className={`text-[10px] ${rc.text}`}>{ROLE_LABELS[role]}</p>
           </div>
         </div>
         <SignOutButton locale={locale} />

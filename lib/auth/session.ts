@@ -1,8 +1,12 @@
 import { cookies } from 'next/headers'
+import type { CRMRole } from './permissions'
+
+export type { CRMRole }
 
 export interface SessionData {
   email: string
-  role: 'admin' | 'agent'
+  role: CRMRole
+  name?: string
   exp: number
 }
 
@@ -20,10 +24,11 @@ async function getKey(): Promise<CryptoKey> {
   )
 }
 
-export async function createSessionToken(email: string, role: 'admin' | 'agent'): Promise<string> {
+export async function createSessionToken(email: string, role: CRMRole, name?: string): Promise<string> {
   const payload: SessionData = {
     email,
     role,
+    name,
     exp: Math.floor(Date.now() / 1000) + SESSION_TTL,
   }
   const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url')

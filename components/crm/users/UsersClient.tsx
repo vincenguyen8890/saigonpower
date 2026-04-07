@@ -16,9 +16,11 @@ interface UsersClientProps {
   currentEmail: string
 }
 
-const roleConfig = {
-  admin: { label: 'Admin',       icon: ShieldCheck, bg: 'bg-amber-50',    text: 'text-amber-700',  border: 'border-amber-200'   },
-  agent: { label: 'Sales Agent', icon: UserCheck,   bg: 'bg-[#E8FFF1]',  text: 'text-[#00A846]',  border: 'border-[#A3F0C4]'   },
+const roleConfig: Record<string, { label: string; icon: React.ElementType; bg: string; text: string; border: string }> = {
+  admin:          { label: 'Administrator',  icon: ShieldCheck, bg: 'bg-amber-50',   text: 'text-amber-700',  border: 'border-amber-200'  },
+  office_manager: { label: 'Office Manager', icon: UserCheck,   bg: 'bg-blue-50',    text: 'text-blue-700',   border: 'border-blue-200'   },
+  csr:            { label: 'CSR',            icon: UserCheck,   bg: 'bg-purple-50',  text: 'text-purple-700', border: 'border-purple-200' },
+  agent:          { label: 'Sales Agent',    icon: UserCheck,   bg: 'bg-[#E8FFF1]',  text: 'text-[#00A846]',  border: 'border-[#A3F0C4]'  },
 }
 
 function UserRow({
@@ -30,7 +32,7 @@ function UserRow({
 }: {
   agent: CRMAgent
   isSelf: boolean
-  onRoleChange: (id: string, role: 'admin' | 'agent') => Promise<void>
+  onRoleChange: (id: string, role: CRMAgent['role']) => Promise<void>
   onToggleActive: (id: string, active: boolean) => Promise<void>
   onDelete: (id: string) => Promise<void>
 }) {
@@ -83,10 +85,12 @@ function UserRow({
         <select
           value={agent.role}
           disabled={isSelf || isPending}
-          onChange={e => act(() => onRoleChange(agent.id, e.target.value as 'admin' | 'agent'))}
+          onChange={e => act(() => onRoleChange(agent.id, e.target.value as CRMAgent['role']))}
           className={`text-[12px] font-semibold px-2.5 py-1.5 rounded-lg border appearance-none cursor-pointer transition-all disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 ${rc.bg} ${rc.text} ${rc.border}`}
         >
-          <option value="admin">Admin</option>
+          <option value="admin">Administrator</option>
+          <option value="office_manager">Office Manager</option>
+          <option value="csr">CSR</option>
           <option value="agent">Sales Agent</option>
         </select>
       </td>
@@ -163,7 +167,7 @@ function UserRow({
 }
 
 function InviteModal({ onClose, onInvited }: { onClose: () => void; onInvited: () => void }) {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'agent' as 'admin' | 'agent', agent_type: 'electricity_broker' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'agent' as CRMAgent['role'], agent_type: 'electricity_broker' })
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
 
@@ -235,11 +239,13 @@ function InviteModal({ onClose, onInvited }: { onClose: () => void; onInvited: (
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">Role</label>
               <select
                 value={form.role}
-                onChange={e => setForm(f => ({ ...f, role: e.target.value as 'admin' | 'agent' }))}
+                onChange={e => setForm(f => ({ ...f, role: e.target.value as CRMAgent['role'] }))}
                 className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
               >
                 <option value="agent">Sales Agent</option>
-                <option value="admin">Admin</option>
+                <option value="csr">CSR</option>
+                <option value="office_manager">Office Manager</option>
+                <option value="admin">Administrator</option>
               </select>
             </div>
             <div className="col-span-2">
@@ -284,7 +290,7 @@ export default function UsersClient({ agents: initial, currentEmail }: UsersClie
   const [agents, setAgents] = useState(initial)
   const [search, setSearch] = useState('')
   const [showInvite, setShowInvite] = useState(false)
-  const [filterRole, setFilterRole] = useState<'all' | 'admin' | 'agent'>('all')
+  const [filterRole, setFilterRole] = useState<'all' | CRMAgent['role']>('all')
 
   const filtered = agents.filter(a => {
     const matchesSearch =
@@ -298,7 +304,7 @@ export default function UsersClient({ agents: initial, currentEmail }: UsersClie
   const agentCount = agents.filter(a => a.role === 'agent').length
   const activeCount = agents.filter(a => a.active).length
 
-  async function handleRoleChange(id: string, role: 'admin' | 'agent') {
+  async function handleRoleChange(id: string, role: CRMAgent['role']) {
     setAgents(prev => prev.map(a => a.id === id ? { ...a, role } : a))
     await updateUserRole(id, role)
   }
@@ -371,11 +377,11 @@ export default function UsersClient({ agents: initial, currentEmail }: UsersClie
               />
             </div>
             <div className="flex bg-slate-50 rounded-lg p-0.5 gap-0.5">
-              {(['all', 'admin', 'agent'] as const).map(r => (
+              {(['all', 'admin', 'office_manager', 'csr', 'agent'] as const).map(r => (
                 <button
                   key={r}
                   onClick={() => setFilterRole(r)}
-                  className={`px-3 py-1.5 text-[11px] font-semibold rounded-md transition-all capitalize ${
+                  className={`px-3 py-1.5 text-[11px] font-semibold rounded-md transition-all ${
                     filterRole === r ? 'bg-white text-[#0F172A] shadow-sm' : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >

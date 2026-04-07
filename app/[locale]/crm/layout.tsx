@@ -22,7 +22,7 @@ export default async function CRMLayout({ children, params }: Props) {
   const session = await getSession()
   if (!session) redirect(`/${locale}/auth/login`)
 
-  const { email, role } = session
+  const { email, role, name } = session
   const isAdmin = role === 'admin'
 
   // ── Notification data ────────────────────────────────────────────────────────
@@ -92,16 +92,18 @@ export default async function CRMLayout({ children, params }: Props) {
       <Sidebar
         locale={locale}
         email={email}
-        isAdmin={isAdmin}
+        role={role}
+        name={name}
         newLeadsCount={recentNewLeads.length}
         expiringCount={expiring.length}
       />
 
-      {/* Mobile nav drawer (unchanged) */}
+      {/* Mobile nav drawer */}
       <MobileNavDrawer
         locale={locale}
         email={email}
-        isAdmin={isAdmin}
+        role={role}
+        name={name}
         notifications={notifications}
       />
 
@@ -111,6 +113,8 @@ export default async function CRMLayout({ children, params }: Props) {
           locale={locale}
           email={email}
           isAdmin={isAdmin}
+          role={role}
+          name={name}
           notifications={notifications}
         />
         <main className="flex-1 overflow-y-auto">

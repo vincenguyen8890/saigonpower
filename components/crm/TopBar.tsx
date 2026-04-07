@@ -8,10 +8,15 @@ import NotificationBell from './NotificationBell'
 import type { CRMNotification } from './NotificationBell'
 import type { SearchResult } from '@/app/api/crm/search/route'
 
+import type { CRMRole } from '@/lib/auth/permissions'
+import { ROLE_COLORS } from '@/lib/auth/permissions'
+
 interface TopBarProps {
   locale: string
   email: string
   isAdmin: boolean
+  role?: CRMRole
+  name?: string
   notifications: CRMNotification[]
 }
 
@@ -153,7 +158,8 @@ function GlobalSearch({ locale }: { locale: string }) {
   )
 }
 
-export default function TopBar({ locale, email, isAdmin, notifications }: TopBarProps) {
+export default function TopBar({ locale, email, isAdmin, role, name, notifications }: TopBarProps) {
+  const rc = role ? ROLE_COLORS[role] : (isAdmin ? ROLE_COLORS.admin : ROLE_COLORS.agent)
   const pathname = usePathname()
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -227,12 +233,10 @@ export default function TopBar({ locale, email, isAdmin, notifications }: TopBar
 
       {/* Avatar */}
       <div
-        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ring-2 ring-white shadow-sm cursor-pointer ${
-          isAdmin ? 'bg-amber-100 text-amber-700' : 'bg-[#E8FFF1] text-[#00A846]'
-        }`}
-        title={email}
+        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ring-2 ring-white shadow-sm cursor-pointer ${rc.bg} ${rc.text}`}
+        title={name || email}
       >
-        {email.charAt(0).toUpperCase()}
+        {(name || email).charAt(0).toUpperCase()}
       </div>
     </header>
   )
