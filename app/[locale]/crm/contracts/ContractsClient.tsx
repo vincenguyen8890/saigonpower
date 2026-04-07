@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { PlusCircle, Pencil, Trash2, X, Calendar, MapPin, Loader2, FileSignature } from 'lucide-react'
+import { PlusCircle, Pencil, Trash2, X, Calendar, MapPin, Loader2, FileSignature, Mail } from 'lucide-react'
 import type { Contract } from '@/lib/supabase/queries'
 import { saveContractAction, deleteContractAction } from './actions'
 
@@ -244,7 +244,7 @@ export default function ContractsClient({ initialContracts, leads, isAdmin, loca
             <table className="w-full">
               <thead className="border-b border-gray-100 bg-gray-50/50">
                 <tr>
-                  {['Customer', 'Plan / Provider', 'Rate', 'Expires', 'Service', 'Status', ''].map((h, i) => (
+                  {['Customer', 'Plan / Provider', 'Rate', 'Expires', 'Sequence', 'Service', 'Status', ''].map((h, i) => (
                     <th key={i} className={`text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-5 py-3 ${i === 4 ? 'hidden md:table-cell' : ''} ${i === 1 ? 'hidden md:table-cell' : ''}`}>{h}</th>
                   ))}
                 </tr>
@@ -275,6 +275,34 @@ export default function ContractsClient({ initialContracts, leads, isAdmin, loca
                             <p className={`text-xs font-medium ${urgency}`}>{daysLeft > 0 ? `${daysLeft}d left` : 'Expired'}</p>
                           </div>
                         </div>
+                      </td>
+                      {/* Renewal sequence dots */}
+                      <td className="px-5 py-4 hidden md:table-cell">
+                        {c.status === 'active' && daysLeft <= 95 && daysLeft > 0 ? (
+                          <div className="flex items-center gap-1" title="Renewal sequence: 90d / 60d / 30d / 7d">
+                            {[
+                              { label: '90d', sent: daysLeft <= 90 },
+                              { label: '60d', sent: daysLeft <= 60 },
+                              { label: '30d', sent: daysLeft <= 30 },
+                              { label: '7d',  sent: daysLeft <= 7  },
+                            ].map(step => (
+                              <span
+                                key={step.label}
+                                title={`${step.label} touchpoint${step.sent ? ' sent' : ' pending'}`}
+                                className={`flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${
+                                  step.sent
+                                    ? 'bg-green-100 text-green-700 border-green-300'
+                                    : 'bg-slate-100 text-slate-400 border-slate-200'
+                                }`}
+                              >
+                                {step.sent && <Mail size={8} />}
+                                {step.label}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-300">—</span>
+                        )}
                       </td>
                       <td className="px-5 py-4 hidden md:table-cell">
                         <span className={`text-xs px-2 py-0.5 rounded font-medium ${c.service_type === 'commercial' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'}`}>

@@ -7,6 +7,7 @@ import AIInsights from '@/components/ai/AIInsights'
 import AIChat from '@/components/ai/AIChat'
 import DraftActions from '@/components/ai/DraftActions'
 import RenewalAlerts from '@/components/ai/RenewalAlerts'
+import RateRecommender from '@/components/ai/RateRecommender'
 
 interface Props {
   params: Promise<{ locale: string }>
@@ -61,10 +62,11 @@ export default async function AIManagerPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Bottom row: Renewals + Drafts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {/* Bottom row: Renewals + Drafts + Rate Recommender */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <RenewalAlerts />
         <DraftActions />
+        <RateRecommender />
       </div>
     </div>
   )

@@ -11,6 +11,7 @@ import EditLeadModal from './EditLeadModal'
 import AddActivityForm from './AddActivityForm'
 import CompleteActivityButton from '@/components/crm/CompleteActivityButton'
 import EmailModal from '@/components/crm/EmailModal'
+import LeadScoreBadge from '@/components/crm/LeadScoreBadge'
 
 interface Props {
   params: Promise<{ locale: string; id: string }>
@@ -436,6 +437,9 @@ export default async function LeadDetailPage({ params }: Props) {
 
         {/* Right — 1 col */}
         <div className="space-y-5">
+          {/* AI Score */}
+          <LeadScoreBadge lead={lead} showFull />
+
           {/* Notes */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">

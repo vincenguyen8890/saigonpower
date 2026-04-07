@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Search, ChevronRight, ChevronLeft } from 'lucide-react'
 import LeadStatusBadge from '@/components/crm/LeadStatusBadge'
+import LeadScoreBadge from '@/components/crm/LeadScoreBadge'
 import { getLeads, getLeadsCount } from '@/lib/supabase/queries'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
@@ -228,7 +229,12 @@ export default async function LeadsPage({ params, searchParams }: Props) {
                           {lead.service_type === 'commercial' ? 'Comm.' : 'Res.'}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5"><LeadStatusBadge status={lead.status} /></td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <LeadStatusBadge status={lead.status} />
+                          <LeadScoreBadge lead={lead} />
+                        </div>
+                      </td>
                       <td className="px-5 py-3.5 hidden lg:table-cell">
                         <span className="text-[11px] text-slate-400 capitalize">{lead.source || '—'}</span>
                       </td>

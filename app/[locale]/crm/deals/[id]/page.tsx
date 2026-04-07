@@ -15,6 +15,7 @@ import AddActivityForm from '../../leads/[id]/AddActivityForm'
 import MarkPaidButton from './MarkPaidButton'
 import DealDocuments from './DealDocuments'
 import SaveTemplateButton from './SaveTemplateButton'
+import DealCoachPanel from './DealCoachPanel'
 
 interface Props {
   params: Promise<{ locale: string; id: string }>
@@ -82,6 +83,7 @@ export default async function DealDetailPage({ params }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <DealCoachPanel dealId={deal.id} />
           <SaveTemplateButton dealId={deal.id} suggestedName={`${deal.provider ?? ''} ${deal.term_months ?? ''}mo`.trim()} />
           <Link
             href={`/${locale}/loa/${deal.id}`}
