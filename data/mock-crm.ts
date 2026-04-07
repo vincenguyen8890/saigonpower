@@ -4,6 +4,7 @@ export type LeadStatus = 'new' | 'contacted' | 'quoted' | 'enrolled' | 'lost'
 export type ServiceType = 'residential' | 'commercial'
 
 export type LeadTag = 'assistant_program' | '65+' | 'red_flag' | 'vip'
+export type AccountStatus = 'active' | 'inactive' | 'switch_away'
 
 export interface Lead {
   id: string
@@ -24,6 +25,7 @@ export interface Lead {
   dob: string | null
   anxh: string | null
   tags: LeadTag[] | null
+  account_status: AccountStatus | null
   notes: string | null
   assigned_to: string | null
   created_at: string
@@ -80,7 +82,7 @@ export const mockLeads: Lead[] = [
     preferred_language: 'vi',
     status: 'new',
     source: 'website',
-    email2: null, phone2: null, tags: null,
+    email2: null, phone2: null, tags: null, account_status: 'active',
     referral_by: null, service_address: null, mailing_address: null, dob: null, anxh: null,
     notes: null,
     assigned_to: null,
@@ -98,7 +100,7 @@ export const mockLeads: Lead[] = [
     preferred_language: 'vi',
     status: 'contacted',
     source: 'referral',
-    email2: null, phone2: null, tags: null,
+    email2: null, phone2: null, tags: null, account_status: 'active',
     referral_by: null, service_address: null, mailing_address: null, dob: null, anxh: null,
     notes: 'Nail salon, 2 locations. Needs commercial rate.',
     assigned_to: 'agent@saigonllc.com',
@@ -116,7 +118,7 @@ export const mockLeads: Lead[] = [
     preferred_language: 'vi',
     status: 'quoted',
     source: 'facebook',
-    email2: null, phone2: null, tags: null,
+    email2: null, phone2: null, tags: null, account_status: 'switch_away',
     referral_by: null, service_address: null, mailing_address: null, dob: null, anxh: null,
     notes: 'Interested in 12-month fixed rate. Budget ~$150/mo.',
     assigned_to: 'agent@saigonllc.com',
@@ -134,7 +136,7 @@ export const mockLeads: Lead[] = [
     preferred_language: 'en',
     status: 'enrolled',
     source: 'website',
-    email2: null, phone2: null, tags: null,
+    email2: null, phone2: null, tags: null, account_status: null,
     referral_by: null, service_address: null, mailing_address: null, dob: null, anxh: null,
     notes: 'Enrolled in Gexa Saver 12. Start date: last week.',
     assigned_to: 'agent@saigonllc.com',
@@ -152,7 +154,7 @@ export const mockLeads: Lead[] = [
     preferred_language: 'vi',
     status: 'new',
     source: 'google',
-    email2: null, phone2: null, tags: null,
+    email2: null, phone2: null, tags: null, account_status: null,
     referral_by: null, service_address: null, mailing_address: null, dob: null, anxh: null,
     notes: null,
     assigned_to: null,
@@ -170,7 +172,7 @@ export const mockLeads: Lead[] = [
     preferred_language: 'vi',
     status: 'new',
     source: 'website',
-    email2: null, phone2: null, tags: null,
+    email2: null, phone2: null, tags: null, account_status: 'inactive',
     referral_by: null, service_address: null, mailing_address: null, dob: null, anxh: null,
     notes: 'Vietnamese restaurant, ~3,000 kWh/month.',
     assigned_to: null,
@@ -188,7 +190,7 @@ export const mockLeads: Lead[] = [
     preferred_language: 'en',
     status: 'lost',
     source: 'google',
-    email2: null, phone2: null, tags: null,
+    email2: null, phone2: null, tags: null, account_status: null,
     referral_by: null, service_address: null, mailing_address: null, dob: null, anxh: null,
     notes: 'Went with another provider.',
     assigned_to: 'agent@saigonllc.com',
@@ -206,7 +208,7 @@ export const mockLeads: Lead[] = [
     preferred_language: 'vi',
     status: 'contacted',
     source: 'referral',
-    email2: null, phone2: null, tags: null,
+    email2: null, phone2: null, tags: null, account_status: null,
     referral_by: null, service_address: null, mailing_address: null, dob: null, anxh: null,
     notes: 'Referred by Lan Nguyen.',
     assigned_to: 'agent@saigonllc.com',

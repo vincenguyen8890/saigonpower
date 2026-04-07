@@ -8,7 +8,7 @@ import {
   Menu, X, LayoutDashboard, Users, FileText, Settings,
   ShieldCheck, UserCheck, Zap, RefreshCw, Building2,
   TrendingUp, BarChart3, Bot, ListChecks, DollarSign,
-  Inbox, Contact2, Plus,
+  Inbox, Contact2, Plus, Landmark,
 } from 'lucide-react'
 import NotificationBell from './NotificationBell'
 import SignOutButton from './SignOutButton'
@@ -46,11 +46,12 @@ export default function MobileNavDrawer({ locale, email, isAdmin, notifications 
     {
       label: 'Pipeline',
       items: [
-        { href: `/${locale}/crm/leads`,     label: 'Leads',      icon: Users      },
-        { href: `/${locale}/crm/deals`,     label: 'Deals',      icon: TrendingUp },
-        { href: `/${locale}/crm/tasks`,     label: 'Work Queue', icon: ListChecks },
-        { href: `/${locale}/crm/proposals`, label: 'Proposals',  icon: FileText   },
-        { href: `/${locale}/crm/rfp`,       label: 'Rate RFPs',  icon: Inbox      },
+        { href: `/${locale}/crm/leads`,    label: 'Leads',      icon: Users      },
+        { href: `/${locale}/crm/deals`,    label: 'Deals',      icon: TrendingUp },
+        { href: `/${locale}/crm/accounts`, label: 'Accounts',   icon: Landmark   },
+        { href: `/${locale}/crm/tasks`,    label: 'Work Queue', icon: ListChecks },
+        { href: `/${locale}/crm/proposals`,label: 'Proposals',  icon: FileText   },
+        { href: `/${locale}/crm/rfp`,      label: 'Rate RFPs',  icon: Inbox      },
       ],
     },
     {

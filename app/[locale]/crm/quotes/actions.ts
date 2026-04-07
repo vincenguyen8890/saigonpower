@@ -51,6 +51,7 @@ export async function createQuoteAction(data: {
       email2:             null,
       phone2:             null,
       tags:               null,
+      account_status:     null,
       notes:              data.notes || null,
       assigned_to:        null,
     })

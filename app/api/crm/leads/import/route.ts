@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
           email2:             null,
           phone2:             null,
           tags:               null,
+          account_status:     null,
           notes:              row.notes?.trim()   || null,
           assigned_to:        null,
         })

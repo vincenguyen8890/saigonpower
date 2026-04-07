@@ -14,9 +14,10 @@ function adminClient() {
 import {
   mockLeads, mockQuotes, mockCRMStats, mockPlans, mockProviders, generateCustomerId,
   type Lead, type QuoteRequest, type LeadStatus, type CRMStats, type Plan, type Provider,
+  type AccountStatus,
 } from '@/data/mock-crm'
 
-export type { Lead, QuoteRequest, Plan, Provider }
+export type { Lead, QuoteRequest, Plan, Provider, AccountStatus }
 
 function useMock() {
   return process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')
@@ -136,6 +137,61 @@ export async function insertLead(lead: Omit<Lead, 'id' | 'created_at' | 'updated
   } catch {
     return null
   }
+}
+
+// ─── Accounts (leads with at least one deal) ──────────────────────────────────
+
+// Lead IDs that have deals in mock data (mirrors mockDeals in data/mock-crm.ts)
+const MOCK_ACCOUNT_LEAD_IDS = new Set(['lead-001', 'lead-002', 'lead-003', 'lead-006'])
+
+export async function getAccounts(filters?: {
+  status?: AccountStatus | 'all'
+  q?: string
+}): Promise<Lead[]> {
+  if (useMock()) {
+    let accounts = mockLeads.filter(l => MOCK_ACCOUNT_LEAD_IDS.has(l.id))
+    if (filters?.status && filters.status !== 'all')
+      accounts = accounts.filter(l => l.account_status === filters.status)
+    if (filters?.q) {
+      const q = filters.q.toLowerCase()
+      accounts = accounts.filter(l =>
+        l.name.toLowerCase().includes(q) ||
+        l.email.toLowerCase().includes(q) ||
+        l.phone.includes(q)
+      )
+    }
+    return accounts
+  }
+
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: dealLeadIds } = await (supabase.from('deals') as any)
+      .select('lead_id')
+      .not('lead_id', 'is', null)
+    const ids: string[] = [...new Set<string>((dealLeadIds ?? []).map((d: { lead_id: string }) => d.lead_id))]
+    if (ids.length === 0) return []
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (supabase.from('leads') as any)
+      .select('*')
+      .in('id', ids)
+      .order('created_at', { ascending: false })
+    if (filters?.status && filters.status !== 'all') q = q.eq('account_status', filters.status)
+    if (filters?.q) {
+      const search = filters.q
+      q = q.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`)
+    }
+    const { data, error } = await q
+    if (error) throw error
+    return data ?? []
+  } catch {
+    return mockLeads.filter(l => ['lead-001', 'lead-002', 'lead-003', 'lead-006'].includes(l.id))
+  }
+}
+
+export async function updateAccountStatus(leadId: string, status: AccountStatus): Promise<void> {
+  await updateLead(leadId, { account_status: status })
 }
 
 // ─── Quotes ───────────────────────────────────────────────────────────────────
