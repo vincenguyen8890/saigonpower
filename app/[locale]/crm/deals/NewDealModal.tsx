@@ -11,11 +11,18 @@ import type { Provider } from '@/data/mock-crm'
 
 const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHTS', 'FREE WEEKENDS']
 
+const DEAL_FLAGS = ['TOS', 'TOAO', 'Deposit', 'Special Deal', '10% Promo', 'Customer Referral']
+
 export default function NewDealModal({ locale, leads, agents, providers }: { locale: string; leads: Lead[]; agents: CRMAgent[]; providers: Provider[] }) {
   const [open, setOpen] = useState(false)
   const [isPending, setIsPending] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [selectedFlags, setSelectedFlags] = useState<string[]>([])
   const router = useRouter()
+
+  function toggleFlag(flag: string) {
+    setSelectedFlags(prev => prev.includes(flag) ? prev.filter(f => f !== flag) : [...prev, flag])
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -52,6 +59,7 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
         term_months:         Number(get('term_months')) || null,
         product_type:        get('product_type') || null,
         usage_kwh:           Number(get('usage_kwh')) || null,
+        flags:               selectedFlags.length > 0 ? selectedFlags : null,
       })
       if (res.error) {
         setSubmitError(res.error)
@@ -118,6 +126,25 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
                       <option value="residential">Residential</option>
                       <option value="commercial">Commercial</option>
                     </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className={L}>Flags</label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {DEAL_FLAGS.map(flag => (
+                        <button
+                          key={flag}
+                          type="button"
+                          onClick={() => toggleFlag(flag)}
+                          className={`text-xs px-3 py-1.5 rounded-lg border transition-colors font-medium ${
+                            selectedFlags.includes(flag)
+                              ? 'border-orange-300 text-orange-700 bg-orange-50'
+                              : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                          }`}
+                        >
+                          {flag}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>

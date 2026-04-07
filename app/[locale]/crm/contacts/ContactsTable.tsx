@@ -99,6 +99,7 @@ function QuickDealModal({
         term_months:         Number(get('term_months')) || null,
         product_type:        get('product_type') || null,
         usage_kwh:           Number(get('usage_kwh')) || null,
+        flags:               null,
       })
       if (res.error) { setError(res.error); return }
       router.refresh()

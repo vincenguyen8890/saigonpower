@@ -38,6 +38,7 @@ export async function startRenewalAction(params: {
     term_months:         null,
     product_type:        null,
     usage_kwh:           null,
+    flags:               null,
   })
 
   // Log renewal activity
