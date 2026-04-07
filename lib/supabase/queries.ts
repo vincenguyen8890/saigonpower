@@ -1066,3 +1066,47 @@ export async function deleteDealDocument(dealId: string, fileName: string): Prom
     await supabase.storage.from('deal-documents').remove([`${dealId}/${fileName}`])
   } catch { /* ignore */ }
 }
+
+// ─── Deal Templates ───────────────────────────────────────────────────────────
+
+export interface DealTemplate {
+  id: string
+  name: string
+  provider: string | null
+  plan_name: string | null
+  product_type: string | null
+  rate_kwh: number | null
+  adder_kwh: number | null
+  term_months: number | null
+  service_type: 'residential' | 'commercial' | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export async function getDealTemplates(): Promise<DealTemplate[]> {
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('crm_deal_templates') as any)
+      .select('*').order('name')
+    if (error) throw error
+    return data ?? []
+  } catch { return [] }
+}
+
+export async function saveDealTemplate(template: Omit<DealTemplate, 'id' | 'created_at'>): Promise<void> {
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('crm_deal_templates') as any).insert({ ...template, updated_at: new Date().toISOString() })
+  } catch { /* ignore */ }
+}
+
+export async function deleteDealTemplate(id: string): Promise<void> {
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('crm_deal_templates') as any).delete().eq('id', id)
+  } catch { /* ignore */ }
+}

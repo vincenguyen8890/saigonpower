@@ -32,7 +32,7 @@ export default function ImportModal() {
   const [rows, setRows] = useState<Record<string, string>[]>([])
   const [fileName, setFileName] = useState('')
   const [isPending, setIsPending] = useState(false)
-  const [result, setResult] = useState<{ imported: number; failed: number; errors: string[] } | null>(null)
+  const [result, setResult] = useState<{ imported: number; failed: number; duplicates: number; errors: string[]; skipped: string[] } | null>(null)
   const [parseError, setParseError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
@@ -131,7 +131,11 @@ export default function ImportModal() {
                     <CheckCircle2 size={20} className="text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-semibold text-green-800">Import complete</p>
-                      <p className="text-sm text-green-700 mt-0.5">{result.imported} contacts imported · {result.failed} skipped</p>
+                      <p className="text-sm text-green-700 mt-0.5">
+                        {result.imported} imported
+                        {result.duplicates > 0 && ` · ${result.duplicates} duplicates skipped`}
+                        {result.failed > 0 && ` · ${result.failed} failed`}
+                      </p>
                     </div>
                   </div>
                   {result.errors.length > 0 && (

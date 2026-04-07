@@ -8,7 +8,7 @@ import {
   Menu, X, LayoutDashboard, Users, FileText, Settings,
   ShieldCheck, UserCheck, Zap, RefreshCw, Building2,
   TrendingUp, BarChart3, Bot, ListChecks, DollarSign,
-  Inbox, Contact2, Plus, Landmark,
+  Inbox, Contact2, Plus, Landmark, Search,
 } from 'lucide-react'
 import NotificationBell from './NotificationBell'
 import SignOutButton from './SignOutButton'
@@ -154,6 +154,18 @@ export default function MobileNavDrawer({ locale, email, isAdmin, notifications 
           >
             <X size={18} />
           </button>
+        </div>
+
+        {/* Mobile search */}
+        <div className="px-4 pt-3 pb-2">
+          <Link
+            href={`/${locale}/crm/contacts`}
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-400 hover:border-[#00C853]/50 transition-colors"
+          >
+            <Search size={14} />
+            Search customers…
+          </Link>
         </div>
 
         {/* Role chip */}

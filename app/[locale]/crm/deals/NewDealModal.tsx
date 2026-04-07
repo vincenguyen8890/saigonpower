@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import { PlusCircle, X } from 'lucide-react'
 import { createDeal } from './actions'
 import type { Lead } from '@/data/mock-crm'
-import type { Deal } from '@/lib/supabase/queries'
+import type { Deal, DealTemplate } from '@/lib/supabase/queries'
 import type { CRMAgent } from '@/lib/supabase/queries'
 import type { Provider } from '@/data/mock-crm'
+import DealTemplateButton from './DealTemplateButton'
 
 const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHTS', 'FREE WEEKENDS']
 
@@ -18,12 +19,25 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
   const [isPending, setIsPending] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [selectedFlags, setSelectedFlags] = useState<string[]>([])
-  const [term, setTerm] = useState<string>('12')
-  const [contractStart, setContractStart] = useState<string>('')
-  const [title, setTitle] = useState<string>('')
-  const [adderKwh, setAdderKwh] = useState<string>('')
-  const [usageKwh, setUsageKwh] = useState<string>('')
+  const [term,         setTerm]         = useState<string>('12')
+  const [contractStart,setContractStart] = useState<string>('')
+  const [title,        setTitle]        = useState<string>('')
+  const [adderKwh,     setAdderKwh]     = useState<string>('')
+  const [usageKwh,     setUsageKwh]     = useState<string>('')
+  const [providerVal,  setProviderVal]  = useState<string>('')
+  const [planNameVal,  setPlanNameVal]  = useState<string>('')
+  const [productType,  setProductType]  = useState<string>('')
+  const [rateKwh,      setRateKwh]      = useState<string>('')
   const router = useRouter()
+
+  function applyTemplate(tpl: DealTemplate) {
+    if (tpl.provider)     setProviderVal(tpl.provider)
+    if (tpl.plan_name)    setPlanNameVal(tpl.plan_name)
+    if (tpl.product_type) setProductType(tpl.product_type)
+    if (tpl.rate_kwh)     setRateKwh(String(tpl.rate_kwh))
+    if (tpl.adder_kwh)    setAdderKwh(String(tpl.adder_kwh))
+    if (tpl.term_months)  setTerm(String(tpl.term_months))
+  }
 
   const autoValue = adderKwh && usageKwh
     ? Math.round(parseFloat(adderKwh) * parseFloat(usageKwh))
@@ -106,7 +120,7 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
   return (
     <>
       <button
-        onClick={() => { setOpen(true); setTitle(''); setSelectedFlags([]); setTerm('12'); setContractStart(''); setAdderKwh(''); setUsageKwh('') }}
+        onClick={() => { setOpen(true); setTitle(''); setSelectedFlags([]); setTerm('12'); setContractStart(''); setAdderKwh(''); setUsageKwh(''); setProviderVal(''); setPlanNameVal(''); setProductType(''); setRateKwh('') }}
         className="flex items-center gap-2 bg-brand-greenDark text-white text-sm px-4 py-2 rounded-xl hover:bg-brand-green transition-colors font-medium"
       >
         <PlusCircle size={16} />
@@ -117,7 +131,10 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
-              <h2 className="font-semibold text-gray-900">New Deal</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="font-semibold text-gray-900">New Deal</h2>
+                <DealTemplateButton onApply={applyTemplate} />
+              </div>
               <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
             </div>
 
@@ -203,18 +220,18 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
                   </div>
                   <div>
                     <label className={L}>Supplier</label>
-                    <select name="provider" defaultValue="" className={C}>
+                    <select name="provider" value={providerVal} onChange={e => setProviderVal(e.target.value)} className={C}>
                       <option value="">— Select —</option>
                       {providers.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className={L}>Plan Name</label>
-                    <input name="plan_name" placeholder="e.g. Gexa Saver 12" className={C} />
+                    <input name="plan_name" value={planNameVal} onChange={e => setPlanNameVal(e.target.value)} placeholder="e.g. Gexa Saver 12" className={C} />
                   </div>
                   <div>
                     <label className={L}>Product Type</label>
-                    <select name="product_type" defaultValue="" className={C}>
+                    <select name="product_type" value={productType} onChange={e => setProductType(e.target.value)} className={C}>
                       <option value="">— Select —</option>
                       {PRODUCT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
@@ -235,7 +252,7 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
                   </div>
                   <div>
                     <label className={L}>Contract Rate ($/kWh)</label>
-                    <input name="rate_kwh" type="number" step="0.001" min="0" placeholder="0.109" className={C} />
+                    <input name="rate_kwh" type="number" step="0.001" min="0" placeholder="0.109" value={rateKwh} onChange={e => setRateKwh(e.target.value)} className={C} />
                   </div>
                   <div>
                     <label className={L}>Adder / Commission ($/kWh)</label>

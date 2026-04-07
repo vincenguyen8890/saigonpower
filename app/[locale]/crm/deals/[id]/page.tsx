@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, DollarSign, Target, Building2, User, TrendingUp, CheckCircle2, MapPin, Clock } from 'lucide-react'
+import { ArrowLeft, DollarSign, Target, Building2, User, TrendingUp, CheckCircle2, MapPin, Clock, Printer } from 'lucide-react'
 import { getDealById, getLeadById, getActivities, getDealAuditLog, getCRMAgents, getProvidersFromDB, getLeads, getDealDocuments } from '@/lib/supabase/queries'
 import { mockProviders } from '@/data/mock-crm'
 import { formatDate } from '@/lib/utils'
@@ -14,6 +14,7 @@ import CompleteActivityButton from '@/components/crm/CompleteActivityButton'
 import AddActivityForm from '../../leads/[id]/AddActivityForm'
 import MarkPaidButton from './MarkPaidButton'
 import DealDocuments from './DealDocuments'
+import SaveTemplateButton from './SaveTemplateButton'
 
 interface Props {
   params: Promise<{ locale: string; id: string }>
@@ -81,6 +82,14 @@ export default async function DealDetailPage({ params }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <SaveTemplateButton dealId={deal.id} suggestedName={`${deal.provider ?? ''} ${deal.term_months ?? ''}mo`.trim()} />
+          <Link
+            href={`/${locale}/crm/deals/${deal.id}/loa`}
+            className="flex items-center gap-1.5 text-sm border border-gray-200 text-gray-600 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors bg-white"
+          >
+            <Printer size={14} />
+            LOA
+          </Link>
           <ShareDealButton dealId={deal.id} locale={locale} />
           {lead?.email && (
             <EmailModal
