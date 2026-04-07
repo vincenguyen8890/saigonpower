@@ -4,10 +4,11 @@ import { getDeals, getLeads, getCRMAgents, getProvidersFromDB } from '@/lib/supa
 import { TrendingUp, DollarSign, Target, CheckCircle2, Download } from 'lucide-react'
 import { mockProviders } from '@/data/mock-crm'
 import NewDealModal from './NewDealModal'
+import DealsToolbar from './DealsToolbar'
 
 interface Props {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ stage?: string }>
+  searchParams: Promise<{ stage?: string; q?: string; agent?: string }>
 }
 
 const stageConfig: Record<string, { label: string; color: string; bg: string }> = {
@@ -23,7 +24,7 @@ const stages = ['prospect', 'qualified', 'proposal', 'negotiation', 'won', 'lost
 
 export default async function DealsPage({ params, searchParams }: Props) {
   const { locale } = await params
-  const { stage } = await searchParams
+  const { stage, q = '', agent = '' } = await searchParams
   setRequestLocale(locale)
 
   const [deals, leads, agents, providers] = await Promise.all([
@@ -42,6 +43,15 @@ export default async function DealsPage({ params, searchParams }: Props) {
 
   // Lead map for lookups
   const leadMap = Object.fromEntries(leads.map(l => [l.id, l.name]))
+
+  // Apply search filters
+  const filteredDeals = deals.filter(d => {
+    const qLower = q.toLowerCase()
+    const agentLower = agent.toLowerCase()
+    const matchQ = !q || d.title.toLowerCase().includes(qLower) || (d.provider ?? '').toLowerCase().includes(qLower) || (d.lead_id ? (leadMap[d.lead_id] ?? '').toLowerCase().includes(qLower) : false)
+    const matchAgent = !agent || (d.assigned_to ?? '').toLowerCase().includes(agentLower)
+    return matchQ && matchAgent
+  })
 
   return (
     <div className="space-y-6">
@@ -62,7 +72,10 @@ export default async function DealsPage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Search/filter toolbar */}
+      <DealsToolbar initialQ={q} initialAgent={agent} />
+
+      {/* Stats — always from full unfiltered deals */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center gap-2 mb-1">
@@ -100,10 +113,10 @@ export default async function DealsPage({ params, searchParams }: Props) {
           href={`/${locale}/crm/deals`}
           className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${!stage ? 'bg-brand-greenDark text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
         >
-          All ({deals.length})
+          All ({filteredDeals.length})
         </a>
         {stages.map(s => {
-          const count = deals.filter(d => d.stage === s).length
+          const count = filteredDeals.filter(d => d.stage === s).length
           const cfg = stageConfig[s]
           return (
             <a
@@ -119,7 +132,7 @@ export default async function DealsPage({ params, searchParams }: Props) {
 
       {/* Deals Table */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {deals.length === 0 ? (
+        {filteredDeals.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <TrendingUp size={32} className="mx-auto mb-3 opacity-30" />
             <p className="font-medium">No deals found</p>
@@ -140,7 +153,7 @@ export default async function DealsPage({ params, searchParams }: Props) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {deals.map(deal => {
+                {filteredDeals.map(deal => {
                   const cfg = stageConfig[deal.stage]
                   const provider = mockProviders.find(p => p.name === deal.provider)
                   const commission = provider

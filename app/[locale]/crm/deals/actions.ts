@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { insertDeal, updateDeal, deleteDeal, insertActivity } from '@/lib/supabase/queries'
+import { insertDeal, updateDeal, deleteDeal, insertActivity, updateAccountStatus } from '@/lib/supabase/queries'
 import type { Deal } from '@/lib/supabase/queries'
 
 function bust() {
@@ -55,6 +55,10 @@ export async function runDealStageAutomation(
 
   const action = stageActions[newStage]
   if (!action) return
+
+  if (newStage === 'won' && leadId) {
+    await updateAccountStatus(leadId, 'active')
+  }
 
   await insertActivity({
     lead_id:     leadId,

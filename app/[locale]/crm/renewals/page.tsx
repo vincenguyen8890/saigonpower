@@ -1,9 +1,8 @@
 import { Calendar, MapPin, RefreshCw, AlertTriangle } from 'lucide-react'
 import { setRequestLocale } from 'next-intl/server'
 import { formatDate } from '@/lib/utils'
-import { getContracts } from '@/lib/supabase/queries'
+import { getDeals, getLeads } from '@/lib/supabase/queries'
 import StartRenewalButton from './StartRenewalButton'
-import Link from 'next/link'
 
 interface Props { params: Promise<{ locale: string }> }
 
@@ -11,8 +10,12 @@ export default async function RenewalCalendarPage({ params }: Props) {
   const { locale } = await params
   setRequestLocale(locale)
 
-  // Fetch all active contracts sorted by expiry
-  const contracts = await getContracts('active')
+  const [deals, leads] = await Promise.all([getDeals('won'), getLeads()])
+
+  // Only won deals with a contract end date
+  const contracts = deals.filter(d => d.contract_end_date)
+
+  const leadMap = Object.fromEntries(leads.map(l => [l.id, l]))
 
   const now = new Date()
 
@@ -30,22 +33,22 @@ export default async function RenewalCalendarPage({ params }: Props) {
   }
 
   const counts = {
-    expired:  contracts.filter(c => getDaysLeft(c.end_date) < 0).length,
-    critical: contracts.filter(c => { const d = getDaysLeft(c.end_date); return d >= 0 && d <= 30 }).length,
-    warning:  contracts.filter(c => { const d = getDaysLeft(c.end_date); return d > 30 && d <= 60 }).length,
-    ok:       contracts.filter(c => getDaysLeft(c.end_date) > 60).length,
+    expired:  contracts.filter(d => getDaysLeft(d.contract_end_date!) < 0).length,
+    critical: contracts.filter(d => { const n = getDaysLeft(d.contract_end_date!); return n >= 0 && n <= 30 }).length,
+    warning:  contracts.filter(d => { const n = getDaysLeft(d.contract_end_date!); return n > 30 && n <= 60 }).length,
+    ok:       contracts.filter(d => getDaysLeft(d.contract_end_date!) > 60).length,
   }
 
   // Sort by soonest expiry first
   const sorted = [...contracts].sort(
-    (a, b) => new Date(a.end_date).getTime() - new Date(b.end_date).getTime()
+    (a, b) => new Date(a.contract_end_date!).getTime() - new Date(b.contract_end_date!).getTime()
   )
 
   // Group by month
-  const byMonth = sorted.reduce<Record<string, typeof sorted>>((acc, c) => {
-    const key = new Date(c.end_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+  const byMonth = sorted.reduce<Record<string, typeof sorted>>((acc, d) => {
+    const key = new Date(d.contract_end_date!).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
     if (!acc[key]) acc[key] = []
-    acc[key].push(c)
+    acc[key].push(d)
     return acc
   }, {})
 
@@ -64,12 +67,6 @@ export default async function RenewalCalendarPage({ params }: Props) {
             {' '}&middot; {contracts.length} active contracts
           </p>
         </div>
-        <Link
-          href={`/${locale}/crm/contracts`}
-          className="text-sm bg-brand-greenDark text-white px-4 py-2 rounded-xl hover:bg-brand-green transition-colors font-medium"
-        >
-          + Add Contract
-        </Link>
       </div>
 
       {/* Summary row */}
@@ -109,30 +106,29 @@ export default async function RenewalCalendarPage({ params }: Props) {
       {contracts.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 text-center text-gray-400">
           <RefreshCw size={40} className="mx-auto mb-3 opacity-30" />
-          <p>No active contracts</p>
-          <Link href={`/${locale}/crm/contracts`} className="text-sm text-brand-green hover:underline mt-2 inline-block">
-            Add a contract →
-          </Link>
+          <p>No won deals with contract end dates</p>
+          <p className="text-xs mt-1">Set a contract end date on won deals to track renewals here.</p>
         </div>
       ) : (
         <div className="space-y-6">
-          {Object.entries(byMonth).map(([month, monthContracts]) => (
+          {Object.entries(byMonth).map(([month, monthDeals]) => (
             <div key={month}>
               <div className="flex items-center gap-3 mb-3">
                 <h2 className="font-semibold text-gray-700 text-sm capitalize">{month}</h2>
                 <div className="flex-1 h-px bg-gray-100" />
-                <span className="text-xs text-gray-400">{monthContracts.length} contracts</span>
+                <span className="text-xs text-gray-400">{monthDeals.length} contracts</span>
               </div>
 
               <div className="space-y-2">
-                {monthContracts.map(c => {
-                  const daysLeft = getDaysLeft(c.end_date)
+                {monthDeals.map(deal => {
+                  const daysLeft = getDaysLeft(deal.contract_end_date!)
                   const urgency = getUrgency(daysLeft)
                   const cfg = urgencyConfig[urgency]
-                  const displayName = c.customer_name ?? 'Unknown Customer'
+                  const lead = deal.lead_id ? leadMap[deal.lead_id] : null
+                  const displayName = lead?.name ?? deal.title
 
                   return (
-                    <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm flex overflow-hidden hover:shadow-md transition-shadow">
+                    <div key={deal.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm flex overflow-hidden hover:shadow-md transition-shadow">
                       <div className={`w-1 flex-shrink-0 ${cfg.bar}`} />
 
                       <div className="flex-1 p-4 flex flex-wrap items-center gap-4">
@@ -141,23 +137,23 @@ export default async function RenewalCalendarPage({ params }: Props) {
                           <p className="text-sm font-semibold text-gray-900">{displayName}</p>
                           <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
                             <MapPin size={10} />
-                            {c.address?.split(',').slice(-2).join(',').trim() ?? c.zip ?? '—'}
+                            {deal.service_address?.split(',').slice(-2).join(',').trim() ?? '—'}
                           </p>
                         </div>
 
                         {/* Plan */}
                         <div className="hidden sm:block min-w-[140px]">
                           <p className="text-xs text-gray-400">Current plan</p>
-                          <p className="text-sm text-gray-700">{c.plan_name ?? c.provider}</p>
-                          {c.rate_kwh && (
-                            <p className="text-xs text-gray-400">{(c.rate_kwh * 100).toFixed(1)}¢/kWh</p>
+                          <p className="text-sm text-gray-700">{deal.plan_name ?? deal.provider ?? '—'}</p>
+                          {deal.rate_kwh && (
+                            <p className="text-xs text-gray-400">{(deal.rate_kwh * 100).toFixed(1)}¢/kWh</p>
                           )}
                         </div>
 
                         {/* Expiry */}
                         <div className="min-w-[100px]">
                           <p className="text-xs text-gray-400">Expires</p>
-                          <p className="text-sm font-medium text-gray-900">{formatDate(c.end_date, locale)}</p>
+                          <p className="text-sm font-medium text-gray-900">{formatDate(deal.contract_end_date!, locale)}</p>
                         </div>
 
                         {/* Days left */}
@@ -169,22 +165,22 @@ export default async function RenewalCalendarPage({ params }: Props) {
 
                         {/* Type */}
                         <span className={`text-xs px-2 py-0.5 rounded font-medium hidden md:inline ${
-                          c.service_type === 'commercial' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'
+                          deal.service_type === 'commercial' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'
                         }`}>
-                          {c.service_type === 'commercial' ? 'Comm.' : 'Res.'}
+                          {deal.service_type === 'commercial' ? 'Comm.' : 'Res.'}
                         </span>
 
                         {/* Actions */}
                         <div className="ml-auto">
                           <StartRenewalButton
-                            contractId={c.id}
-                            leadId={c.lead_id}
+                            contractId={deal.id}
+                            leadId={deal.lead_id ?? null}
                             customerName={displayName}
-                            provider={c.provider}
-                            planName={c.plan_name}
-                            serviceType={c.service_type}
-                            currentRate={c.rate_kwh}
-                            endDate={c.end_date}
+                            provider={deal.provider ?? ''}
+                            planName={deal.plan_name ?? null}
+                            serviceType={(deal.service_type as 'residential' | 'commercial') ?? 'residential'}
+                            currentRate={deal.rate_kwh ?? null}
+                            endDate={deal.contract_end_date!}
                           />
                         </div>
                       </div>
