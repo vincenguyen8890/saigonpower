@@ -18,12 +18,12 @@ export default function DealEditForm({ deal, locale, agents, providers, leads = 
     deal.term_months ? String(deal.term_months) : 'mtm'
   )
   const [contractStart, setContractStart] = useState<string>(deal.contract_start_date ?? '')
-  const [rateKwh, setRateKwh] = useState<string>(deal.rate_kwh ? String(deal.rate_kwh) : '')
+  const [adderKwh, setAdderKwh] = useState<string>(deal.adder_kwh ? String(deal.adder_kwh) : '')
   const [usageKwh, setUsageKwh] = useState<string>(deal.usage_kwh ? String(deal.usage_kwh) : '')
   const router = useRouter()
 
-  const autoValue = rateKwh && usageKwh
-    ? Math.round(parseFloat(rateKwh) * parseFloat(usageKwh))
+  const autoValue = adderKwh && usageKwh
+    ? Math.round(parseFloat(adderKwh) * parseFloat(usageKwh))
     : null
 
   function toggleFlag(flag: string) {
@@ -202,11 +202,11 @@ export default function DealEditForm({ deal, locale, agents, providers, leads = 
                   </div>
                   <div>
                     <label className={L}>Contract Rate ($/kWh)</label>
-                    <input name="rate_kwh" type="number" step="0.001" min="0" value={rateKwh} onChange={e => setRateKwh(e.target.value)} className={C} />
+                    <input name="rate_kwh" type="number" step="0.001" min="0" defaultValue={deal.rate_kwh ?? ''} className={C} />
                   </div>
                   <div>
-                    <label className={L}>Adder ($/kWh)</label>
-                    <input name="adder_kwh" type="number" step="0.001" min="0" defaultValue={deal.adder_kwh ?? ''} className={C} />
+                    <label className={L}>Adder / Commission ($/kWh)</label>
+                    <input name="adder_kwh" type="number" step="0.0001" min="0" value={adderKwh} onChange={e => setAdderKwh(e.target.value)} className={C} />
                   </div>
                   <div>
                     <label className={L}>Estimated Usage (kWh/mo)</label>
@@ -214,7 +214,7 @@ export default function DealEditForm({ deal, locale, agents, providers, leads = 
                   </div>
                   {autoValue !== null && (
                     <div className="col-span-2">
-                      <label className={L}>Est. Monthly Value (auto-calculated)</label>
+                      <label className={L}>Monthly Commission (usage × adder)</label>
                       <div className={C + ' bg-green-50 text-green-700 font-semibold cursor-default'}>${autoValue}/mo</div>
                     </div>
                   )}
