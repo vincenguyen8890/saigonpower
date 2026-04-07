@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { TrendingUp, CheckSquare, Square, X } from 'lucide-react'
+import { TrendingUp, CheckSquare, Square, X, Clock } from 'lucide-react'
 import { bulkUpdateDealsAction } from './actions'
 import type { Deal, CRMAgent } from '@/lib/supabase/queries'
 
@@ -17,6 +17,11 @@ const stageConfig: Record<string, { label: string; color: string; bg: string }> 
 }
 
 const STAGES = ['prospect', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
+const FINAL_STAGES = new Set(['won', 'lost'])
+
+function agingDays(updatedAt: string): number {
+  return Math.floor((Date.now() - new Date(updatedAt).getTime()) / 86_400_000)
+}
 
 interface Props {
   deals: Deal[]
@@ -107,7 +112,53 @@ export default function DealsTable({ deals, locale, leadMap, agents }: Props) {
           <p className="font-medium">No deals found</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+          {/* Mobile cards (below md) */}
+          <div className="md:hidden divide-y divide-gray-50">
+            {deals.map(deal => {
+              const cfg = stageConfig[deal.stage] ?? stageConfig.prospect
+              const isChecked = selected.has(deal.id)
+              const days = agingDays(deal.updated_at)
+              const stale = !FINAL_STAGES.has(deal.stage) && days >= 7
+              return (
+                <div key={deal.id} className={`px-4 py-3 ${isChecked ? 'bg-green-50/40' : ''}`}>
+                  <div className="flex items-start gap-3">
+                    <button onClick={() => toggleOne(deal.id)} className="mt-0.5 flex-shrink-0 text-gray-400 hover:text-gray-600">
+                      {isChecked ? <CheckSquare size={15} className="text-brand-greenDark" /> : <Square size={15} />}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{deal.title}</p>
+                          {stale && (
+                            <span className="flex items-center gap-0.5 text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full flex-shrink-0 font-medium">
+                              <Clock size={9} />{days}d
+                            </span>
+                          )}
+                        </div>
+                        <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium capitalize flex-shrink-0 ${cfg.bg} ${cfg.color}`}>
+                          {cfg.label}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mb-1">{deal.lead_id ? (leadMap[deal.lead_id] ?? '—') : '—'}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-gray-900">${deal.value}<span className="text-xs font-normal text-gray-400">/mo</span></p>
+                        <Link
+                          href={`/${locale}/crm/deals/${deal.id}`}
+                          className="text-xs bg-brand-greenDark text-white px-3 py-1 rounded-lg hover:bg-brand-green transition-colors font-medium"
+                        >
+                          View
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Desktop table (md+) */}
+          <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead className="border-b border-gray-100 bg-gray-50/50">
               <tr>
@@ -127,6 +178,8 @@ export default function DealsTable({ deals, locale, leadMap, agents }: Props) {
               {deals.map(deal => {
                 const cfg = stageConfig[deal.stage] ?? stageConfig.prospect
                 const isChecked = selected.has(deal.id)
+                const days = agingDays(deal.updated_at)
+                const stale = !FINAL_STAGES.has(deal.stage) && days >= 7
 
                 return (
                   <tr key={deal.id} className={`hover:bg-gray-50/60 transition-colors ${isChecked ? 'bg-green-50/40' : ''}`}>
@@ -136,7 +189,14 @@ export default function DealsTable({ deals, locale, leadMap, agents }: Props) {
                       </button>
                     </td>
                     <td className="px-4 py-4">
-                      <p className="text-sm font-semibold text-gray-900">{deal.title}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-semibold text-gray-900">{deal.title}</p>
+                        {stale && (
+                          <span className="flex items-center gap-0.5 text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full font-medium" title={`No activity for ${days} days`}>
+                            <Clock size={9} />{days}d
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-400 capitalize">{deal.service_type ?? '—'}</p>
                     </td>
                     <td className="px-4 py-4 hidden md:table-cell">
@@ -169,7 +229,8 @@ export default function DealsTable({ deals, locale, leadMap, agents }: Props) {
               })}
             </tbody>
           </table>
-        </div>
+          </div>
+          </>
       )}
     </div>
   )

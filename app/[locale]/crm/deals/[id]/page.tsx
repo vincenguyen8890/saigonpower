@@ -84,7 +84,7 @@ export default async function DealDetailPage({ params }: Props) {
         <div className="flex items-center gap-2">
           <SaveTemplateButton dealId={deal.id} suggestedName={`${deal.provider ?? ''} ${deal.term_months ?? ''}mo`.trim()} />
           <Link
-            href={`/${locale}/crm/deals/${deal.id}/loa`}
+            href={`/${locale}/loa/${deal.id}`}
             className="flex items-center gap-1.5 text-sm border border-gray-200 text-gray-600 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors bg-white"
           >
             <Printer size={14} />
