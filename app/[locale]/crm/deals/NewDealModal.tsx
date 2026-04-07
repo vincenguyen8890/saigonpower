@@ -20,10 +20,19 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
   const [selectedFlags, setSelectedFlags] = useState<string[]>([])
   const [term, setTerm] = useState<string>('12')
   const [contractStart, setContractStart] = useState<string>('')
+  const [title, setTitle] = useState<string>('')
   const router = useRouter()
 
   function toggleFlag(flag: string) {
     setSelectedFlags(prev => prev.includes(flag) ? prev.filter(f => f !== flag) : [...prev, flag])
+  }
+
+  function handleLeadChange(leadId: string) {
+    const lead = leads.find(l => l.id === leadId)
+    if (!lead) { setTitle(''); return }
+    const firstName = lead.name.trim().split(' ')[0]
+    const address = lead.service_address || lead.zip || ''
+    setTitle(address ? `${firstName} – ${address}` : firstName)
   }
 
   function calcEndDate(start: string, months: string): string {
@@ -91,7 +100,7 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => { setOpen(true); setTitle(''); setSelectedFlags([]); setTerm('12'); setContractStart('') }}
         className="flex items-center gap-2 bg-brand-greenDark text-white text-sm px-4 py-2 rounded-xl hover:bg-brand-green transition-colors font-medium"
       >
         <PlusCircle size={16} />
@@ -113,15 +122,27 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Basic Info</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
-                    <label className={L}>Deal Title *</label>
-                    <input name="title" required placeholder="e.g. Nguyen – Residential 12mo" className={C} />
-                  </div>
-                  <div className="col-span-2">
                     <label className={L}>Linked Contact</label>
-                    <select name="lead_id" defaultValue="" className={C}>
+                    <select
+                      name="lead_id"
+                      defaultValue=""
+                      className={C}
+                      onChange={e => handleLeadChange(e.target.value)}
+                    >
                       <option value="">— None —</option>
                       {leads.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                     </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className={L}>Deal Title *</label>
+                    <input
+                      name="title"
+                      required
+                      placeholder="Auto-filled from contact, or type manually"
+                      value={title}
+                      onChange={e => setTitle(e.target.value)}
+                      className={C}
+                    />
                   </div>
                   <div>
                     <label className={L}>Stage</label>
