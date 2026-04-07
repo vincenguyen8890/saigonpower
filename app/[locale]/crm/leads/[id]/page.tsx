@@ -93,7 +93,7 @@ export default async function LeadDetailPage({ params }: Props) {
               <div className="flex items-start gap-3">
                 <Phone size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Phone</p>
+                  <p className="text-xs text-gray-400 mb-0.5">Phone 1</p>
                   <a href={`tel:${lead.phone}`} className="text-sm font-medium text-gray-900 hover:text-brand-green">
                     {lead.phone}
                   </a>
@@ -102,12 +102,34 @@ export default async function LeadDetailPage({ params }: Props) {
               <div className="flex items-start gap-3">
                 <Mail size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Email</p>
+                  <p className="text-xs text-gray-400 mb-0.5">Email 1</p>
                   <a href={`mailto:${lead.email}`} className="text-sm font-medium text-gray-900 hover:text-brand-green truncate block">
                     {lead.email}
                   </a>
                 </div>
               </div>
+              {lead.phone2 && (
+                <div className="flex items-start gap-3">
+                  <Phone size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Phone 2</p>
+                    <a href={`tel:${lead.phone2}`} className="text-sm font-medium text-gray-900 hover:text-brand-green">
+                      {lead.phone2}
+                    </a>
+                  </div>
+                </div>
+              )}
+              {lead.email2 && (
+                <div className="flex items-start gap-3">
+                  <Mail size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Email 2</p>
+                    <a href={`mailto:${lead.email2}`} className="text-sm font-medium text-gray-900 hover:text-brand-green truncate block">
+                      {lead.email2}
+                    </a>
+                  </div>
+                </div>
+              )}
               <div className="flex items-start gap-3">
                 <MapPin size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
                 <div>
@@ -122,21 +144,50 @@ export default async function LeadDetailPage({ params }: Props) {
                   <p className="text-sm font-medium text-gray-900 uppercase">{lead.preferred_language}</p>
                 </div>
               </div>
-              {(lead as { dob?: string | null }).dob && (
+              {lead.dob && (
                 <div className="flex items-start gap-3">
                   <Calendar size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs text-gray-400 mb-0.5">Date of Birth</p>
-                    <p className="text-sm font-medium text-gray-900">{(lead as { dob?: string | null }).dob}</p>
+                    <p className="text-sm font-medium text-gray-900">{lead.dob}</p>
                   </div>
                 </div>
               )}
-              {(lead as { anxh?: string | null }).anxh && (
+              {lead.anxh && (
                 <div className="flex items-start gap-3">
                   <FileText size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs text-gray-400 mb-0.5">ANXH</p>
-                    <p className="text-sm font-medium text-gray-900">{(lead as { anxh?: string | null }).anxh}</p>
+                    <p className="text-sm font-medium text-gray-900">{lead.anxh}</p>
+                  </div>
+                </div>
+              )}
+              {lead.tags && lead.tags.length > 0 && (
+                <div className="flex items-start gap-3 sm:col-span-2">
+                  <FileText size={15} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1.5">Tags</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {lead.tags.map(tag => {
+                        const tagStyles: Record<string, string> = {
+                          assistant_program: 'bg-blue-50 text-blue-700',
+                          '65+':             'bg-purple-50 text-purple-700',
+                          red_flag:          'bg-red-50 text-red-700',
+                          vip:               'bg-amber-50 text-amber-700',
+                        }
+                        const tagLabels: Record<string, string> = {
+                          assistant_program: 'Assistant Program',
+                          '65+':             '65+',
+                          red_flag:          'Red Flag',
+                          vip:               'VIP',
+                        }
+                        return (
+                          <span key={tag} className={`text-xs px-2 py-0.5 rounded font-medium ${tagStyles[tag] ?? 'bg-gray-100 text-gray-600'}`}>
+                            {tagLabels[tag] ?? tag}
+                          </span>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
               )}

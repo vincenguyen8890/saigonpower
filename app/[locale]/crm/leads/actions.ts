@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { updateLead, insertActivity } from '@/lib/supabase/queries'
-import type { LeadStatus } from '@/data/mock-crm'
+import type { LeadStatus, LeadTag } from '@/data/mock-crm'
 import type { Activity } from '@/lib/supabase/queries'
 
 function bust() {
@@ -49,13 +49,18 @@ export async function updateLeadAssignment(leadId: string, assignedTo: string | 
 export async function updateLeadFull(leadId: string, data: {
   name: string
   email: string
+  email2?: string | null
   phone: string
+  phone2?: string | null
   zip: string
+  dob?: string | null
+  anxh?: string | null
   service_type: string
   preferred_language: string
   source: string
   notes: string
   assigned_to: string
+  tags?: LeadTag[]
 }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await updateLead(leadId, data as any)

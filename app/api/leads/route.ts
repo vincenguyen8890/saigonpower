@@ -19,6 +19,9 @@ export async function POST(req: Request) {
       mailing_address:    body.mailing_address   ?? null,
       dob:                body.dob               ?? null,
       anxh:               body.anxh              ?? null,
+      email2:             body.email2            ?? null,
+      phone2:             body.phone2            ?? null,
+      tags:               body.tags              ?? null,
       notes:              body.notes             ?? null,
       assigned_to:        body.assigned_to       ?? null,
     })

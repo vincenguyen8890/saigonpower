@@ -48,6 +48,9 @@ export async function createQuoteAction(data: {
       mailing_address:    null,
       dob:                null,
       anxh:               null,
+      email2:             null,
+      phone2:             null,
+      tags:               null,
       notes:              data.notes || null,
       assigned_to:        null,
     })
