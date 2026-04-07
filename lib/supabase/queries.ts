@@ -51,7 +51,8 @@ export async function getLeads(filters?: {
   try {
     const supabase = await createClient()
     const PAGE = 1000
-    let all: unknown[] = []
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let all: any[] = []
     let from = 0
     while (true) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71,7 +72,7 @@ export async function getLeads(filters?: {
       if (!data || data.length < PAGE) break
       from += PAGE
     }
-    return all
+    return all as Lead[]
   } catch {
     return mockLeads
   }
@@ -375,7 +376,8 @@ export async function getDeals(stage?: string): Promise<Deal[]> {
   try {
     const supabase = await createClient()
     const PAGE = 1000
-    let all: unknown[] = []
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let all: any[] = []
     let from = 0
     while (true) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -390,7 +392,7 @@ export async function getDeals(stage?: string): Promise<Deal[]> {
       if (!data || data.length < PAGE) break
       from += PAGE
     }
-    return all
+    return all as Deal[]
   } catch { return mockDeals }
 }
 
