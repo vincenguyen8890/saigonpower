@@ -29,6 +29,8 @@ export async function getLeads(filters?: {
   status?: string
   service?: string
   q?: string
+  page?: number
+  perPage?: number
 }): Promise<Lead[]> {
   if (useMock()) {
     let leads = mockLeads
@@ -45,11 +47,34 @@ export async function getLeads(filters?: {
         l.zip.includes(q)
       )
     }
+    if (filters?.page && filters?.perPage) {
+      const from = (filters.page - 1) * filters.perPage
+      return leads.slice(from, from + filters.perPage)
+    }
     return leads
   }
 
   try {
     const supabase = await createClient()
+
+    // Paginated mode: single range query
+    if (filters?.page && filters?.perPage) {
+      const from = (filters.page - 1) * filters.perPage
+      const to   = from + filters.perPage - 1
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let q = (supabase.from('leads') as any)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to)
+      if (filters.status && filters.status !== 'all') q = q.eq('status', filters.status)
+      if (filters.service && filters.service !== 'all') q = q.eq('service_type', filters.service)
+      if (filters.q) q = q.or(`name.ilike.%${filters.q}%,email.ilike.%${filters.q}%,phone.ilike.%${filters.q}%,zip.ilike.%${filters.q}%`)
+      const { data, error } = await q
+      if (error) throw error
+      return (data ?? []) as Lead[]
+    }
+
+    // Full load mode (for contacts page, reports, etc.)
     const PAGE = 1000
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let all: any[] = []
@@ -76,6 +101,31 @@ export async function getLeads(filters?: {
   } catch {
     return mockLeads
   }
+}
+
+export async function getLeadsCount(filters?: {
+  status?: string
+  service?: string
+  q?: string
+}): Promise<number> {
+  if (useMock()) {
+    let leads = mockLeads
+    if (filters?.status && filters.status !== 'all') leads = leads.filter(l => l.status === filters.status as LeadStatus)
+    if (filters?.service && filters.service !== 'all') leads = leads.filter(l => l.service_type === filters.service as Lead['service_type'])
+    if (filters?.q) { const q = filters.q.toLowerCase(); leads = leads.filter(l => l.name.toLowerCase().includes(q) || l.email.toLowerCase().includes(q) || l.phone.includes(q) || l.zip.includes(q)) }
+    return leads.length
+  }
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (supabase.from('leads') as any).select('*', { count: 'exact', head: true })
+    if (filters?.status && filters.status !== 'all') q = q.eq('status', filters.status)
+    if (filters?.service && filters.service !== 'all') q = q.eq('service_type', filters.service)
+    if (filters?.q) q = q.or(`name.ilike.%${filters.q}%,email.ilike.%${filters.q}%,phone.ilike.%${filters.q}%,zip.ilike.%${filters.q}%`)
+    const { count, error } = await q
+    if (error) throw error
+    return count ?? 0
+  } catch { return 0 }
 }
 
 export async function getLeadById(id: string): Promise<Lead | null> {
@@ -372,15 +422,19 @@ export interface Deal {
   product_type: string | null
   usage_kwh: number | null
   flags: string[] | null
+  commission_paid?: boolean | null
+  commission_paid_amount?: number | null
+  commission_paid_at?: string | null
+  share_token?: string | null
   created_at: string
   updated_at: string
 }
 
 const mockDeals: Deal[] = [
-  { id: 'd-001', lead_id: 'lead-002', title: 'Minh Tran – Nail Salon Commercial', value: 200, stage: 'proposal',     probability: 70, expected_close: '2025-05-01', provider: 'Reliant Energy', plan_name: 'Reliant Business 12', service_type: 'commercial',  notes: null, assigned_to: 'agent@saigonllc.com', service_order: null, agent_code: null, service_address: '910 Business Blvd, Sugar Land TX', esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: 0.132, adder_kwh: null, term_months: 12, product_type: 'FIXED RATE', usage_kwh: 1800, flags: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: 'd-002', lead_id: 'lead-003', title: 'Mai Pham – Residential 12mo',       value: 75,  stage: 'negotiation', probability: 85, expected_close: '2025-04-15', provider: 'Gexa Energy',    plan_name: 'Gexa Saver 12',       service_type: 'residential', notes: null, assigned_to: 'agent@saigonllc.com', service_order: null, agent_code: null, service_address: '5678 Oak Ave, Katy TX', esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: 0.109, adder_kwh: null, term_months: 12, product_type: 'FIXED RATE', usage_kwh: 1200, flags: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: 'd-003', lead_id: 'lead-006', title: 'Hoa Nguyen Restaurant',             value: 350, stage: 'qualified',   probability: 50, expected_close: '2025-05-15', provider: null,             plan_name: null,                  service_type: 'commercial',  notes: 'High usage ~3200 kWh/mo', assigned_to: null, service_order: null, agent_code: null, service_address: null, esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: null, adder_kwh: null, term_months: null, product_type: null, usage_kwh: 3200, flags: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: 'd-004', lead_id: 'lead-001', title: 'Lan Nguyen – Residential',          value: 75,  stage: 'prospect',    probability: 30, expected_close: '2025-06-01', provider: null,             plan_name: null,                  service_type: 'residential', notes: null, assigned_to: null, service_order: null, agent_code: null, service_address: null, esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: null, adder_kwh: null, term_months: null, product_type: null, usage_kwh: null, flags: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'd-001', lead_id: 'lead-002', title: 'Minh Tran – Nail Salon Commercial', value: 200, stage: 'proposal',     probability: 70, expected_close: '2025-05-01', provider: 'Reliant Energy', plan_name: 'Reliant Business 12', service_type: 'commercial',  notes: null, assigned_to: 'agent@saigonllc.com', service_order: null, agent_code: null, service_address: '910 Business Blvd, Sugar Land TX', esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: 0.132, adder_kwh: null, term_months: 12, product_type: 'FIXED RATE', usage_kwh: 1800, flags: null, commission_paid: null, commission_paid_amount: null, commission_paid_at: null, share_token: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'd-002', lead_id: 'lead-003', title: 'Mai Pham – Residential 12mo',       value: 75,  stage: 'negotiation', probability: 85, expected_close: '2025-04-15', provider: 'Gexa Energy',    plan_name: 'Gexa Saver 12',       service_type: 'residential', notes: null, assigned_to: 'agent@saigonllc.com', service_order: null, agent_code: null, service_address: '5678 Oak Ave, Katy TX', esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: 0.109, adder_kwh: null, term_months: 12, product_type: 'FIXED RATE', usage_kwh: 1200, flags: null, commission_paid: null, commission_paid_amount: null, commission_paid_at: null, share_token: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'd-003', lead_id: 'lead-006', title: 'Hoa Nguyen Restaurant',             value: 350, stage: 'qualified',   probability: 50, expected_close: '2025-05-15', provider: null,             plan_name: null,                  service_type: 'commercial',  notes: 'High usage ~3200 kWh/mo', assigned_to: null, service_order: null, agent_code: null, service_address: null, esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: null, adder_kwh: null, term_months: null, product_type: null, usage_kwh: 3200, flags: null, commission_paid: null, commission_paid_amount: null, commission_paid_at: null, share_token: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'd-004', lead_id: 'lead-001', title: 'Lan Nguyen – Residential',          value: 75,  stage: 'prospect',    probability: 30, expected_close: '2025-06-01', provider: null,             plan_name: null,                  service_type: 'residential', notes: null, assigned_to: null, service_order: null, agent_code: null, service_address: null, esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: null, adder_kwh: null, term_months: null, product_type: null, usage_kwh: null, flags: null, commission_paid: null, commission_paid_amount: null, commission_paid_at: null, share_token: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
 ]
 
 export async function getDeals(stage?: string): Promise<Deal[]> {
@@ -917,4 +971,98 @@ export async function getCRMStats(): Promise<CRMStats> {
   } catch {
     return mockCRMStats
   }
+}
+
+// ─── Agent Goals ──────────────────────────────────────────────────────────────
+
+export interface AgentGoal {
+  id: string
+  agent_email: string
+  month: string        // 'YYYY-MM'
+  target_deals: number
+  target_value: number
+  created_at: string
+  updated_at: string
+}
+
+export async function getAgentGoals(month?: string): Promise<AgentGoal[]> {
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (supabase.from('crm_agent_goals') as any).select('*').order('agent_email')
+    if (month) q = q.eq('month', month)
+    const { data, error } = await q
+    if (error) throw error
+    return data ?? []
+  } catch { return [] }
+}
+
+export async function upsertAgentGoal(goal: Omit<AgentGoal, 'id' | 'created_at' | 'updated_at'>): Promise<void> {
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('crm_agent_goals') as any)
+      .upsert({ ...goal, updated_at: new Date().toISOString() }, { onConflict: 'agent_email,month' })
+  } catch { /* ignore */ }
+}
+
+export async function markCommissionPaid(dealId: string, amount: number): Promise<void> {
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('deals') as any)
+      .update({ commission_paid: true, commission_paid_amount: amount, commission_paid_at: new Date().toISOString() })
+      .eq('id', dealId)
+  } catch { /* ignore */ }
+}
+
+export async function setDealShareToken(dealId: string, token: string): Promise<void> {
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('deals') as any).update({ share_token: token }).eq('id', dealId)
+  } catch { /* ignore */ }
+}
+
+export async function getDealByShareToken(token: string): Promise<Deal | null> {
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('deals') as any)
+      .select('*').eq('share_token', token).single()
+    if (error) throw error
+    return data
+  } catch { return null }
+}
+
+// ─── Deal Documents (Supabase Storage) ───────────────────────────────────────
+
+export interface DealDocument {
+  name: string
+  size: number
+  created_at: string
+  url: string
+}
+
+export async function getDealDocuments(dealId: string): Promise<DealDocument[]> {
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase.storage
+      .from('deal-documents')
+      .list(dealId, { sortBy: { column: 'created_at', order: 'desc' } })
+    if (error || !data) return []
+    return data.map(f => ({
+      name: f.name,
+      size: f.metadata?.size ?? 0,
+      created_at: f.created_at ?? '',
+      url: supabase.storage.from('deal-documents').getPublicUrl(`${dealId}/${f.name}`).data.publicUrl,
+    }))
+  } catch { return [] }
+}
+
+export async function deleteDealDocument(dealId: string, fileName: string): Promise<void> {
+  try {
+    const supabase = await createClient()
+    await supabase.storage.from('deal-documents').remove([`${dealId}/${fileName}`])
+  } catch { /* ignore */ }
 }

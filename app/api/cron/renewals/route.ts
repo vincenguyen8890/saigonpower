@@ -1,57 +1,109 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { insertActivity } from '@/lib/supabase/queries'
+import { Resend } from 'resend'
+import { getDeals, getCRMAgents, insertActivity } from '@/lib/supabase/queries'
 
-// Shared contract data (would come from Supabase in production)
-const mockContracts = [
-  { id: 'CTR-001', user_name: 'Hung Le',        lead_id: 'lead-004', end_date: '2025-05-15', provider: 'Gexa Energy',    plan_name: 'Gexa Saver 12'       },
-  { id: 'CTR-002', user_name: 'Mai Pham',        lead_id: 'lead-003', end_date: '2025-06-01', provider: 'TXU Energy',     plan_name: 'TXU Energy Saver 24'  },
-  { id: 'CTR-003', user_name: 'Minh Tran Nails', lead_id: 'lead-002', end_date: '2025-05-01', provider: 'Reliant Energy', plan_name: 'Reliant Business 12'  },
-  { id: 'CTR-004', user_name: 'Linh Do',         lead_id: null,       end_date: '2025-05-20', provider: 'Green Mountain', plan_name: 'Green Mtn Simple 12'  },
-  { id: 'CTR-005', user_name: 'David Kim',       lead_id: null,       end_date: '2025-06-15', provider: 'Cirro Energy',   plan_name: 'Cirro Value 6'        },
+const resend = new Resend(process.env.RESEND_API_KEY)
+const FROM   = process.env.RESEND_FROM ?? 'Saigon Power <noreply@saigonpower.com>'
+
+const WINDOWS = [
+  { label: '90-day',  min: 85,  max: 95,  activityType: 'task'  as const, title: '90-day renewal review',          emoji: '📋', urgency: 'low'    },
+  { label: '60-day',  min: 55,  max: 65,  activityType: 'call'  as const, title: 'Schedule renewal call',           emoji: '📞', urgency: 'medium' },
+  { label: '30-day',  min: 25,  max: 35,  activityType: 'email' as const, title: 'Send renewal quote',              emoji: '📧', urgency: 'high'   },
+  { label: '7-day',   min: 4,   max: 8,   activityType: 'task'  as const, title: 'URGENT — contract expiring soon', emoji: '🚨', urgency: 'high'   },
 ]
 
 export async function GET(req: NextRequest) {
-  // Verify cron secret — Vercel sets Authorization header automatically
-  const auth = req.headers.get('authorization')
+  const auth   = req.headers.get('authorization')
   const secret = process.env.CRON_SECRET
   if (secret && auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const now = new Date()
-  const summary: { window: string; contracts: string[] }[] = []
+  const now      = new Date()
+  const todayStr = now.toISOString().split('T')[0]
 
-  const windows = [
-    { label: '60-day',  min: 55,  max: 65,  type: 'call'  as const, title: 'Schedule renewal call',     urgencyPrefix: '📞' },
-    { label: '30-day',  min: 25,  max: 35,  type: 'email' as const, title: 'Send renewal quote',         urgencyPrefix: '📧' },
-    { label: '7-day',   min: 5,   max: 10,  type: 'task'  as const, title: 'URGENT — contract expiring', urgencyPrefix: '🚨' },
-  ]
+  const [deals, agents] = await Promise.all([
+    getDeals(),
+    getCRMAgents(),
+  ])
 
-  for (const w of windows) {
-    const matched: string[] = []
-    for (const c of mockContracts) {
-      const daysLeft = Math.ceil((new Date(c.end_date).getTime() - now.getTime()) / 86400000)
-      if (daysLeft >= w.min && daysLeft <= w.max) {
-        await insertActivity({
-          lead_id:     c.lead_id,
-          type:        w.type,
-          title:       `${w.title} — ${c.user_name}`,
-          description: `Contract ${c.id} (${c.plan_name} / ${c.provider}) expires in ${daysLeft} days on ${c.end_date}. Automated ${w.label} reminder.`,
-          due_date:    now.toISOString(),
-          completed:   false,
-          assigned_to: null,
-          created_by:  'cron:renewal-engine',
-        })
-        matched.push(`${c.user_name} (${daysLeft}d)`)
+  const agentMap = Object.fromEntries(agents.map(a => [a.email, a.name]))
+
+  // Only deals with a contract_end_date in the future
+  const relevant = deals.filter(d => d.contract_end_date && d.contract_end_date >= todayStr)
+
+  const summary: { window: string; sent: string[] }[] = []
+  let totalActivities = 0
+  let totalEmails     = 0
+
+  for (const w of WINDOWS) {
+    const sent: string[] = []
+
+    for (const deal of relevant) {
+      const daysLeft = Math.ceil((new Date(deal.contract_end_date!).getTime() - now.getTime()) / 86400000)
+      if (daysLeft < w.min || daysLeft > w.max) continue
+
+      const agentEmail = deal.assigned_to ?? null
+      const agentName  = agentEmail ? (agentMap[agentEmail] ?? agentEmail.split('@')[0]) : 'Agent'
+
+      // Create activity
+      await insertActivity({
+        lead_id:     deal.lead_id,
+        type:        w.activityType,
+        title:       `${w.title} — ${deal.title}`,
+        description: `Contract expires in ${daysLeft} days (${deal.contract_end_date}). ${w.label} automated reminder.`,
+        due_date:    now.toISOString(),
+        completed:   false,
+        assigned_to: agentEmail,
+        created_by:  'cron:renewal-engine',
+      })
+      totalActivities++
+
+      // Send email to assigned agent if Resend is configured
+      if (agentEmail && process.env.RESEND_API_KEY) {
+        try {
+          await resend.emails.send({
+            from: FROM,
+            to:   agentEmail,
+            subject: `${w.emoji} ${w.label} renewal alert — ${deal.title}`,
+            text: `Hi ${agentName},
+
+This is an automated reminder from Saigon Power CRM.
+
+${deal.title} has a contract expiring in ${daysLeft} days (${deal.contract_end_date}).
+
+Action required: ${w.title}
+
+Deal details:
+• Provider: ${deal.provider ?? '—'}
+• Plan: ${deal.plan_name ?? '—'}
+• Contract value: $${deal.value}/mo
+• Contract end: ${deal.contract_end_date}
+
+Please log in to the CRM to take action.
+
+—
+Saigon Power Automated Alerts`,
+          })
+          totalEmails++
+        } catch {
+          // Don't fail the whole cron if one email bounces
+        }
       }
+
+      sent.push(`${deal.title} (${daysLeft}d, agent: ${agentEmail ?? 'unassigned'})`)
     }
-    summary.push({ window: w.label, contracts: matched })
+
+    summary.push({ window: w.label, sent })
   }
 
   return NextResponse.json({
-    ok: true,
-    ran_at: now.toISOString(),
+    ok:                   true,
+    ran_at:               now.toISOString(),
+    deals_checked:        relevant.length,
+    activities_created:   totalActivities,
+    emails_sent:          totalEmails,
+    resend_configured:    !!process.env.RESEND_API_KEY,
     summary,
-    total_activities_created: summary.reduce((n, s) => n + s.contracts.length, 0),
   })
 }

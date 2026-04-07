@@ -7,6 +7,7 @@ import NewDealModal from './NewDealModal'
 import DealsToolbar from './DealsToolbar'
 import DealsKanban from './DealsKanban'
 import DealsTable from './DealsTable'
+import UnlinkedDealsPanel from './UnlinkedDealsPanel'
 
 interface Props {
   params: Promise<{ locale: string }>
@@ -27,6 +28,7 @@ const stages = ['prospect', 'qualified', 'proposal', 'negotiation', 'won', 'lost
 export default async function DealsPage({ params, searchParams }: Props) {
   const { locale } = await params
   const { stage, q = '', agent = '', view = 'table' } = await searchParams
+  const showUnlinked = stage === 'unlinked'
   setRequestLocale(locale)
 
   const [deals, leads, agents, providers] = await Promise.all([
@@ -146,10 +148,24 @@ export default async function DealsPage({ params, searchParams }: Props) {
             </a>
           )
         })}
+        {(() => {
+          const unlinkedCount = deals.filter(d => !d.lead_id).length
+          return unlinkedCount > 0 ? (
+            <a
+              href={`/${locale}/crm/deals?stage=unlinked`}
+              className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${showUnlinked ? 'bg-amber-600 text-white' : 'bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100'}`}
+            >
+              Unlinked ({unlinkedCount})
+            </a>
+          ) : null
+        })()}
       </div>
 
-      {/* Deals Table with bulk ops */}
-      <DealsTable deals={filteredDeals} locale={locale} leadMap={leadMap} agents={agents} />
+      {/* Unlinked deals or Deals Table with bulk ops */}
+      {showUnlinked
+        ? <UnlinkedDealsPanel deals={deals} leads={leads} locale={locale} />
+        : <DealsTable deals={filteredDeals} locale={locale} leadMap={leadMap} agents={agents} />
+      }
       </>}
     </div>
   )

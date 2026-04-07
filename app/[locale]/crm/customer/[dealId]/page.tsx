@@ -7,14 +7,19 @@ import { Zap, MapPin, Calendar, FileText, Phone, Mail } from 'lucide-react'
 
 interface Props {
   params: Promise<{ locale: string; dealId: string }>
+  searchParams: Promise<{ token?: string }>
 }
 
-export default async function CustomerContractPage({ params }: Props) {
+export default async function CustomerContractPage({ params, searchParams }: Props) {
   const { locale, dealId } = await params
+  const { token } = await searchParams
   setRequestLocale(locale)
 
   const deal = await getDealById(dealId)
   if (!deal || !['won', 'proposal', 'negotiation'].includes(deal.stage)) notFound()
+
+  // Token required — must match the deal's share_token
+  if (!token || !deal.share_token || token !== deal.share_token) notFound()
 
   const lead = deal.lead_id ? await getLeadById(deal.lead_id) : null
 

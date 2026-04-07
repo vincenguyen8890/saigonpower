@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, X, Copy, ExternalLink, CheckCircle2 } from 'lucide-react'
+import { Mail, X, Copy, ExternalLink, CheckCircle2, Send, Loader2 } from 'lucide-react'
 
 interface TemplateData {
   customerName: string
@@ -117,6 +117,9 @@ export default function EmailModal({ data, trigger }: Props) {
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<TemplateKey>('followup')
   const [copied, setCopied] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
 
   const templates = buildTemplates(data)
   const tpl = templates[selected]
@@ -127,6 +130,26 @@ export default function EmailModal({ data, trigger }: Props) {
     await navigator.clipboard.writeText(tpl.body)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function sendEmail() {
+    setSending(true)
+    setSendError(null)
+    try {
+      const res = await fetch('/api/crm/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: data.email, subject: tpl.subject, body: tpl.body }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Send failed')
+      setSent(true)
+      setTimeout(() => { setSent(false); setOpen(false) }, 2000)
+    } catch (e) {
+      setSendError(e instanceof Error ? e.message : 'Send failed')
+    } finally {
+      setSending(false)
+    }
   }
 
   if (!data.email) return null
@@ -198,23 +221,34 @@ export default function EmailModal({ data, trigger }: Props) {
               </div>
             </div>
 
+            {sendError && (
+              <div className="mx-6 mb-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{sendError}</div>
+            )}
             <div className="flex gap-2 px-6 py-4 border-t border-gray-100 flex-shrink-0">
               <button
                 onClick={copyBody}
                 className="flex items-center gap-1.5 text-sm border border-gray-200 text-gray-600 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors"
               >
                 {copied ? <CheckCircle2 size={14} className="text-green-600" /> : <Copy size={14} />}
-                {copied ? 'Copied!' : 'Copy body'}
+                {copied ? 'Copied!' : 'Copy'}
               </button>
               <a
                 href={mailtoLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-2 bg-brand-greenDark text-white py-2 rounded-xl text-sm hover:bg-brand-green transition-colors font-medium"
+                className="flex items-center gap-1.5 text-sm border border-gray-200 text-gray-600 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors"
               >
                 <ExternalLink size={14} />
-                Open in email client
+                Open client
               </a>
+              <button
+                onClick={sendEmail}
+                disabled={sending || sent}
+                className="flex-1 flex items-center justify-center gap-2 bg-brand-greenDark text-white py-2 rounded-xl text-sm hover:bg-brand-green transition-colors font-medium disabled:opacity-60"
+              >
+                {sent ? <CheckCircle2 size={14} /> : sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                {sent ? 'Sent!' : sending ? 'Sending…' : 'Send Email'}
+              </button>
             </div>
           </div>
         </div>

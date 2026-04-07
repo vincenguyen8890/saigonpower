@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, DollarSign, Target, Building2, User, TrendingUp, CheckCircle2, MapPin, Clock } from 'lucide-react'
-import { getDealById, getLeadById, getActivities, getDealAuditLog, getCRMAgents, getProvidersFromDB, getLeads } from '@/lib/supabase/queries'
+import { getDealById, getLeadById, getActivities, getDealAuditLog, getCRMAgents, getProvidersFromDB, getLeads, getDealDocuments } from '@/lib/supabase/queries'
 import { mockProviders } from '@/data/mock-crm'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
@@ -12,6 +12,8 @@ import EmailModal from '@/components/crm/EmailModal'
 import EsidInfo from '@/components/crm/EsidInfo'
 import CompleteActivityButton from '@/components/crm/CompleteActivityButton'
 import AddActivityForm from '../../leads/[id]/AddActivityForm'
+import MarkPaidButton from './MarkPaidButton'
+import DealDocuments from './DealDocuments'
 
 interface Props {
   params: Promise<{ locale: string; id: string }>
@@ -33,13 +35,14 @@ export default async function DealDetailPage({ params }: Props) {
   const deal = await getDealById(id)
   if (!deal) notFound()
 
-  const [lead, activities, auditLog, agents, providers, allLeads] = await Promise.all([
+  const [lead, activities, auditLog, agents, providers, allLeads, documents] = await Promise.all([
     deal.lead_id ? getLeadById(deal.lead_id) : Promise.resolve(null),
     deal.lead_id ? getActivities({ leadId: deal.lead_id, limit: 10 }) : getActivities({ limit: 10 }),
     getDealAuditLog(deal.id),
     getCRMAgents(),
     getProvidersFromDB(),
     getLeads(),
+    getDealDocuments(deal.id),
   ])
 
   const provider = mockProviders.find(p => p.name === deal.provider)
@@ -321,8 +324,20 @@ export default async function DealDetailPage({ params }: Props) {
                   <span className="font-bold text-green-700">${estimatedLifetimeCommission.toLocaleString()}</span>
                 </div>
               </div>
+              <div className="mt-4 pt-4 border-t border-gray-50">
+                <MarkPaidButton
+                  dealId={deal.id}
+                  suggestedAmount={estimatedLifetimeCommission}
+                  isPaid={deal.commission_paid ?? false}
+                  paidAmount={deal.commission_paid_amount}
+                  paidAt={deal.commission_paid_at}
+                />
+              </div>
             </div>
           )}
+
+          {/* Documents */}
+          <DealDocuments dealId={deal.id} documents={documents} />
 
           {/* Assignment + Meta */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
