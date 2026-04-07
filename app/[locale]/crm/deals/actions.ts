@@ -1,8 +1,36 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { insertDeal, updateDeal, deleteDeal, insertActivity, updateAccountStatus } from '@/lib/supabase/queries'
+import { insertDeal, updateDeal, deleteDeal, getDealById, insertActivity, updateAccountStatus } from '@/lib/supabase/queries'
 import type { Deal } from '@/lib/supabase/queries'
+
+const AUDIT_LABELS: Partial<Record<keyof Deal, string>> = {
+  stage: 'Stage', provider: 'Supplier', plan_name: 'Plan', rate_kwh: 'Rate',
+  adder_kwh: 'Adder', term_months: 'Term', contract_start_date: 'Start date',
+  contract_end_date: 'End date', assigned_to: 'Agent', service_order: 'Service order',
+  esid: 'ESI ID', service_address: 'Address',
+}
+
+async function logDealChange(dealId: string, leadId: string | null, oldDeal: Deal, updates: Partial<Deal>) {
+  const changed: string[] = []
+  for (const [k, label] of Object.entries(AUDIT_LABELS)) {
+    const key = k as keyof Deal
+    if (key in updates && String(updates[key] ?? '') !== String(oldDeal[key] ?? '')) {
+      changed.push(`${label}: "${oldDeal[key] ?? '—'}" → "${updates[key] ?? '—'}"`)
+    }
+  }
+  if (changed.length === 0) return
+  await insertActivity({
+    lead_id:     leadId,
+    type:        'note',
+    title:       `Deal updated`,
+    description: `deal:${dealId} | ${changed.join(' · ')}`,
+    due_date:    null,
+    completed:   true,
+    assigned_to: null,
+    created_by:  'system:audit',
+  })
+}
 
 function bust() {
   revalidatePath('/', 'layout')
@@ -27,7 +55,9 @@ export async function createDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated
 }
 
 export async function updateDealAction(id: string, updates: Partial<Deal>) {
+  const old = await getDealById(id)
   await updateDeal(id, updates)
+  if (old) await logDealChange(id, old.lead_id, old, updates)
   bust()
 }
 

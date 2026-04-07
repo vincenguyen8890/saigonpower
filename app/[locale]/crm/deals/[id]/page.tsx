@@ -1,12 +1,15 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, DollarSign, Target, Building2, User, TrendingUp, CheckCircle2, MapPin, Zap, Hash } from 'lucide-react'
-import { getDealById, getLeadById, getActivities, getCRMAgents, getProvidersFromDB, getLeads } from '@/lib/supabase/queries'
+import { ArrowLeft, DollarSign, Target, Building2, User, TrendingUp, CheckCircle2, MapPin, Clock } from 'lucide-react'
+import { getDealById, getLeadById, getActivities, getDealAuditLog, getCRMAgents, getProvidersFromDB, getLeads } from '@/lib/supabase/queries'
 import { mockProviders } from '@/data/mock-crm'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
 import DealEditForm from './DealEditForm'
 import DeleteDealButton from './DeleteDealButton'
+import ShareDealButton from './ShareDealButton'
+import EmailModal from '@/components/crm/EmailModal'
+import EsidInfo from '@/components/crm/EsidInfo'
 
 interface Props {
   params: Promise<{ locale: string; id: string }>
@@ -28,9 +31,10 @@ export default async function DealDetailPage({ params }: Props) {
   const deal = await getDealById(id)
   if (!deal) notFound()
 
-  const [lead, activities, agents, providers, allLeads] = await Promise.all([
+  const [lead, activities, auditLog, agents, providers, allLeads] = await Promise.all([
     deal.lead_id ? getLeadById(deal.lead_id) : Promise.resolve(null),
     deal.lead_id ? getActivities({ leadId: deal.lead_id, limit: 10 }) : getActivities({ limit: 10 }),
+    getDealAuditLog(deal.id),
     getCRMAgents(),
     getProvidersFromDB(),
     getLeads(),
@@ -72,6 +76,20 @@ export default async function DealDetailPage({ params }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <ShareDealButton dealId={deal.id} locale={locale} />
+          {lead?.email && (
+            <EmailModal
+              data={{
+                customerName: lead.name,
+                email: lead.email,
+                provider: deal.provider ?? undefined,
+                planName: deal.plan_name ?? undefined,
+                rateKwh: deal.rate_kwh,
+                contractEndDate: deal.contract_end_date,
+                dealTitle: deal.title,
+              }}
+            />
+          )}
           <DealEditForm deal={deal} locale={locale} agents={agents} providers={providers} leads={allLeads} />
           <DeleteDealButton dealId={deal.id} locale={locale} />
         </div>
@@ -175,9 +193,9 @@ export default async function DealDetailPage({ params }: Props) {
                   </div>
                 )}
                 {deal.esid && (
-                  <div className="flex items-center justify-between py-2.5">
-                    <span className="text-xs text-gray-400 uppercase tracking-wide">ESI ID</span>
-                    <span className="text-sm font-mono text-gray-700">{deal.esid}</span>
+                  <div className="py-2.5">
+                    <span className="text-xs text-gray-400 uppercase tracking-wide block mb-1.5">ESI ID</span>
+                    <EsidInfo esid={deal.esid} />
                   </div>
                 )}
               </div>
@@ -220,6 +238,30 @@ export default async function DealDetailPage({ params }: Props) {
               </div>
             )}
           </div>
+
+          {/* Deal History */}
+          {auditLog.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Clock size={16} className="text-brand-green" />
+                Change History
+              </h2>
+              <div className="space-y-3">
+                {auditLog.map(entry => {
+                  const changes = entry.description?.split(' | ')[1] ?? ''
+                  return (
+                    <div key={entry.id} className="flex gap-3 text-xs">
+                      <div className="w-1.5 h-1.5 rounded-full bg-gray-300 mt-1.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-gray-700">{changes}</p>
+                        <p className="text-gray-400 mt-0.5">{formatDate(entry.created_at, locale)}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right — linked lead + actions */}

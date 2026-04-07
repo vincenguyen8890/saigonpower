@@ -319,6 +319,22 @@ export async function insertActivity(activity: Omit<Activity, 'id' | 'created_at
   } catch { return null }
 }
 
+export async function getDealAuditLog(dealId: string): Promise<Activity[]> {
+  if (useMock()) return []
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('activities') as any)
+      .select('*')
+      .eq('created_by', 'system:audit')
+      .ilike('description', `deal:${dealId}%`)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (error) throw error
+    return data ?? []
+  } catch { return [] }
+}
+
 export async function completeActivity(id: string): Promise<void> {
   if (useMock()) return
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
