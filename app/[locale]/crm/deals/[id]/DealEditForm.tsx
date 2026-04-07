@@ -8,7 +8,7 @@ import type { Deal, CRMAgent } from '@/lib/supabase/queries'
 import type { Provider } from '@/data/mock-crm'
 
 const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHTS', 'FREE WEEKENDS']
-const DEAL_FLAGS = ['TOS', 'TOAO', 'Deposit', 'Special Deal', '10% Promo', 'Customer Referral']
+const DEAL_FLAGS = ['TOS', 'TOAO', 'Deposit', 'Special Deal', '10% Promo']
 
 export default function DealEditForm({ deal, locale, agents, providers }: { deal: Deal; locale: string; agents: CRMAgent[]; providers: Provider[] }) {
   const [open, setOpen] = useState(false)

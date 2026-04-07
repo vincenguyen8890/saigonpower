@@ -11,7 +11,7 @@ import type { Provider } from '@/data/mock-crm'
 
 const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHTS', 'FREE WEEKENDS']
 
-const DEAL_FLAGS = ['TOS', 'TOAO', 'Deposit', 'Special Deal', '10% Promo', 'Customer Referral']
+const DEAL_FLAGS = ['TOS', 'TOAO', 'Deposit', 'Special Deal', '10% Promo']
 
 export default function NewDealModal({ locale, leads, agents, providers }: { locale: string; leads: Lead[]; agents: CRMAgent[]; providers: Provider[] }) {
   const [open, setOpen] = useState(false)
