@@ -127,7 +127,7 @@ export default function EditLeadModal({ lead }: { lead: Lead }) {
                   </div>
                 </div>
                 <div>
-                  <label className={labelClass}>Service Type</label>
+                  <label className={labelClass}>Account Type</label>
                   <select name="service_type" defaultValue={lead.service_type} className={inputClass}>
                     <option value="residential">Residential</option>
                     <option value="commercial">Commercial</option>
