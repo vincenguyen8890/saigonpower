@@ -57,6 +57,26 @@ export default async function CRMOverview({ params }: Props) {
   const activeDeals  = deals.filter(d => !['won', 'lost'].includes(d.stage))
   const wonDeals     = deals.filter(d => d.stage === 'won')
   const wonValue     = wonDeals.reduce((s, d) => s + d.value, 0)
+
+  // ── Agent leaderboard (from deal assigned_to) ─────────────────────────────
+  const agentMap = new Map<string, { deals: number; wonDeals: number; wonValue: number }>()
+  for (const d of deals) {
+    if (!d.assigned_to) continue
+    if (!agentMap.has(d.assigned_to)) agentMap.set(d.assigned_to, { deals: 0, wonDeals: 0, wonValue: 0 })
+    const a = agentMap.get(d.assigned_to)!
+    a.deals++
+    if (d.stage === 'won') { a.wonDeals++; a.wonValue += d.value }
+  }
+  const agentLeaderboard = [...agentMap.entries()]
+    .map(([name, s]) => ({ name, ...s }))
+    .sort((a, b) => b.wonValue - a.wonValue)
+    .slice(0, 8)
+
+  // ── Expiring contracts (from deal contract_end_date) ──────────────────────
+  const in60 = new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0]
+  const expiringDeals = deals
+    .filter(d => d.contract_end_date && d.contract_end_date >= now.toISOString().split('T')[0] && d.contract_end_date <= in60)
+    .sort((a, b) => (a.contract_end_date ?? '').localeCompare(b.contract_end_date ?? ''))
   const prospectDeals    = deals.filter(d => d.stage === 'prospect')
   const activeStageDeals = deals.filter(d => ['qualified', 'proposal'].includes(d.stage))
   const closingDeals     = deals.filter(d => d.stage === 'negotiation')
@@ -283,6 +303,73 @@ export default async function CRMOverview({ params }: Props) {
           </>
         )}
       </div>
+
+      {/* ── Agent Leaderboard ── */}
+      {agentLeaderboard.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-100 shadow-[0_1px_3px_rgba(15,23,42,0.06)] overflow-hidden">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100">
+            <div>
+              <h2 className="text-sm font-semibold text-[#0F172A] flex items-center gap-2">
+                <TrendingUp size={14} className="text-[#00C853]" /> Agent Leaderboard
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">Ranked by total won value</p>
+            </div>
+          </div>
+          <div className="divide-y divide-slate-50">
+            {agentLeaderboard.map((agent, i) => (
+              <div key={agent.name} className="flex items-center gap-4 px-4 sm:px-6 py-3">
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                  i === 0 ? 'bg-amber-100 text-amber-700' :
+                  i === 1 ? 'bg-slate-100 text-slate-600' :
+                  i === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-50 text-slate-400'
+                }`}>{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-800 truncate">{agent.name}</p>
+                  <p className="text-xs text-slate-400">{agent.wonDeals} won · {agent.deals} total</p>
+                </div>
+                <span className="text-sm font-bold text-[#00A846]">${agent.wonValue.toLocaleString()}<span className="text-xs font-normal text-slate-400">/mo</span></span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Expiring Contracts ── */}
+      {expiringDeals.length > 0 && (
+        <div className="bg-white rounded-xl border border-red-100 shadow-[0_1px_3px_rgba(15,23,42,0.06)] overflow-hidden">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-red-50">
+            <div>
+              <h2 className="text-sm font-semibold text-red-700 flex items-center gap-2">
+                <AlertTriangle size={14} className="text-red-500" /> Contracts Expiring Soon
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">{expiringDeals.length} contracts expiring within 60 days</p>
+            </div>
+            <Link href={`/${locale}/crm/deals`} className="text-xs text-red-600 hover:text-red-700 font-semibold flex items-center gap-1">
+              View all <ArrowUpRight size={12} />
+            </Link>
+          </div>
+          <div className="divide-y divide-slate-50">
+            {expiringDeals.slice(0, 8).map(deal => {
+              const daysLeft = Math.ceil((new Date(deal.contract_end_date!).getTime() - now.getTime()) / 86400000)
+              return (
+                <div key={deal.id} className="flex items-center gap-3 px-4 sm:px-6 py-3">
+                  <div className={`w-1.5 h-8 rounded-full flex-shrink-0 ${daysLeft <= 14 ? 'bg-red-500' : daysLeft <= 30 ? 'bg-amber-400' : 'bg-yellow-300'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">{deal.title}</p>
+                    <p className="text-xs text-slate-400">{deal.provider ?? '—'} · {deal.contract_end_date}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${daysLeft <= 14 ? 'bg-red-100 text-red-700' : daysLeft <= 30 ? 'bg-amber-100 text-amber-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      {daysLeft}d left
+                    </span>
+                    <p className="text-xs text-slate-400 mt-0.5">${deal.value}/mo</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Open deals ── */}
       {activeDeals.length > 0 && (

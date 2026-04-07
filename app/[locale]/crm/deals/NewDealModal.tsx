@@ -21,7 +21,13 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
   const [term, setTerm] = useState<string>('12')
   const [contractStart, setContractStart] = useState<string>('')
   const [title, setTitle] = useState<string>('')
+  const [rateKwh, setRateKwh] = useState<string>('')
+  const [usageKwh, setUsageKwh] = useState<string>('')
   const router = useRouter()
+
+  const autoValue = rateKwh && usageKwh
+    ? Math.round(parseFloat(rateKwh) * parseFloat(usageKwh))
+    : null
 
   function toggleFlag(flag: string) {
     setSelectedFlags(prev => prev.includes(flag) ? prev.filter(f => f !== flag) : [...prev, flag])
@@ -59,7 +65,7 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
       const res = await createDeal({
         title:               get('title'),
         lead_id:             get('lead_id') || null,
-        value:               0,
+        value:               autoValue ?? 0,
         stage:               get('stage') as Deal['stage'],
         probability:         50,
         expected_close:      get('expected_close') || null,
@@ -100,7 +106,7 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
   return (
     <>
       <button
-        onClick={() => { setOpen(true); setTitle(''); setSelectedFlags([]); setTerm('12'); setContractStart('') }}
+        onClick={() => { setOpen(true); setTitle(''); setSelectedFlags([]); setTerm('12'); setContractStart(''); setRateKwh(''); setUsageKwh('') }}
         className="flex items-center gap-2 bg-brand-greenDark text-white text-sm px-4 py-2 rounded-xl hover:bg-brand-green transition-colors font-medium"
       >
         <PlusCircle size={16} />
@@ -229,7 +235,7 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
                   </div>
                   <div>
                     <label className={L}>Contract Rate ($/kWh)</label>
-                    <input name="rate_kwh" type="number" step="0.001" min="0" placeholder="0.109" className={C} />
+                    <input name="rate_kwh" type="number" step="0.001" min="0" placeholder="0.109" value={rateKwh} onChange={e => setRateKwh(e.target.value)} className={C} />
                   </div>
                   <div>
                     <label className={L}>Adder ($/kWh)</label>
@@ -237,8 +243,14 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
                   </div>
                   <div>
                     <label className={L}>Estimated Usage (kWh/mo)</label>
-                    <input name="usage_kwh" type="number" min="0" placeholder="1200" className={C} />
+                    <input name="usage_kwh" type="number" min="0" placeholder="1200" value={usageKwh} onChange={e => setUsageKwh(e.target.value)} className={C} />
                   </div>
+                  {autoValue !== null && (
+                    <div className="col-span-2">
+                      <label className={L}>Est. Monthly Value (auto-calculated)</label>
+                      <div className={C + ' bg-green-50 text-green-700 font-semibold cursor-default'}>${autoValue}/mo</div>
+                    </div>
+                  )}
                   <div>
                     <label className={L}>Expected Close Date</label>
                     <input name="expected_close" type="date" className={C} />

@@ -18,7 +18,13 @@ export default function DealEditForm({ deal, locale, agents, providers, leads = 
     deal.term_months ? String(deal.term_months) : 'mtm'
   )
   const [contractStart, setContractStart] = useState<string>(deal.contract_start_date ?? '')
+  const [rateKwh, setRateKwh] = useState<string>(deal.rate_kwh ? String(deal.rate_kwh) : '')
+  const [usageKwh, setUsageKwh] = useState<string>(deal.usage_kwh ? String(deal.usage_kwh) : '')
   const router = useRouter()
+
+  const autoValue = rateKwh && usageKwh
+    ? Math.round(parseFloat(rateKwh) * parseFloat(usageKwh))
+    : null
 
   function toggleFlag(flag: string) {
     setSelectedFlags(prev => prev.includes(flag) ? prev.filter(f => f !== flag) : [...prev, flag])
@@ -43,6 +49,7 @@ export default function DealEditForm({ deal, locale, agents, providers, leads = 
       await updateDealAction(deal.id, {
         lead_id:             get('lead_id') || null,
         title:               get('title'),
+        value:               autoValue ?? deal.value,
         stage:               newStage as Deal['stage'],
         expected_close:      get('expected_close')      || null,
         provider:            get('provider')            || null,
@@ -195,7 +202,7 @@ export default function DealEditForm({ deal, locale, agents, providers, leads = 
                   </div>
                   <div>
                     <label className={L}>Contract Rate ($/kWh)</label>
-                    <input name="rate_kwh" type="number" step="0.001" min="0" defaultValue={deal.rate_kwh ?? ''} className={C} />
+                    <input name="rate_kwh" type="number" step="0.001" min="0" value={rateKwh} onChange={e => setRateKwh(e.target.value)} className={C} />
                   </div>
                   <div>
                     <label className={L}>Adder ($/kWh)</label>
@@ -203,8 +210,14 @@ export default function DealEditForm({ deal, locale, agents, providers, leads = 
                   </div>
                   <div>
                     <label className={L}>Estimated Usage (kWh/mo)</label>
-                    <input name="usage_kwh" type="number" min="0" defaultValue={deal.usage_kwh ?? ''} className={C} />
+                    <input name="usage_kwh" type="number" min="0" value={usageKwh} onChange={e => setUsageKwh(e.target.value)} className={C} />
                   </div>
+                  {autoValue !== null && (
+                    <div className="col-span-2">
+                      <label className={L}>Est. Monthly Value (auto-calculated)</label>
+                      <div className={C + ' bg-green-50 text-green-700 font-semibold cursor-default'}>${autoValue}/mo</div>
+                    </div>
+                  )}
                   <div>
                     <label className={L}>Contract Start Date</label>
                     <input

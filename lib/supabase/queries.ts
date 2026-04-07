@@ -872,19 +872,21 @@ export async function getCRMStats(): Promise<CRMStats> {
     const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
     const in30Days = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
 
-    const [todayLeads, weekLeads, pendingQuotes, activeContracts, expiring, enrolled] = await Promise.all([
+    const [todayLeads, weekLeads, totalLeads, pendingQuotes, activeContracts, expiring, enrolled] = await Promise.all([
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase.from('leads') as any).select('id', { count: 'exact' }).gte('created_at', today).eq('status', 'new'),
+      (supabase.from('leads') as any).select('id', { count: 'exact', head: true }).gte('created_at', today).eq('status', 'new'),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase.from('leads') as any).select('id', { count: 'exact' }).gte('created_at', weekAgo),
+      (supabase.from('leads') as any).select('id', { count: 'exact', head: true }).gte('created_at', weekAgo),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase.from('quote_requests') as any).select('id', { count: 'exact' }).eq('status', 'pending'),
+      (supabase.from('leads') as any).select('id', { count: 'exact', head: true }),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase.from('contracts') as any).select('id', { count: 'exact' }).eq('status', 'active'),
+      (supabase.from('quote_requests') as any).select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase.from('contracts') as any).select('id', { count: 'exact' }).eq('status', 'active').lte('end_date', in30Days),
+      (supabase.from('contracts') as any).select('id', { count: 'exact', head: true }).eq('status', 'active'),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase.from('leads') as any).select('id', { count: 'exact' }).eq('status', 'enrolled').gte('updated_at', monthAgo),
+      (supabase.from('contracts') as any).select('id', { count: 'exact', head: true }).eq('status', 'active').lte('end_date', in30Days),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase.from('leads') as any).select('id', { count: 'exact', head: true }).eq('status', 'enrolled').gte('updated_at', monthAgo),
     ])
 
     return {
@@ -893,7 +895,7 @@ export async function getCRMStats(): Promise<CRMStats> {
       pendingQuotes:       pendingQuotes.count ?? 0,
       activeContracts:     activeContracts.count ?? 0,
       expiringSoon:        expiring.count     ?? 0,
-      totalLeads:          weekLeads.count    ?? 0,
+      totalLeads:          totalLeads.count   ?? 0,
       enrolledThisMonth:   enrolled.count     ?? 0,
     }
   } catch {
