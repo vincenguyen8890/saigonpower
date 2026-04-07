@@ -7,7 +7,7 @@ import type { Activity } from '@/lib/supabase/queries'
 
 const activityTypes: Activity['type'][] = ['call', 'email', 'meeting', 'task', 'note', 'renewal']
 
-export default function AddActivityForm({ leadId }: { leadId: string }) {
+export default function AddActivityForm({ leadId }: { leadId: string | null }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)

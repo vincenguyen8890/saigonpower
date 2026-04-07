@@ -10,6 +10,8 @@ import DeleteDealButton from './DeleteDealButton'
 import ShareDealButton from './ShareDealButton'
 import EmailModal from '@/components/crm/EmailModal'
 import EsidInfo from '@/components/crm/EsidInfo'
+import CompleteActivityButton from '@/components/crm/CompleteActivityButton'
+import AddActivityForm from '../../leads/[id]/AddActivityForm'
 
 interface Props {
   params: Promise<{ locale: string; id: string }>
@@ -206,35 +208,44 @@ export default async function DealDetailPage({ params }: Props) {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <CheckCircle2 size={16} className="text-brand-green" />
-              Related Activities
+              Activities
               {activities.filter(a => !a.completed).length > 0 && (
                 <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
                   {activities.filter(a => !a.completed).length} open
                 </span>
               )}
             </h2>
-            {activities.length === 0 ? (
-              <p className="text-sm text-gray-400 py-4 text-center">No activities yet</p>
-            ) : (
-              <div className="space-y-2">
-                {activities.slice(0, 6).map(a => (
-                  <div key={a.id} className={`flex items-start gap-3 p-3 border rounded-xl ${
-                    a.completed ? 'border-gray-100 opacity-60' : 'border-amber-100 bg-amber-50/30'
-                  }`}>
-                    <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                      a.completed ? 'bg-green-400' : 'bg-amber-400'
-                    }`} />
+
+            <AddActivityForm leadId={lead?.id ?? null} />
+
+            {activities.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {activities.filter(a => !a.completed).map(a => (
+                  <div key={a.id} className="flex items-start gap-3 p-3 border border-amber-100 bg-amber-50/30 rounded-xl">
+                    <div className="w-2 h-2 rounded-full mt-2 flex-shrink-0 bg-amber-400" />
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${a.completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                        {a.title}
-                      </p>
-                      {a.due_date && (
-                        <p className="text-xs text-gray-400">{formatDate(a.due_date, locale)}</p>
-                      )}
+                      <p className="text-sm font-medium text-gray-900">{a.title}</p>
+                      {a.due_date && <p className="text-xs text-gray-400">{formatDate(a.due_date, locale)}</p>}
                     </div>
                     <span className="text-xs capitalize text-gray-400 flex-shrink-0">{a.type}</span>
+                    <CompleteActivityButton activityId={a.id} />
                   </div>
                 ))}
+                {activities.filter(a => a.completed).length > 0 && (
+                  <details className="mt-1">
+                    <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 select-none">
+                      {activities.filter(a => a.completed).length} completed
+                    </summary>
+                    <div className="mt-2 space-y-2">
+                      {activities.filter(a => a.completed).map(a => (
+                        <div key={a.id} className="flex items-start gap-3 p-3 border border-gray-100 rounded-xl opacity-60">
+                          <div className="w-2 h-2 rounded-full mt-2 flex-shrink-0 bg-green-400" />
+                          <p className="text-sm text-gray-500 line-through flex-1">{a.title}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
             )}
           </div>

@@ -9,6 +9,8 @@ import { setRequestLocale } from 'next-intl/server'
 import NotesFormComponent from './NotesForm'
 import EditLeadModal from './EditLeadModal'
 import AddActivityForm from './AddActivityForm'
+import CompleteActivityButton from '@/components/crm/CompleteActivityButton'
+import EmailModal from '@/components/crm/EmailModal'
 
 interface Props {
   params: Promise<{ locale: string; id: string }>
@@ -72,6 +74,15 @@ export default async function LeadDetailPage({ params }: Props) {
         </div>
 
         <div className="flex items-start gap-3">
+          {lead.email && (
+            <EmailModal
+              data={{
+                customerName: lead.name,
+                email: lead.email,
+                agentName: lead.assigned_to ?? undefined,
+              }}
+            />
+          )}
           <div>
             <p className="text-xs text-gray-500 mb-1 font-medium">Update Status</p>
             <LeadStatusSelect leadId={lead.id} currentStatus={lead.status} />
@@ -351,6 +362,7 @@ export default async function LeadDetailPage({ params }: Props) {
                     <span className="text-xs capitalize bg-white border border-amber-200 text-amber-700 px-1.5 py-0.5 rounded font-medium flex-shrink-0">
                       {a.type}
                     </span>
+                    <CompleteActivityButton activityId={a.id} />
                   </div>
                 ))}
 
@@ -471,13 +483,17 @@ export default async function LeadDetailPage({ params }: Props) {
                 <Phone size={14} />
                 Call Now
               </a>
-              <a
-                href={`mailto:${lead.email}`}
-                className="flex items-center gap-2 w-full px-3 py-2 border border-gray-200 text-gray-700 text-sm rounded-xl hover:bg-gray-50 transition-colors"
-              >
-                <Mail size={14} />
-                Send Email
-              </a>
+              {lead.email && (
+                <EmailModal
+                  data={{ customerName: lead.name, email: lead.email }}
+                  trigger={
+                    <div className="flex items-center gap-2 w-full px-3 py-2 border border-gray-200 text-gray-700 text-sm rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">
+                      <Mail size={14} />
+                      Send Email
+                    </div>
+                  }
+                />
+              )}
               <Link
                 href={`/${locale}/crm/renewals`}
                 className="flex items-center gap-2 w-full px-3 py-2 border border-gray-200 text-gray-700 text-sm rounded-xl hover:bg-gray-50 transition-colors"
