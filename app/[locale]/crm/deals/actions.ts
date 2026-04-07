@@ -36,6 +36,11 @@ export async function deleteDealAction(id: string): Promise<void> {
   bust()
 }
 
+export async function bulkUpdateDealsAction(ids: string[], updates: Partial<Deal>): Promise<void> {
+  await Promise.all(ids.map(id => updateDeal(id, updates)))
+  bust()
+}
+
 /**
  * When a deal advances to a new stage, auto-create the next logical activity.
  */

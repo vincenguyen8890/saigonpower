@@ -1,14 +1,16 @@
 import Link from 'next/link'
 import { setRequestLocale } from 'next-intl/server'
 import { getDeals, getLeads, getCRMAgents, getProvidersFromDB } from '@/lib/supabase/queries'
-import { TrendingUp, DollarSign, Target, CheckCircle2, Download } from 'lucide-react'
-import { mockProviders } from '@/data/mock-crm'
+import { TrendingUp, DollarSign, Target, CheckCircle2, Download, LayoutGrid, List } from 'lucide-react'
+// stageConfig kept here for stage tabs
 import NewDealModal from './NewDealModal'
 import DealsToolbar from './DealsToolbar'
+import DealsKanban from './DealsKanban'
+import DealsTable from './DealsTable'
 
 interface Props {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ stage?: string; q?: string; agent?: string }>
+  searchParams: Promise<{ stage?: string; q?: string; agent?: string; view?: string }>
 }
 
 const stageConfig: Record<string, { label: string; color: string; bg: string }> = {
@@ -24,7 +26,7 @@ const stages = ['prospect', 'qualified', 'proposal', 'negotiation', 'won', 'lost
 
 export default async function DealsPage({ params, searchParams }: Props) {
   const { locale } = await params
-  const { stage, q = '', agent = '' } = await searchParams
+  const { stage, q = '', agent = '', view = 'table' } = await searchParams
   setRequestLocale(locale)
 
   const [deals, leads, agents, providers] = await Promise.all([
@@ -68,12 +70,22 @@ export default async function DealsPage({ params, searchParams }: Props) {
             <Download size={14} />
             Export
           </a>
+          <div className="flex border border-gray-200 rounded-xl overflow-hidden bg-white">
+            <Link href={`/${locale}/crm/deals?view=table${stage ? `&stage=${stage}` : ''}`}
+              className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${view !== 'kanban' ? 'bg-gray-100 text-gray-800' : 'text-gray-400 hover:bg-gray-50'}`}>
+              <List size={15} />
+            </Link>
+            <Link href={`/${locale}/crm/deals?view=kanban${stage ? `&stage=${stage}` : ''}`}
+              className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${view === 'kanban' ? 'bg-gray-100 text-gray-800' : 'text-gray-400 hover:bg-gray-50'}`}>
+              <LayoutGrid size={15} />
+            </Link>
+          </div>
           <NewDealModal locale={locale} leads={leads} agents={agents} providers={providers} />
         </div>
       </div>
 
-      {/* Search/filter toolbar */}
-      <DealsToolbar initialQ={q} initialAgent={agent} />
+      {/* Search/filter toolbar (table view only) */}
+      {view !== 'kanban' && <DealsToolbar initialQ={q} initialAgent={agent} />}
 
       {/* Stats — always from full unfiltered deals */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -107,6 +119,12 @@ export default async function DealsPage({ params, searchParams }: Props) {
         </div>
       </div>
 
+      {/* Kanban view */}
+      {view === 'kanban' && (
+        <DealsKanban deals={deals} locale={locale} leadMap={leadMap} />
+      )}
+
+      {view !== 'kanban' && <>
       {/* Stage Filter Tabs */}
       <div className="flex gap-2 flex-wrap">
         <a
@@ -130,88 +148,9 @@ export default async function DealsPage({ params, searchParams }: Props) {
         })}
       </div>
 
-      {/* Deals Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {filteredDeals.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <TrendingUp size={32} className="mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No deals found</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="border-b border-gray-100 bg-gray-50/50">
-                <tr>
-                  {['Deal', 'Lead', 'Stage', 'Value', 'Commission', 'Probability', 'Expected Close', ''].map((h, i) => (
-                    <th
-                      key={i}
-                      className={`text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-5 py-3 ${[5,6].includes(i) ? 'hidden lg:table-cell' : ''} ${[1,4].includes(i) ? 'hidden md:table-cell' : ''}`}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filteredDeals.map(deal => {
-                  const cfg = stageConfig[deal.stage]
-                  const provider = mockProviders.find(p => p.name === deal.provider)
-                  const commission = provider
-                    ? (deal.service_type === 'commercial' ? provider.commission_commercial : provider.commission_residential) * 12
-                    : null
-
-                  return (
-                    <tr key={deal.id} className="hover:bg-gray-50/60 transition-colors">
-                      <td className="px-5 py-4">
-                        <p className="text-sm font-semibold text-gray-900">{deal.title}</p>
-                        <p className="text-xs text-gray-400 capitalize">{deal.service_type ?? '—'}</p>
-                      </td>
-                      <td className="px-5 py-4 hidden md:table-cell">
-                        <p className="text-sm text-gray-700">
-                          {deal.lead_id ? (leadMap[deal.lead_id] ?? '—') : '—'}
-                        </p>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${cfg.bg} ${cfg.color}`}>
-                          {cfg.label}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <p className="text-sm font-semibold text-gray-900">${deal.value}<span className="text-xs font-normal text-gray-400">/mo</span></p>
-                      </td>
-                      <td className="px-5 py-4 hidden md:table-cell">
-                        {commission
-                          ? <span className="text-sm font-medium text-green-700">${commission.toLocaleString()}</span>
-                          : <span className="text-xs text-gray-300">—</span>}
-                        <p className="text-xs text-gray-400">12-mo est.</p>
-                      </td>
-                      <td className="px-5 py-4 hidden md:table-cell">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-brand-greenDark rounded-full" style={{ width: `${deal.probability}%` }} />
-                          </div>
-                          <span className="text-xs text-gray-500">{deal.probability}%</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 hidden lg:table-cell">
-                        <p className="text-xs text-gray-500">{deal.expected_close ?? 'TBD'}</p>
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <Link
-                          href={`/${locale}/crm/deals/${deal.id}`}
-                          className="text-xs bg-brand-greenDark text-white px-3 py-1.5 rounded-lg hover:bg-brand-green transition-colors font-medium"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Deals Table with bulk ops */}
+      <DealsTable deals={filteredDeals} locale={locale} leadMap={leadMap} agents={agents} />
+      </>}
     </div>
   )
 }

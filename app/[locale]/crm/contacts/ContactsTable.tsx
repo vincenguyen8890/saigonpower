@@ -10,6 +10,7 @@ import { formatDate } from '@/lib/utils'
 import { createDeal } from '../deals/actions'
 import { deleteCustomerAction, bulkUpdateAccountStatusAction } from './actions'
 import type { Deal } from '@/lib/supabase/queries'
+import ImportModal from './ImportModal'
 
 interface Props {
   contacts: Lead[]
@@ -428,6 +429,7 @@ export default function ContactsTable({ contacts, locale, currentUserEmail, agen
               ))}
             </>
           )}
+          <ImportModal />
           <a
             href="/api/crm/leads/export"
             className="flex items-center gap-1.5 text-sm border border-gray-200 text-gray-600 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors bg-white"

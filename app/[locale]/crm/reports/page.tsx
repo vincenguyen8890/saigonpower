@@ -65,6 +65,25 @@ export default async function ReportsPage({ params }: Props) {
     })
     .filter(p => p.deals > 0)
 
+  // ── Agent Commission (real: adder × usage from won deals) ────
+  const agentCommMap = new Map<string, { wonDeals: number; totalValue: number; totalAdder: number; totalUsage: number }>()
+  for (const d of deals.filter(d => d.stage === 'won' && d.assigned_to)) {
+    const key = d.assigned_to!
+    if (!agentCommMap.has(key)) agentCommMap.set(key, { wonDeals: 0, totalValue: 0, totalAdder: 0, totalUsage: 0 })
+    const a = agentCommMap.get(key)!
+    a.wonDeals++
+    a.totalValue += d.value
+    if (d.adder_kwh && d.usage_kwh) a.totalAdder += d.adder_kwh * d.usage_kwh
+  }
+  const agentCommission = [...agentCommMap.entries()]
+    .map(([email, s]) => ({
+      name: email.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      email,
+      ...s,
+      monthlyComm: Math.round(s.totalAdder || s.totalValue),
+    }))
+    .sort((a, b) => b.monthlyComm - a.monthlyComm)
+
   // ── Pipeline Health ───────────────────────────────────────────
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString()
   const stalledDeals = deals.filter(d =>
@@ -258,6 +277,41 @@ export default async function ReportsPage({ params }: Props) {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Agent Commission Leaderboard */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <DollarSign size={16} className="text-brand-green" />
+          Agent Commission — Won Deals
+        </h2>
+        {agentCommission.length === 0 ? (
+          <p className="text-sm text-gray-400 py-4 text-center">No won deals with assigned agents yet</p>
+        ) : (
+          <div className="space-y-3">
+            {agentCommission.map((a, i) => {
+              const maxComm = agentCommission[0].monthlyComm || 1
+              return (
+                <div key={a.email} className="flex items-center gap-4">
+                  <span className="text-xs font-bold text-gray-400 w-5 text-right">{i + 1}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-900">{a.name}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-400">{a.wonDeals} won</span>
+                        <span className="text-sm font-bold text-green-700">${a.monthlyComm.toLocaleString()}/mo</span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-brand-greenDark rounded-full" style={{ width: `${(a.monthlyComm / maxComm) * 100}%` }} />
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        <p className="text-xs text-gray-400 mt-4 italic">* Monthly commission = adder × usage for deals with both fields set; falls back to deal value</p>
       </div>
 
       {/* Commission Estimates + Activity Breakdown */}
