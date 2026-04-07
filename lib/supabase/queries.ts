@@ -50,22 +50,28 @@ export async function getLeads(filters?: {
 
   try {
     const supabase = await createClient()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q = (supabase.from('leads') as any)
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(200)
-
-    if (filters?.status && filters.status !== 'all') q = q.eq('status', filters.status)
-    if (filters?.service && filters.service !== 'all') q = q.eq('service_type', filters.service)
-    if (filters?.q) {
-      const search = filters.q
-      q = q.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,zip.ilike.%${search}%`)
+    const PAGE = 1000
+    let all: unknown[] = []
+    let from = 0
+    while (true) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let q = (supabase.from('leads') as any)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE - 1)
+      if (filters?.status && filters.status !== 'all') q = q.eq('status', filters.status)
+      if (filters?.service && filters.service !== 'all') q = q.eq('service_type', filters.service)
+      if (filters?.q) {
+        const search = filters.q
+        q = q.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,zip.ilike.%${search}%`)
+      }
+      const { data, error } = await q
+      if (error) throw error
+      all = all.concat(data ?? [])
+      if (!data || data.length < PAGE) break
+      from += PAGE
     }
-
-    const { data, error } = await q
-    if (error) throw error
-    return data ?? []
+    return all
   } catch {
     return mockLeads
   }
@@ -166,10 +172,20 @@ export async function getAccounts(filters?: {
   try {
     const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: dealLeadIds } = await (supabase.from('deals') as any)
-      .select('lead_id')
-      .not('lead_id', 'is', null)
-    const ids: string[] = [...new Set<string>((dealLeadIds ?? []).map((d: { lead_id: string }) => d.lead_id))]
+    // Paginate deal lead_ids
+    let allDealLeadIds: { lead_id: string }[] = []
+    let dFrom = 0
+    while (true) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: chunk } = await (supabase.from('deals') as any)
+        .select('lead_id')
+        .not('lead_id', 'is', null)
+        .range(dFrom, dFrom + 999)
+      allDealLeadIds = allDealLeadIds.concat(chunk ?? [])
+      if (!chunk || chunk.length < 1000) break
+      dFrom += 1000
+    }
+    const ids: string[] = [...new Set<string>(allDealLeadIds.map((d: { lead_id: string }) => d.lead_id))]
     if (ids.length === 0) return []
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -358,15 +374,23 @@ export async function getDeals(stage?: string): Promise<Deal[]> {
 
   try {
     const supabase = await createClient()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q = (supabase.from('deals') as any)
-      .select('*')
-      .order('updated_at', { ascending: false })
-      .limit(200)
-    if (stage && stage !== 'all') q = q.eq('stage', stage)
-    const { data, error } = await q
-    if (error) throw error
-    return data ?? []
+    const PAGE = 1000
+    let all: unknown[] = []
+    let from = 0
+    while (true) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let q = (supabase.from('deals') as any)
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .range(from, from + PAGE - 1)
+      if (stage && stage !== 'all') q = q.eq('stage', stage)
+      const { data, error } = await q
+      if (error) throw error
+      all = all.concat(data ?? [])
+      if (!data || data.length < PAGE) break
+      from += PAGE
+    }
+    return all
   } catch { return mockDeals }
 }
 
