@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import { Search, Plus, X, ChevronDown, UserPlus, TrendingUp, FilePlus } from 'lucide-react'
 import Link from 'next/link'
@@ -35,9 +35,17 @@ const pageLabels: Record<string, string> = {
 
 export default function TopBar({ locale, email, isAdmin, notifications }: TopBarProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault()
+    if (!search.trim()) return
+    router.push(`/${locale}/crm/contacts?q=${encodeURIComponent(search.trim())}`)
+    setSearch('')
+  }
 
   const segment = pathname.replace(`/${locale}/crm`, '').replace(/^\//, '').split('/')[0]
   const pageTitle = pageLabels[segment] ?? 'CRM'
@@ -60,26 +68,23 @@ export default function TopBar({ locale, email, isAdmin, notifications }: TopBar
       </div>
 
       {/* Search */}
-      <div className="flex-1 max-w-md">
+      <form onSubmit={handleSearch} className="flex-1 max-w-md">
         <div className="relative flex items-center">
           <Search size={13} className="absolute left-3 text-slate-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search leads, deals, contracts…"
+            placeholder="Search customers… (press Enter)"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full pl-8 pr-8 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] text-slate-700 placeholder:text-slate-400 transition-all"
           />
           {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-2.5 text-slate-400 hover:text-slate-600"
-            >
+            <button type="button" onClick={() => setSearch('')} className="absolute right-2.5 text-slate-400 hover:text-slate-600">
               <X size={13} />
             </button>
           )}
         </div>
-      </div>
+      </form>
 
       {/* Quick add */}
       <div className="relative flex-shrink-0" ref={dropdownRef}>

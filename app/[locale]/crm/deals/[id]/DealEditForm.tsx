@@ -4,13 +4,13 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Pencil, X } from 'lucide-react'
 import { updateDealAction, runDealStageAutomation } from '../actions'
-import type { Deal, CRMAgent } from '@/lib/supabase/queries'
+import type { Deal, CRMAgent, Lead } from '@/lib/supabase/queries'
 import type { Provider } from '@/data/mock-crm'
 
 const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHTS', 'FREE WEEKENDS']
 const DEAL_FLAGS = ['TOS', 'TOAO', 'Deposit', 'Special Deal', '10% Promo']
 
-export default function DealEditForm({ deal, locale, agents, providers }: { deal: Deal; locale: string; agents: CRMAgent[]; providers: Provider[] }) {
+export default function DealEditForm({ deal, locale, agents, providers, leads = [] }: { deal: Deal; locale: string; agents: CRMAgent[]; providers: Provider[]; leads?: Lead[] }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [selectedFlags, setSelectedFlags] = useState<string[]>(deal.flags ?? [])
@@ -41,6 +41,7 @@ export default function DealEditForm({ deal, locale, agents, providers }: { deal
 
     startTransition(async () => {
       await updateDealAction(deal.id, {
+        lead_id:             get('lead_id') || null,
         title:               get('title'),
         stage:               newStage as Deal['stage'],
         expected_close:      get('expected_close')      || null,
@@ -97,6 +98,17 @@ export default function DealEditForm({ deal, locale, agents, providers }: { deal
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Basic Info</p>
                 <div className="grid grid-cols-2 gap-3">
+                  {leads.length > 0 && (
+                    <div className="col-span-2">
+                      <label className={L}>Linked Contact</label>
+                      <select name="lead_id" defaultValue={deal.lead_id ?? ''} className={C}>
+                        <option value="">— Unlinked —</option>
+                        {leads.map(l => (
+                          <option key={l.id} value={l.id}>{l.name}{l.customer_id ? ` (${l.customer_id})` : ''}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="col-span-2">
                     <label className={L}>Title *</label>
                     <input name="title" required defaultValue={deal.title} className={C} />

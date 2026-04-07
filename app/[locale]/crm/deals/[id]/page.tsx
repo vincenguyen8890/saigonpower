@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, DollarSign, Target, Building2, User, TrendingUp, CheckCircle2, MapPin, Zap, Hash } from 'lucide-react'
-import { getDealById, getLeadById, getActivities, getCRMAgents, getProvidersFromDB } from '@/lib/supabase/queries'
+import { getDealById, getLeadById, getActivities, getCRMAgents, getProvidersFromDB, getLeads } from '@/lib/supabase/queries'
 import { mockProviders } from '@/data/mock-crm'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
@@ -28,11 +28,12 @@ export default async function DealDetailPage({ params }: Props) {
   const deal = await getDealById(id)
   if (!deal) notFound()
 
-  const [lead, activities, agents, providers] = await Promise.all([
+  const [lead, activities, agents, providers, allLeads] = await Promise.all([
     deal.lead_id ? getLeadById(deal.lead_id) : Promise.resolve(null),
     deal.lead_id ? getActivities({ leadId: deal.lead_id, limit: 10 }) : getActivities({ limit: 10 }),
     getCRMAgents(),
     getProvidersFromDB(),
+    getLeads(),
   ])
 
   const provider = mockProviders.find(p => p.name === deal.provider)
@@ -71,7 +72,7 @@ export default async function DealDetailPage({ params }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <DealEditForm deal={deal} locale={locale} agents={agents} providers={providers} />
+          <DealEditForm deal={deal} locale={locale} agents={agents} providers={providers} leads={allLeads} />
           <DeleteDealButton dealId={deal.id} locale={locale} />
         </div>
       </div>

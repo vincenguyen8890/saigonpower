@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { setRequestLocale } from 'next-intl/server'
 import { getDeals, getLeads, getCRMAgents, getProvidersFromDB } from '@/lib/supabase/queries'
-import { TrendingUp, DollarSign, Target, CheckCircle2 } from 'lucide-react'
+import { TrendingUp, DollarSign, Target, CheckCircle2, Download } from 'lucide-react'
 import { mockProviders } from '@/data/mock-crm'
 import NewDealModal from './NewDealModal'
 
@@ -50,7 +50,16 @@ export default async function DealsPage({ params, searchParams }: Props) {
           <h1 className="text-2xl font-bold text-gray-900">Deals & Opportunities</h1>
           <p className="text-gray-500 text-sm mt-1">{activeDeals.length} active deals · ${totalValue.toLocaleString()}/mo pipeline</p>
         </div>
-        <NewDealModal locale={locale} leads={leads} agents={agents} providers={providers} />
+        <div className="flex items-center gap-2">
+          <a
+            href="/api/crm/deals/export"
+            className="flex items-center gap-1.5 text-sm border border-gray-200 text-gray-600 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors bg-white"
+          >
+            <Download size={14} />
+            Export
+          </a>
+          <NewDealModal locale={locale} leads={leads} agents={agents} providers={providers} />
+        </div>
       </div>
 
       {/* Stats */}

@@ -239,6 +239,29 @@ export default async function LeadDetailPage({ params }: Props) {
             </div>
           </div>
 
+          {/* Deal Summary */}
+          {deals.length > 0 && (() => {
+            const wonDeals    = deals.filter(d => d.stage === 'won')
+            const activeDeals = deals.filter(d => !['won','lost'].includes(d.stage))
+            const lostDeals   = deals.filter(d => d.stage === 'lost').length
+            const totalValue  = wonDeals.reduce((s, d) => s + d.value, 0)
+            return (
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  { label: 'Total Deals', value: deals.length, color: 'text-gray-900' },
+                  { label: 'Won',         value: wonDeals.length,    color: 'text-green-700' },
+                  { label: 'Active',      value: activeDeals.length, color: 'text-blue-700' },
+                  { label: 'Won Value',   value: `$${totalValue.toLocaleString()}/mo`, color: 'text-green-700' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
+                    <p className={`text-lg font-bold ${color}`}>{value}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+
           {/* Linked Deals */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">

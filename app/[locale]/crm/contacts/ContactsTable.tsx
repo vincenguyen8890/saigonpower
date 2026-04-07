@@ -8,7 +8,7 @@ import type { Lead, CRMAgent } from '@/lib/supabase/queries'
 import type { Provider } from '@/data/mock-crm'
 import { formatDate } from '@/lib/utils'
 import { createDeal } from '../deals/actions'
-import { deleteCustomerAction } from './actions'
+import { deleteCustomerAction, bulkUpdateAccountStatusAction } from './actions'
 import type { Deal } from '@/lib/supabase/queries'
 
 interface Props {
@@ -18,6 +18,7 @@ interface Props {
   agents: CRMAgent[]
   providers: Provider[]
   isAdmin: boolean
+  initialSearch?: string
 }
 
 const AVATAR_COLORS = [
@@ -267,16 +268,17 @@ function QuickDealModal({
 }
 
 // ─── Main Table ───────────────────────────────────────────────────────────────
-export default function ContactsTable({ contacts, locale, currentUserEmail, agents, providers, isAdmin }: Props) {
+export default function ContactsTable({ contacts, locale, currentUserEmail, agents, providers, isAdmin, initialSearch = '' }: Props) {
   const [view,         setView]         = useState<View>('all')
-  const [search,       setSearch]       = useState('')
+  const [search,       setSearch]       = useState(initialSearch)
   const [selected,     setSelected]     = useState<Set<string>>(new Set())
   const [page,         setPage]         = useState(1)
   const [statusFilter, setStatusFilter] = useState('all')
   const [showFilters,  setShowFilters]  = useState(false)
   const [dealContact,  setDealContact]  = useState<Lead | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-  const [deleting,      setDeleting]      = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm]   = useState<string | null>(null)
+  const [deleting,      setDeleting]        = useState<string | null>(null)
+  const [bulkPending,   setBulkPending]     = useState(false)
 
   const byView = useMemo(() => {
     if (view === 'mine')       return contacts.filter(c => c.assigned_to === currentUserEmail)
@@ -327,6 +329,14 @@ export default function ContactsTable({ contacts, locale, currentUserEmail, agen
     await deleteCustomerAction(id)
     setDeleteConfirm(null)
     setDeleting(null)
+  }
+
+  async function handleBulkStatus(status: 'active' | 'inactive' | 'switch_away') {
+    if (selected.size === 0) return
+    setBulkPending(true)
+    await bulkUpdateAccountStatusAction(Array.from(selected), status)
+    setSelected(new Set())
+    setBulkPending(false)
   }
 
   return (
@@ -395,11 +405,28 @@ export default function ContactsTable({ contacts, locale, currentUserEmail, agen
           Filters
         </button>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 flex-wrap">
           {selected.size > 0 && (
-            <span className="text-xs text-gray-500 bg-gray-100 px-2.5 py-1.5 rounded-lg">
-              {selected.size} selected
-            </span>
+            <>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2.5 py-1.5 rounded-lg font-medium">
+                {selected.size} selected
+              </span>
+              <span className="text-xs text-gray-400">Set status:</span>
+              {(['active', 'inactive', 'switch_away'] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => handleBulkStatus(s)}
+                  disabled={bulkPending}
+                  className={`text-xs px-2.5 py-1.5 rounded-lg font-medium border transition-colors disabled:opacity-50 ${
+                    s === 'active'      ? 'border-green-200 text-green-700 hover:bg-green-50' :
+                    s === 'inactive'    ? 'border-gray-200 text-gray-600 hover:bg-gray-50' :
+                                         'border-amber-200 text-amber-700 hover:bg-amber-50'
+                  }`}
+                >
+                  {s === 'switch_away' ? 'Switch Away' : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </>
           )}
           <a
             href="/api/crm/leads/export"
