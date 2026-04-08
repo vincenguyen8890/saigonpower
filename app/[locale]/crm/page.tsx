@@ -41,9 +41,10 @@ export default async function CRMOverview({ params }: Props) {
 
   // ── Time context ─────────────────────────────────────────────────────────
   const now = new Date()
-  const hour = now.getHours()
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
-  const today = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+  const tz = 'America/Chicago'
+  const hour = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', hour12: false }).format(now))
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const today = now.toLocaleDateString('en-US', { timeZone: tz, weekday: 'long', month: 'long', day: 'numeric' })
 
   // ── Portfolio metrics ─────────────────────────────────────────────────────
   const providerMap = Object.fromEntries(providers.map(p => [p.name, p]))
