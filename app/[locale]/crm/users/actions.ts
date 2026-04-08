@@ -168,8 +168,7 @@ export async function resetUserPassword(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update({ password: newPassword } as any)
       .eq('id', id)
-    // 42703 = column does not exist — password column not migrated yet
-    if (error && !String(error.code).includes('42703')) throw error
+    if (error) throw error
     revalidatePath('/crm/users')
     return { ok: true }
   } catch (e) {
