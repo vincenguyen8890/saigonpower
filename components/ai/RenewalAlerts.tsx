@@ -1,23 +1,46 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Loader2, RefreshCw, AlertTriangle, Clock, Copy, Check } from 'lucide-react'
+import { Loader2, RefreshCw, AlertTriangle, Clock, Copy, Check, PhoneCall } from 'lucide-react'
 import type { RenewalSummary, RenewalAlert } from '@/app/api/ai/renewals/route'
 
 const urgencyConfig = {
-  critical: { badge: 'bg-red-100 text-red-700 border border-red-200',   bar: 'bg-red-400'    },
-  high:     { badge: 'bg-amber-100 text-amber-700 border border-amber-200', bar: 'bg-amber-400' },
-  medium:   { badge: 'bg-blue-50 text-blue-600 border border-blue-200',  bar: 'bg-blue-400'   },
+  critical: { badge: 'bg-red-100 text-red-700 border border-red-200',      bar: 'bg-red-400'    },
+  high:     { badge: 'bg-amber-100 text-amber-700 border border-amber-200', bar: 'bg-amber-400'  },
+  medium:   { badge: 'bg-blue-50 text-blue-600 border border-blue-200',     bar: 'bg-blue-400'   },
 }
 
 function RenewalCard({ contract }: { contract: RenewalAlert }) {
   const cfg = urgencyConfig[contract.urgency]
   const [copied, setCopied] = useState(false)
+  const [logging, setLogging] = useState(false)
+  const [logged, setLogged] = useState(false)
 
   function copy() {
     navigator.clipboard.writeText(contract.outreach_message).catch(() => {})
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function logContact() {
+    setLogging(true)
+    try {
+      await fetch('/api/crm/activities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'call',
+          title: contract.task_title,
+          description: `Renewal outreach — ${contract.provider} contract expires in ${contract.days_remaining} days (${contract.end_date}).`,
+          due_date: new Date(Date.now() + 86400000).toISOString(), // due tomorrow
+        }),
+      })
+      setLogged(true)
+    } catch {
+      // silent fail
+    } finally {
+      setLogging(false)
+    }
   }
 
   return (
@@ -53,9 +76,24 @@ function RenewalCard({ contract }: { contract: RenewalAlert }) {
         <p className="text-[11px] text-slate-600 leading-relaxed">{contract.outreach_message}</p>
       </div>
 
-      <p className="text-[10px] text-slate-400 mt-2">
-        Task: <span className="font-medium text-slate-600">{contract.task_title}</span>
-      </p>
+      {/* Log contact button */}
+      <button
+        onClick={logContact}
+        disabled={logging || logged}
+        className={`mt-2.5 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+          logged
+            ? 'bg-[#E8FFF1] text-[#00A846] border border-[#A3F0C4]'
+            : 'bg-slate-50 hover:bg-[#EBF2FF] text-slate-500 hover:text-[#2979FF] border border-slate-200 hover:border-[#93B4FF]'
+        } disabled:opacity-60`}
+      >
+        {logging
+          ? <Loader2 size={11} className="animate-spin" />
+          : logged
+            ? <Check size={11} />
+            : <PhoneCall size={11} />
+        }
+        {logged ? 'Task logged to Work Queue' : 'Log Contact Task'}
+      </button>
     </div>
   )
 }

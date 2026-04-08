@@ -3,15 +3,77 @@
 import { useRef, useEffect, useState } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
-import { Send, Bot, User, Loader2, RefreshCw, Sparkles } from 'lucide-react'
+import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react'
 
 const SUGGESTED_PROMPTS = [
-  'Which leads need attention today?',
+  'Who needs attention today?',
   'Which contracts expire this month?',
   'Show me stale leads not contacted in 3+ days',
-  'What are the top open deals?',
+  'Draft a follow-up for my newest lead',
   'Summarize this week\'s pipeline',
 ]
+
+// ── Markdown renderer ─────────────────────────────────────────────────────────
+
+function renderInline(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**'))
+      return <strong key={i} className="font-semibold text-[#0F172A]">{part.slice(2, -2)}</strong>
+    if (part.startsWith('*') && part.endsWith('*'))
+      return <em key={i}>{part.slice(1, -1)}</em>
+    if (part.startsWith('`') && part.endsWith('`'))
+      return <code key={i} className="bg-slate-200 px-1 rounded text-[11px] font-mono">{part.slice(1, -1)}</code>
+    return part
+  })
+}
+
+function MarkdownText({ text }: { text: string }) {
+  const lines = text.split('\n')
+  const elements: React.ReactNode[] = []
+  let listItems: string[] = []
+  let keyIdx = 0
+
+  function flushList() {
+    if (listItems.length === 0) return
+    elements.push(
+      <ul key={`ul-${keyIdx++}`} className="list-disc list-inside space-y-0.5 my-1">
+        {listItems.map((item, i) => (
+          <li key={i} className="text-[13px] leading-relaxed">{renderInline(item)}</li>
+        ))}
+      </ul>
+    )
+    listItems = []
+  }
+
+  for (const line of lines) {
+    const bullet = line.match(/^[-*•]\s+(.+)/)
+    if (bullet) {
+      listItems.push(bullet[1])
+      continue
+    }
+    flushList()
+    if (line.trim() === '') {
+      elements.push(<div key={keyIdx++} className="h-1" />)
+    } else if (line.match(/^#{1,3}\s/)) {
+      elements.push(
+        <p key={keyIdx++} className="text-[13px] font-bold text-[#0F172A] mt-1.5 mb-0.5">
+          {renderInline(line.replace(/^#{1,3}\s/, ''))}
+        </p>
+      )
+    } else {
+      elements.push(
+        <p key={keyIdx++} className="text-[13px] leading-relaxed">
+          {renderInline(line)}
+        </p>
+      )
+    }
+  }
+  flushList()
+  return <div className="space-y-0.5">{elements}</div>
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function AIChat() {
   const [input, setInput] = useState('')
@@ -95,16 +157,21 @@ export default function AIChat() {
                     : <Bot size={12} className="text-white" />
                   }
                 </div>
-                <div className={`max-w-[80%] px-3.5 py-2.5 rounded-xl text-[13px] leading-relaxed ${
+                <div className={`max-w-[80%] px-3.5 py-2.5 rounded-xl ${
                   isUser
-                    ? 'bg-[#EBF2FF] text-[#0F172A] rounded-tr-sm'
+                    ? 'bg-[#EBF2FF] text-[#0F172A] rounded-tr-sm text-[13px] leading-relaxed'
                     : 'bg-slate-50 text-slate-700 rounded-tl-sm border border-slate-100'
                 }`}>
-                  {text || (isStreaming && !isUser ? (
-                    <span className="flex items-center gap-1.5 text-slate-400">
-                      <Loader2 size={11} className="animate-spin" /> Thinking…
-                    </span>
-                  ) : '')}
+                  {isUser
+                    ? text
+                    : text
+                      ? <MarkdownText text={text} />
+                      : isStreaming
+                        ? <span className="flex items-center gap-1.5 text-slate-400 text-[13px]">
+                            <Loader2 size={11} className="animate-spin" /> Thinking…
+                          </span>
+                        : null
+                  }
                 </div>
               </div>
             )

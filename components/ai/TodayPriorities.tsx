@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Loader2, RefreshCw, AlertTriangle, TrendingUp, FileText, ListChecks, Zap } from 'lucide-react'
+import { useParams } from 'next/navigation'
+import { Loader2, RefreshCw, AlertTriangle, TrendingUp, FileText, ListChecks, Zap, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 import type { DailySummary, Priority } from '@/app/api/ai/daily-summary/route'
 
 const urgencyConfig = {
@@ -17,7 +19,20 @@ const typeIcon: Record<Priority['type'], React.ReactNode> = {
   task:     <ListChecks size={13} className="text-purple-500" />,
 }
 
+function priorityHref(locale: string, p: Priority): string | null {
+  if (!p.id || p.id === 'new') return null
+  switch (p.type) {
+    case 'lead':     return `/${locale}/crm/leads/${p.id}`
+    case 'deal':     return `/${locale}/crm/deals/${p.id}`
+    case 'contract': return `/${locale}/crm/contracts`
+    case 'task':     return `/${locale}/crm/tasks`
+    default:         return null
+  }
+}
+
 export default function TodayPriorities() {
+  const params = useParams()
+  const locale = (params?.locale as string) ?? 'en'
   const [data, setData] = useState<DailySummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -78,18 +93,28 @@ export default function TodayPriorities() {
               <div className="space-y-2.5">
                 {data.priorities.map((p, i) => {
                   const cfg = urgencyConfig[p.urgency]
-                  return (
-                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
+                  const href = priorityHref(locale, p)
+                  const inner = (
+                    <div className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                      href ? 'border-slate-100 hover:border-[#00C853] hover:bg-[#E8FFF1]/40 cursor-pointer group' : 'border-slate-100'
+                    }`}>
                       <div className="mt-0.5 flex-shrink-0">{typeIcon[p.type]}</div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-semibold text-[#0F172A] truncate">{p.title}</p>
                         <p className="text-[11px] text-slate-500 mt-0.5">{p.action}</p>
                       </div>
-                      <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${cfg.label}`}>
-                        {p.urgency}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${cfg.label}`}>
+                          {p.urgency}
+                        </span>
+                        {href && <ArrowRight size={12} className="text-slate-300 group-hover:text-[#00C853] transition-colors" />}
+                      </div>
                     </div>
                   )
+
+                  return href
+                    ? <Link key={i} href={href}>{inner}</Link>
+                    : <div key={i}>{inner}</div>
                 })}
               </div>
             )}
