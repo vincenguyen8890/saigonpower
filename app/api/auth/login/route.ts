@@ -51,8 +51,19 @@ async function checkAgentPassword(email: string, password: string): Promise<User
       .eq('email', email.trim().toLowerCase())
       .single()
     if (!data || !data.active) return null
-    if (!data.password || data.password !== password) return null
-    return { email: data.email, password: data.password, role: data.role, name: data.name }
+
+    // If DB password is set, validate against it directly
+    if (data.password) {
+      if (data.password !== password) return null
+      return { email: data.email, password: data.password, role: data.role, name: data.name }
+    }
+
+    // No DB password — fall back to env-var users with matching role.
+    // This handles the case where an admin changed a user's email after the
+    // user was originally set up via env vars (so no password row exists yet).
+    const envMatch = getUsers().find(u => u.role === data.role && u.password === password)
+    if (!envMatch) return null
+    return { email: data.email, password: envMatch.password, role: data.role, name: data.name }
   } catch {
     return null
   }
