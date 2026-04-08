@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { setRequestLocale } from 'next-intl/server'
 import { getDeals, getLeads, getCRMAgents, getProvidersFromDB } from '@/lib/supabase/queries'
+import { getSession } from '@/lib/auth/session'
 import { TrendingUp, DollarSign, Target, CheckCircle2, Download, LayoutGrid, List } from 'lucide-react'
 // stageConfig kept here for stage tabs
 import NewDealModal from './NewDealModal'
@@ -31,12 +32,14 @@ export default async function DealsPage({ params, searchParams }: Props) {
   const showUnlinked = stage === 'unlinked'
   setRequestLocale(locale)
 
-  const [deals, leads, agents, providers] = await Promise.all([
+  const [deals, leads, agents, providers, session] = await Promise.all([
     getDeals(stage),
     getLeads(),
     getCRMAgents(),
     getProvidersFromDB(),
+    getSession(),
   ])
+  const showValue = !['csr', 'office_manager'].includes(session?.role ?? '')
 
   // Pipeline stats
   const activeDeals = deals.filter(d => !['won', 'lost'].includes(d.stage))
@@ -62,7 +65,7 @@ export default async function DealsPage({ params, searchParams }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Deals & Opportunities</h1>
-          <p className="text-gray-500 text-sm mt-1">{activeDeals.length} active deals · ${totalValue.toLocaleString()}/mo pipeline</p>
+          <p className="text-gray-500 text-sm mt-1">{activeDeals.length} active deals{showValue ? ` · $${totalValue.toLocaleString()}/mo pipeline` : ''}</p>
         </div>
         <div className="flex items-center gap-2">
           <a
@@ -98,32 +101,38 @@ export default async function DealsPage({ params, searchParams }: Props) {
           </div>
           <p className="text-2xl font-bold text-gray-900">{activeDeals.length}</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <DollarSign size={16} className="text-purple-500" />
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Pipeline Value</p>
+        {showValue && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <DollarSign size={16} className="text-purple-500" />
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Pipeline Value</p>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">${totalValue.toLocaleString()}<span className="text-sm font-normal text-gray-400">/mo</span></p>
           </div>
-          <p className="text-2xl font-bold text-gray-900">${totalValue.toLocaleString()}<span className="text-sm font-normal text-gray-400">/mo</span></p>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <Target size={16} className="text-amber-500" />
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Weighted Value</p>
+        )}
+        {showValue && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Target size={16} className="text-amber-500" />
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Weighted Value</p>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">${Math.round(weightedValue).toLocaleString()}<span className="text-sm font-normal text-gray-400">/mo</span></p>
           </div>
-          <p className="text-2xl font-bold text-gray-900">${Math.round(weightedValue).toLocaleString()}<span className="text-sm font-normal text-gray-400">/mo</span></p>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <CheckCircle2 size={16} className="text-green-500" />
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Won Value</p>
+        )}
+        {showValue && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <CheckCircle2 size={16} className="text-green-500" />
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Won Value</p>
+            </div>
+            <p className="text-2xl font-bold text-green-600">${wonValue.toLocaleString()}<span className="text-sm font-normal text-gray-400">/mo</span></p>
           </div>
-          <p className="text-2xl font-bold text-green-600">${wonValue.toLocaleString()}<span className="text-sm font-normal text-gray-400">/mo</span></p>
-        </div>
+        )}
       </div>
 
       {/* Kanban view */}
       {view === 'kanban' && (
-        <DealsKanban deals={deals} locale={locale} leadMap={leadMap} />
+        <DealsKanban deals={deals} locale={locale} leadMap={leadMap} showValue={showValue} />
       )}
 
       {view !== 'kanban' && <>
@@ -164,7 +173,7 @@ export default async function DealsPage({ params, searchParams }: Props) {
       {/* Unlinked deals or Deals Table with bulk ops */}
       {showUnlinked
         ? <UnlinkedDealsPanel deals={deals} leads={leads} locale={locale} />
-        : <DealsTable deals={filteredDeals} locale={locale} leadMap={leadMap} agents={agents} />
+        : <DealsTable deals={filteredDeals} locale={locale} leadMap={leadMap} agents={agents} showValue={showValue} />
       }
       </>}
     </div>

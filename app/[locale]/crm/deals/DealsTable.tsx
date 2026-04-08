@@ -28,9 +28,10 @@ interface Props {
   locale: string
   leadMap: Record<string, string>
   agents: CRMAgent[]
+  showValue?: boolean
 }
 
-export default function DealsTable({ deals, locale, leadMap, agents }: Props) {
+export default function DealsTable({ deals, locale, leadMap, agents, showValue = true }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [isPending, startTransition] = useTransition()
   const [bulkStage, setBulkStage] = useState('')
@@ -142,7 +143,7 @@ export default function DealsTable({ deals, locale, leadMap, agents }: Props) {
                       </div>
                       <p className="text-xs text-gray-500 mb-1">{deal.lead_id ? (leadMap[deal.lead_id] ?? '—') : '—'}</p>
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-gray-900">${deal.value}<span className="text-xs font-normal text-gray-400">/mo</span></p>
+                        {showValue && <p className="text-sm font-semibold text-gray-900">${deal.value}<span className="text-xs font-normal text-gray-400">/mo</span></p>}
                         <Link
                           href={`/${locale}/crm/deals/${deal.id}`}
                           className="text-xs bg-brand-greenDark text-white px-3 py-1 rounded-lg hover:bg-brand-green transition-colors font-medium"
@@ -208,7 +209,7 @@ export default function DealsTable({ deals, locale, leadMap, agents }: Props) {
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <p className="text-sm font-semibold text-gray-900">${deal.value}<span className="text-xs font-normal text-gray-400">/mo</span></p>
+                      {showValue && <p className="text-sm font-semibold text-gray-900">${deal.value}<span className="text-xs font-normal text-gray-400">/mo</span></p>}
                     </td>
                     <td className="px-4 py-4 hidden lg:table-cell">
                       <p className="text-xs text-gray-500 truncate max-w-[120px]">{deal.assigned_to ? deal.assigned_to.split('@')[0] : '—'}</p>

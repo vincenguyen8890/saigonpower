@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.RESEND_FROM ?? 'Saigon Power <noreply@saigonpower.com>'
 
 export async function POST(req: NextRequest) {
   if (!process.env.RESEND_API_KEY) {
     return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 503 })
   }
+  const resend = new Resend(process.env.RESEND_API_KEY)
 
   try {
     const { to, subject, body } = await req.json() as { to: string; subject: string; body: string }

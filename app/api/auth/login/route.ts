@@ -41,6 +41,23 @@ function getUsers(): UserEntry[] {
   return users
 }
 
+async function checkAgentPassword(email: string, password: string): Promise<UserEntry | null> {
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const db = createAdminClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (db.from('crm_agents') as any)
+      .select('id, email, name, role, password, active')
+      .eq('email', email.trim().toLowerCase())
+      .single()
+    if (!data || !data.active) return null
+    if (!data.password || data.password !== password) return null
+    return { email: data.email, password: data.password, role: data.role, name: data.name }
+  } catch {
+    return null
+  }
+}
+
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json()
 
@@ -48,10 +65,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
   }
 
+  // Check env-var users first, then crm_agents.password
   const users = getUsers()
-  const match = users.find(
+  let match = users.find(
     u => u.email.toLowerCase() === email.trim().toLowerCase() && u.password === password
   )
+  if (!match) {
+    match = await checkAgentPassword(email, password) ?? undefined
+  }
 
   if (!match) {
     await new Promise(r => setTimeout(r, 400)) // Brute-force delay

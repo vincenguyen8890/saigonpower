@@ -91,6 +91,9 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
         agent_code:          selectedAgent?.id ?? null,
         service_order:       get('service_order') || null,
         service_address:     get('service_address') || null,
+        service_city:        get('service_city') || null,
+        service_state:       get('service_state') || null,
+        service_zip:         get('service_zip') || null,
         esid:                get('esid') || null,
         contract_start_date: contractStart || null,
         contract_end_date:   term === 'mtm' ? (get('contract_end_date') || null) : (computedEndDate || null),
@@ -305,7 +308,21 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <label className={L}>Service Address</label>
-                    <input name="service_address" placeholder="123 Main St, Houston TX 77036" className={C} />
+                    <input name="service_address" placeholder="Street address" className={C} />
+                  </div>
+                  <div>
+                    <label className={L}>City</label>
+                    <input name="service_city" placeholder="City" className={C} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={L}>State</label>
+                      <input name="service_state" placeholder="TX" maxLength={2} className={C} />
+                    </div>
+                    <div>
+                      <label className={L}>Zip</label>
+                      <input name="service_zip" placeholder="77036" maxLength={10} className={C} />
+                    </div>
                   </div>
                   <div>
                     <label className={L}>ESI ID</label>

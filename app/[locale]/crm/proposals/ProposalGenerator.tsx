@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Zap, Leaf, Tag, FileText, Send, CheckCircle2, Loader2 } from 'lucide-react'
+import { Zap, Leaf, Tag, FileText, Send, CheckCircle2, Loader2, Printer } from 'lucide-react'
 import type { Lead, Plan } from '@/data/mock-crm'
 
 interface PlanWithCost extends Plan {
@@ -26,6 +26,52 @@ export default function ProposalGenerator({ locale, leads, selectedLead, plans, 
   const [sent, setSent] = useState(false)
   const [sending, setSending] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
+  const printRef = useRef<HTMLDivElement>(null)
+
+  function handlePrint() {
+    const content = printRef.current
+    if (!content) return
+    const win = window.open('', '_blank', 'width=900,height=700')
+    if (!win) return
+    win.document.write(`
+      <html><head><title>Proposal – ${selectedLead?.name}</title>
+      <style>
+        body { font-family: system-ui, sans-serif; padding: 32px; color: #111; }
+        h1 { font-size: 20px; margin-bottom: 4px; }
+        .sub { font-size: 13px; color: #555; margin-bottom: 24px; }
+        .grid { display: grid; grid-template-columns: repeat(${chosenPlans.length}, 1fr); gap: 16px; }
+        .plan { border: 1px solid #ddd; border-radius: 12px; padding: 16px; }
+        .plan.best { border-color: #16a34a; background: #f0fdf4; }
+        .price { font-size: 26px; font-weight: 700; margin: 8px 0 4px; }
+        .detail { font-size: 12px; color: #666; margin: 2px 0; }
+        .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #16a34a; color: #fff; margin-bottom: 6px; }
+        .rec { margin-top: 20px; padding: 12px 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; font-size: 13px; }
+        .footer { margin-top: 32px; font-size: 11px; color: #888; }
+      </style></head><body>
+      <h1>Electricity Rate Proposal for ${selectedLead?.name}</h1>
+      <p class="sub">${selectedLead?.service_type === 'commercial' ? 'Commercial' : 'Residential'} · ZIP ${selectedLead?.zip} · ${usageKwh.toLocaleString()} kWh/mo · ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+      <div class="grid">
+        ${chosenPlans.map(p => `
+          <div class="plan${bestPlan?.id === p.id ? ' best' : ''}">
+            ${bestPlan?.id === p.id ? '<div class="badge">Best Rate</div><br>' : ''}
+            <div style="font-size:12px;color:#555">${p.provider_name}</div>
+            <div style="font-weight:600">${p.name}</div>
+            <div class="price">$${p.monthlyEstimate}<span style="font-size:14px;font-weight:400">/mo</span></div>
+            <div class="detail">${(p.rate_kwh * 100).toFixed(1)}¢/kWh</div>
+            <div class="detail">${p.term_months === 0 ? 'Prepaid — no contract' : `${p.term_months}-month term`}</div>
+            <div class="detail">Annual est: $${p.annualEstimate.toLocaleString()}</div>
+            ${p.renewable ? '<div class="detail" style="color:#16a34a">✓ 100% Renewable</div>' : ''}
+          </div>
+        `).join('')}
+      </div>
+      ${bestPlan ? `<div class="rec">Recommendation: <strong>${bestPlan.name}</strong> — lowest monthly bill at $${bestPlan.monthlyEstimate}/mo ($${bestPlan.annualEstimate.toLocaleString()}/yr).</div>` : ''}
+      <div class="footer">Prepared by Saigon Power · saigonpower.com</div>
+      </body></html>
+    `)
+    win.document.close()
+    win.focus()
+    win.print()
+  }
 
   function handleLeadChange(leadId: string) {
     startTransition(() => {
@@ -208,7 +254,7 @@ export default function ProposalGenerator({ locale, leads, selectedLead, plans, 
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div ref={printRef} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             {/* Proposal header */}
             <div className="bg-brand-greenDark px-6 py-5">
               <div className="flex items-start justify-between">
@@ -304,6 +350,13 @@ export default function ProposalGenerator({ locale, leads, selectedLead, plans, 
                     >
                       <FileText size={14} />
                       {previewOpen ? 'Hide Preview' : 'Email Preview'}
+                    </button>
+                    <button
+                      onClick={handlePrint}
+                      className="flex items-center gap-2 border border-slate-200 text-slate-600 text-sm px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+                    >
+                      <Printer size={14} />
+                      Print / PDF
                     </button>
                   </>
                 )}

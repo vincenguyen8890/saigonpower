@@ -11,7 +11,7 @@ export default function ShareDealButton({ dealId, locale }: { dealId: string; lo
     setState('loading')
     try {
       const token = await getOrCreateShareTokenAction(dealId)
-      const url = `${window.location.origin}/${locale}/crm/customer/${dealId}?token=${token}`
+      const url = `${window.location.origin}/${locale}/customer/${dealId}?token=${token}`
       await navigator.clipboard.writeText(url)
       setState('copied')
       setTimeout(() => setState('idle'), 2500)

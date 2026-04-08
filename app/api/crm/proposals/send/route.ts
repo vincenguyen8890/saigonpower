@@ -108,7 +108,7 @@ async function sendProposalEmail(payload: ProposalPayload) {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: 'Saigon Power <power@saigonllc.com>',
+      from: process.env.RESEND_FROM ?? 'Saigon Power <onboarding@resend.dev>',
       to:   lead.email,
       subject: `⚡ Your electricity rate proposal — ${lead.name}`,
       html,

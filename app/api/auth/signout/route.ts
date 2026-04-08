@@ -11,11 +11,15 @@ export async function POST(request: NextRequest) {
     // Supabase not configured — ignore
   }
 
-  const locale = request.formData
-    ? (await request.formData()).get('locale') as string ?? 'vi'
-    : 'vi'
+  let locale = 'en'
+  try {
+    const body = await request.json()
+    locale = body.locale ?? 'en'
+  } catch {
+    // ignore parse errors
+  }
 
-  const response = NextResponse.redirect(new URL(`/${locale}/auth/login`, request.url))
+  const response = NextResponse.json({ success: true })
 
   // Clear custom session cookie
   response.cookies.set(COOKIE_NAME, '', {

@@ -4,7 +4,6 @@ import { generateText } from 'ai'
 import { getDeals, getCRMAgents, insertActivity, getActivities, getLeadById } from '@/lib/supabase/queries'
 import { getOpenAIModel, hasOpenAI } from '@/lib/ai/client'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM   = process.env.RESEND_FROM ?? 'Saigon Power <noreply@saigonpower.com>'
 
 const WINDOWS = [
@@ -51,6 +50,7 @@ function defaultEmail(customerName: string, agentName: string, dealTitle: string
 }
 
 export async function GET(req: NextRequest) {
+  const resend = new Resend(process.env.RESEND_API_KEY)
   const auth   = req.headers.get('authorization')
   const secret = process.env.CRON_SECRET
   if (secret && auth !== `Bearer ${secret}`) {

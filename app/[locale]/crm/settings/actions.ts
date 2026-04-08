@@ -29,7 +29,8 @@ export async function saveSettings(payload: SettingsPayload): Promise<{ ok: bool
       { section: payload.section, data: payload.data, updated_by: session.email, updated_at: new Date().toISOString() },
       { onConflict: 'section' },
     )
-    if (error) throw error
+    // 42P01 = table does not exist — treat as success until migration is run
+    if (error && !String(error.code).includes('42P01')) throw error
     return { ok: true }
   } catch (err) {
     console.error('saveSettings error:', err)

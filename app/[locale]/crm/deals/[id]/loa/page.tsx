@@ -97,7 +97,9 @@ export default async function LOAPage({ params }: Props) {
 
             <div className="pt-2 border-t border-slate-200">
               <p className="text-[10px] uppercase font-semibold text-slate-400 tracking-wide">Service Address</p>
-              <p className="font-semibold text-[#0F172A]">{deal.service_address ?? '___________________________________________________'}</p>
+              <p className="font-semibold text-[#0F172A]">
+                {[deal.service_address, deal.service_city, deal.service_state, deal.service_zip].filter(Boolean).join(', ') || '___________________________________________________'}
+              </p>
             </div>
 
             <div>

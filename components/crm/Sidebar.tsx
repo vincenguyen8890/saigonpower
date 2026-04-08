@@ -8,6 +8,7 @@ import {
   ShieldCheck, UserCheck, Zap, RefreshCw, Building2,
   TrendingUp, BarChart3, Bot, ListChecks, DollarSign,
   Inbox, Contact2, Sparkles, Landmark, Headset, BriefcaseBusiness,
+  ClipboardList,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import SignOutButton from './SignOutButton'
@@ -185,6 +186,7 @@ export default function Sidebar({
             <div className="space-y-0.5">
               {[
                 { href: `/${locale}/crm/users`,    label: 'Users',    icon: Users    },
+                { href: `/${locale}/crm/audit`,    label: 'Audit Log', icon: ClipboardList },
                 { href: `/${locale}/crm/settings`, label: 'Settings', icon: Settings },
               ].map(({ href, label, icon: Icon }) => (
                 <Link

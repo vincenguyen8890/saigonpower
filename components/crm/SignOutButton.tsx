@@ -1,10 +1,24 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { LogOut, X } from 'lucide-react'
 
 export default function SignOutButton({ locale }: { locale: string }) {
   const [showConfirm, setShowConfirm] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  async function handleSignOut() {
+    setLoading(true)
+    await fetch('/api/auth/signout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locale }),
+    })
+    router.push(`/${locale}/auth/login`)
+    router.refresh()
+  }
 
   return (
     <>
@@ -35,15 +49,14 @@ export default function SignOutButton({ locale }: { locale: string }) {
               >
                 Cancel
               </button>
-              <form action="/api/auth/signout" method="POST" className="flex-1">
-                <input type="hidden" name="locale" value={locale} />
-                <button
-                  type="submit"
-                  className="w-full bg-red-600 text-white py-2.5 rounded-xl text-sm hover:bg-red-700 transition-colors font-medium"
-                >
-                  Sign Out
-                </button>
-              </form>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={loading}
+                className="flex-1 bg-red-600 text-white py-2.5 rounded-xl text-sm hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
+              >
+                {loading ? 'Signing out…' : 'Sign Out'}
+              </button>
             </div>
           </div>
         </div>

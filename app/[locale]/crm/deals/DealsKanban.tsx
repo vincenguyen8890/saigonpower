@@ -21,9 +21,10 @@ interface Props {
   deals: Deal[]
   locale: string
   leadMap: Record<string, string>
+  showValue?: boolean
 }
 
-export default function DealsKanban({ deals: initial, locale, leadMap }: Props) {
+export default function DealsKanban({ deals: initial, locale, leadMap, showValue = true }: Props) {
   const [deals, setDeals] = useState(initial)
   const [moving, setMoving] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState<Stage | null>(null)
@@ -107,7 +108,7 @@ export default function DealsKanban({ deals: initial, locale, leadMap }: Props) 
                   )}
 
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs font-bold text-gray-800">${deal.value}<span className="text-gray-400 font-normal">/mo</span></span>
+                    {showValue && <span className="text-xs font-bold text-gray-800">${deal.value}<span className="text-gray-400 font-normal">/mo</span></span>}
                     {deal.provider && (
                       <span className="text-xs text-gray-400 truncate max-w-[90px]">{deal.provider}</span>
                     )}

@@ -10,7 +10,8 @@ import type { Provider } from '@/data/mock-crm'
 const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHTS', 'FREE WEEKENDS']
 const DEAL_FLAGS = ['TOS', 'TOAO', 'Deposit', 'Special Deal', '10% Promo']
 
-export default function DealEditForm({ deal, locale, agents, providers, leads = [] }: { deal: Deal; locale: string; agents: CRMAgent[]; providers: Provider[]; leads?: Lead[] }) {
+export default function DealEditForm({ deal, locale, agents, providers, leads = [], role = 'agent' }: { deal: Deal; locale: string; agents: CRMAgent[]; providers: Provider[]; leads?: Lead[]; role?: string }) {
+  const showCommission = !['csr', 'office_manager'].includes(role)
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [selectedFlags, setSelectedFlags] = useState<string[]>(deal.flags ?? [])
@@ -57,6 +58,9 @@ export default function DealEditForm({ deal, locale, agents, providers, leads = 
         notes:               get('notes')               || null,
         assigned_to:         get('assigned_to')         || null,
         service_address:     get('service_address')     || null,
+        service_city:        get('service_city')        || null,
+        service_state:       get('service_state')       || null,
+        service_zip:         get('service_zip')         || null,
         esid:                get('esid')                || null,
         contract_start_date: contractStart || null,
         contract_end_date:   term === 'mtm' ? (get('contract_end_date') || null) : (computedEndDate || null),
@@ -204,15 +208,17 @@ export default function DealEditForm({ deal, locale, agents, providers, leads = 
                     <label className={L}>Contract Rate ($/kWh)</label>
                     <input name="rate_kwh" type="number" step="0.001" min="0" defaultValue={deal.rate_kwh ?? ''} className={C} />
                   </div>
-                  <div>
-                    <label className={L}>Adder / Commission ($/kWh)</label>
-                    <input name="adder_kwh" type="number" step="0.0001" min="0" value={adderKwh} onChange={e => setAdderKwh(e.target.value)} className={C} />
-                  </div>
+                  {showCommission && (
+                    <div>
+                      <label className={L}>Adder / Commission ($/kWh)</label>
+                      <input name="adder_kwh" type="number" step="0.0001" min="0" value={adderKwh} onChange={e => setAdderKwh(e.target.value)} className={C} />
+                    </div>
+                  )}
                   <div>
                     <label className={L}>Estimated Usage (kWh/mo)</label>
                     <input name="usage_kwh" type="number" min="0" value={usageKwh} onChange={e => setUsageKwh(e.target.value)} className={C} />
                   </div>
-                  {autoValue !== null && (
+                  {showCommission && autoValue !== null && (
                     <div className="col-span-2">
                       <label className={L}>Monthly Commission (usage × adder)</label>
                       <div className={C + ' bg-green-50 text-green-700 font-semibold cursor-default'}>${autoValue}/mo</div>
@@ -251,7 +257,21 @@ export default function DealEditForm({ deal, locale, agents, providers, leads = 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <label className={L}>Service Address</label>
-                    <input name="service_address" defaultValue={deal.service_address ?? ''} className={C} />
+                    <input name="service_address" placeholder="Street address" defaultValue={deal.service_address ?? ''} className={C} />
+                  </div>
+                  <div>
+                    <label className={L}>City</label>
+                    <input name="service_city" placeholder="City" defaultValue={deal.service_city ?? ''} className={C} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={L}>State</label>
+                      <input name="service_state" placeholder="TX" maxLength={2} defaultValue={deal.service_state ?? ''} className={C} />
+                    </div>
+                    <div>
+                      <label className={L}>Zip</label>
+                      <input name="service_zip" placeholder="77036" maxLength={10} defaultValue={deal.service_zip ?? ''} className={C} />
+                    </div>
                   </div>
                   <div>
                     <label className={L}>ESI ID</label>

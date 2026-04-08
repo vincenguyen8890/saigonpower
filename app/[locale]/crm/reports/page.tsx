@@ -1,6 +1,6 @@
 import { setRequestLocale } from 'next-intl/server'
 import { getLeads, getDeals, getActivities } from '@/lib/supabase/queries'
-import { BarChart3, TrendingUp, Users, CheckCircle2, DollarSign, Target } from 'lucide-react'
+import { BarChart3, TrendingUp, Users, CheckCircle2, DollarSign, Target, Download } from 'lucide-react'
 import LeadFunnelChart from '@/components/crm/LeadFunnelChart'
 import PipelineValueChart from '@/components/crm/PipelineValueChart'
 import EnrollmentTrendChart from '@/components/crm/EnrollmentTrendChart'
@@ -126,12 +126,30 @@ export default async function ReportsPage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <BarChart3 size={22} className="text-brand-greenDark" />
-          Reports & Analytics
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">Performance overview across all modules</p>
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <BarChart3 size={22} className="text-brand-greenDark" />
+            Reports & Analytics
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">Performance overview across all modules</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <a
+            href="/api/crm/reports/export?type=leads"
+            className="flex items-center gap-1.5 text-xs font-medium border border-slate-200 text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            <Download size={13} />
+            Leads CSV
+          </a>
+          <a
+            href="/api/crm/reports/export?type=deals"
+            className="flex items-center gap-1.5 text-xs font-medium border border-slate-200 text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            <Download size={13} />
+            Deals CSV
+          </a>
+        </div>
       </div>
 
       {/* KPI Row */}

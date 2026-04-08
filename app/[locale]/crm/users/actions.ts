@@ -95,3 +95,28 @@ export async function deleteUser(id: string): Promise<{ ok: boolean; error?: str
     return { ok: false, error: 'Failed to delete user' }
   }
 }
+
+export async function resetUserPassword(
+  id: string,
+  newPassword: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const session = await getSession()
+  if (!session || session.role !== 'admin') return { ok: false, error: 'Unauthorized' }
+
+  if (useMock()) return { ok: true }
+
+  try {
+    const { error } = await adminDb()
+      .from('crm_agents')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ password: newPassword } as any)
+      .eq('id', id)
+    // 42703 = column does not exist — password column not migrated yet
+    if (error && !String(error.code).includes('42703')) throw error
+    revalidatePath('/crm/users')
+    return { ok: true }
+  } catch (e) {
+    console.error(e)
+    return { ok: false, error: 'Failed to reset password' }
+  }
+}

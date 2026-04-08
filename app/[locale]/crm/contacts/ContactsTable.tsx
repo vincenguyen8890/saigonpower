@@ -93,6 +93,9 @@ function QuickDealModal({
         service_order:       get('service_order') || null,
         agent_code:          null,
         service_address:     get('service_address') || null,
+        service_city:        get('service_city') || null,
+        service_state:       get('service_state') || null,
+        service_zip:         get('service_zip') || null,
         esid:                get('esid') || null,
         contract_start_date: get('contract_start_date') || null,
         contract_end_date:   get('contract_end_date') || null,
@@ -458,8 +461,47 @@ export default function ContactsTable({ contacts, locale, currentUserEmail, agen
         </div>
       )}
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      {/* Mobile card list */}
+      <div className="sm:hidden bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden divide-y divide-gray-50">
+        {pageRows.length === 0 ? (
+          <p className="text-center py-16 text-gray-400 text-sm">No customers found</p>
+        ) : pageRows.map(contact => {
+          const initials = getInitials(contact.name)
+          const avatarBg = getAvatarColor(contact.name)
+          return (
+            <div key={contact.id} className="flex items-center gap-3 px-4 py-3.5">
+              <div className={`w-10 h-10 rounded-full ${avatarBg} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                {initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <Link href={`/${locale}/crm/leads/${contact.id}`} className="text-[13px] font-semibold text-blue-600 hover:underline truncate block">
+                  {contact.name}
+                </Link>
+                <p className="text-[11px] text-gray-400 mt-0.5">{contact.phone || contact.email || '—'}</p>
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                  contact.service_type === 'commercial' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'
+                }`}>
+                  {contact.service_type === 'commercial' ? 'Comm' : 'Res'}
+                </span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium capitalize ${STATUS_STYLES[contact.status] ?? STATUS_STYLES.new}`}>
+                  {contact.status}
+                </span>
+                <button
+                  onClick={() => setDealContact(contact)}
+                  className="text-xs bg-brand-greenDark text-white px-2 py-1 rounded-lg font-medium"
+                >
+                  Deal
+                </button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="border-b border-gray-100 bg-gray-50/60">

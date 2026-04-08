@@ -4,11 +4,11 @@ import { useState, useTransition } from 'react'
 import {
   ShieldCheck, UserCheck, UserX, Pencil, Trash2,
   Plus, X, Loader2, Check, AlertCircle, Mail, Phone,
-  Search,
+  Search, KeyRound,
 } from 'lucide-react'
 import type { CRMAgent } from '@/lib/supabase/queries'
 import {
-  updateUserRole, toggleUserActive, inviteUser, deleteUser,
+  updateUserRole, toggleUserActive, inviteUser, deleteUser, resetUserPassword,
 } from '@/app/[locale]/crm/users/actions'
 
 interface UsersClientProps {
@@ -39,6 +39,9 @@ function UserRow({
   const [isPending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<'saved' | 'error' | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showPasswordReset, setShowPasswordReset] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [pwFeedback, setPwFeedback] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
   const rc = roleConfig[agent.role]
   const RoleIcon = rc.icon
@@ -52,6 +55,7 @@ function UserRow({
   }
 
   return (
+    <>
     <tr className={`border-b border-slate-50 transition-colors ${agent.active ? 'hover:bg-slate-50' : 'bg-slate-50/60 opacity-60'}`}>
       {/* User info */}
       <td className="px-6 py-4">
@@ -134,6 +138,13 @@ function UserRow({
 
           {!isSelf && (
             <>
+              <button
+                onClick={() => { setShowPasswordReset(v => !v); setNewPassword(''); setPwFeedback('idle') }}
+                className="text-slate-300 hover:text-blue-500 transition-colors p-1 rounded"
+                title="Reset password"
+              >
+                <KeyRound size={13} />
+              </button>
               {showDeleteConfirm ? (
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] text-slate-500">Delete?</span>
@@ -163,6 +174,41 @@ function UserRow({
         </div>
       </td>
     </tr>
+    {showPasswordReset && (
+      <tr className="bg-blue-50/40 border-b border-slate-50">
+        <td colSpan={6} className="px-6 py-3">
+          <div className="flex items-center gap-3">
+            <KeyRound size={13} className="text-blue-500 flex-shrink-0" />
+            <span className="text-[12px] font-medium text-slate-600 flex-shrink-0">New password for {agent.name}:</span>
+            <input
+              type="text"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              placeholder="Enter new password"
+              className="flex-1 max-w-[200px] px-2.5 py-1.5 text-[12px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
+            />
+            <button
+              disabled={!newPassword || pwFeedback === 'saving'}
+              onClick={() => {
+                setPwFeedback('saving')
+                resetUserPassword(agent.id, newPassword).then(r => {
+                  setPwFeedback(r.ok ? 'saved' : 'error')
+                  if (r.ok) { setTimeout(() => { setShowPasswordReset(false); setPwFeedback('idle') }, 1500) }
+                })
+              }}
+              className="text-[12px] font-semibold bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {pwFeedback === 'saving' ? 'Saving…' : pwFeedback === 'saved' ? '✓ Saved' : 'Save'}
+            </button>
+            {pwFeedback === 'error' && <span className="text-[11px] text-red-500">Failed</span>}
+            <button onClick={() => setShowPasswordReset(false)} className="text-slate-400 hover:text-slate-600 ml-auto">
+              <X size={13} />
+            </button>
+          </div>
+        </td>
+      </tr>
+    )}
+  </>
   )
 }
 
