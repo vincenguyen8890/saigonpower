@@ -1134,28 +1134,52 @@ export interface DealNote {
   created_at: string
 }
 
+const DEAL_NOTE_TAG = (dealId: string) => `__deal_note:${dealId}__`
+
 export async function getDealNotes(dealId: string): Promise<DealNote[]> {
+  // Try dedicated table first
   try {
     const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('deal_notes') as any)
-      .select('*')
-      .eq('deal_id', dealId)
-      .order('created_at', { ascending: false })
+      .select('*').eq('deal_id', dealId).order('created_at', { ascending: false })
     if (!error && data) return data as DealNote[]
+  } catch { /* ignore */ }
+
+  // Fallback: activities table with tag in description
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('activities') as any)
+      .select('id, title, created_by, created_at')
+      .eq('description', DEAL_NOTE_TAG(dealId))
+      .order('created_at', { ascending: false })
+    if (!error && data) return (data as any[]).map(r => ({
+      id: r.id, deal_id: dealId, body: r.title,
+      created_by: r.created_by || 'Unknown', created_at: r.created_at,
+    }))
   } catch { /* ignore */ }
   return []
 }
 
 export async function insertDealNote(dealId: string, body: string, createdBy: string): Promise<DealNote | null> {
+  // Try dedicated table first
   try {
     const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('deal_notes') as any)
-      .insert({ deal_id: dealId, body, created_by: createdBy })
-      .select()
-      .single()
+      .insert({ deal_id: dealId, body, created_by: createdBy }).select().single()
     if (!error && data) return data as DealNote
+  } catch { /* ignore */ }
+
+  // Fallback: activities table
+  try {
+    await insertActivity({
+      lead_id: null, type: 'note', title: body,
+      description: DEAL_NOTE_TAG(dealId),
+      due_date: null, completed: true, assigned_to: null, created_by: createdBy,
+    })
+    return { id: `note-${Date.now()}`, deal_id: dealId, body, created_by: createdBy, created_at: new Date().toISOString() }
   } catch { /* ignore */ }
   return null
 }
@@ -1170,28 +1194,53 @@ export interface LeadNote {
   created_at: string
 }
 
+const LEAD_NOTE_TAG = '__lead_note__'
+
 export async function getLeadNotes(leadId: string): Promise<LeadNote[]> {
+  // Try dedicated table first
   try {
     const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('lead_notes') as any)
-      .select('*')
-      .eq('lead_id', leadId)
-      .order('created_at', { ascending: false })
+      .select('*').eq('lead_id', leadId).order('created_at', { ascending: false })
     if (!error && data) return data as LeadNote[]
+  } catch { /* ignore */ }
+
+  // Fallback: activities table with tag in description
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('activities') as any)
+      .select('id, title, created_by, created_at')
+      .eq('lead_id', leadId)
+      .eq('description', LEAD_NOTE_TAG)
+      .order('created_at', { ascending: false })
+    if (!error && data) return (data as any[]).map(r => ({
+      id: r.id, lead_id: leadId, body: r.title,
+      created_by: r.created_by || 'Unknown', created_at: r.created_at,
+    }))
   } catch { /* ignore */ }
   return []
 }
 
 export async function insertLeadNote(leadId: string, body: string, createdBy: string): Promise<LeadNote | null> {
+  // Try dedicated table first
   try {
     const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('lead_notes') as any)
-      .insert({ lead_id: leadId, body, created_by: createdBy })
-      .select()
-      .single()
+      .insert({ lead_id: leadId, body, created_by: createdBy }).select().single()
     if (!error && data) return data as LeadNote
+  } catch { /* ignore */ }
+
+  // Fallback: activities table
+  try {
+    await insertActivity({
+      lead_id: leadId, type: 'note', title: body,
+      description: LEAD_NOTE_TAG,
+      due_date: null, completed: true, assigned_to: null, created_by: createdBy,
+    })
+    return { id: `note-${Date.now()}`, lead_id: leadId, body, created_by: createdBy, created_at: new Date().toISOString() }
   } catch { /* ignore */ }
   return null
 }
