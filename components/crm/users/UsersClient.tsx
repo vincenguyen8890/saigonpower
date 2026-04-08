@@ -138,15 +138,16 @@ function UserRow({
           {feedback === 'saved' && <Check size={13} className="text-[#00C853]" />}
           {feedback === 'error' && <AlertCircle size={13} className="text-red-500" />}
 
+          <button
+            onClick={() => onEdit(agent)}
+            className="text-slate-300 hover:text-[#00C853] transition-colors p-1 rounded"
+            title="Edit user"
+          >
+            <Pencil size={13} />
+          </button>
+
           {!isSelf && (
             <>
-              <button
-                onClick={() => onEdit(agent)}
-                className="text-slate-300 hover:text-[#00C853] transition-colors p-1 rounded"
-                title="Edit user"
-              >
-                <Pencil size={13} />
-              </button>
               <button
                 onClick={() => { setShowPasswordReset(v => !v); setNewPassword(''); setPwFeedback('idle') }}
                 className="text-slate-300 hover:text-blue-500 transition-colors p-1 rounded"
@@ -341,7 +342,7 @@ function InviteModal({ onClose, onInvited }: { onClose: () => void; onInvited: (
   )
 }
 
-function EditUserModal({ agent, onClose, onSaved }: { agent: CRMAgent; onClose: () => void; onSaved: (updated: CRMAgent) => void }) {
+function EditUserModal({ agent, isSelf, onClose, onSaved }: { agent: CRMAgent; isSelf: boolean; onClose: () => void; onSaved: (updated: CRMAgent) => void }) {
   const [form, setForm] = useState({
     name: agent.name,
     email: agent.email,
@@ -420,11 +421,14 @@ function EditUserModal({ agent, onClose, onSaved }: { agent: CRMAgent; onClose: 
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Role</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                Role {isSelf && <span className="text-slate-400 font-normal">(locked)</span>}
+              </label>
               <select
                 value={form.role}
+                disabled={isSelf}
                 onChange={e => setForm(f => ({ ...f, role: e.target.value as CRMAgent['role'] }))}
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
+                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="agent">Sales Agent</option>
                 <option value="csr">CSR</option>
@@ -513,6 +517,7 @@ export default function UsersClient({ agents: initial, currentEmail }: UsersClie
       {editingAgent && (
         <EditUserModal
           agent={editingAgent}
+          isSelf={editingAgent.email === currentEmail}
           onClose={() => setEditingAgent(null)}
           onSaved={handleEditSaved}
         />
