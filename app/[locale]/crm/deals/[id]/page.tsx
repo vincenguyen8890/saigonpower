@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, DollarSign, Target, Building2, User, TrendingUp, CheckCircle2, MapPin, Clock, Printer } from 'lucide-react'
-import { getDealById, getLeadById, getActivities, getDealAuditLog, getCRMAgents, getProvidersFromDB, getLeads, getDealDocuments } from '@/lib/supabase/queries'
+import { getDealById, getLeadById, getActivities, getDealAuditLog, getCRMAgents, getProvidersFromDB, getLeads, getDealDocuments, getDealNotes } from '@/lib/supabase/queries'
 import { mockProviders } from '@/data/mock-crm'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
+import { getSession } from '@/lib/auth/session'
 import DealEditForm from './DealEditForm'
 import DeleteDealButton from './DeleteDealButton'
 import ShareDealButton from './ShareDealButton'
@@ -16,6 +17,8 @@ import MarkPaidButton from './MarkPaidButton'
 import DealDocuments from './DealDocuments'
 import SaveTemplateButton from './SaveTemplateButton'
 import DealCoachPanel from './DealCoachPanel'
+import DealTabs from './DealTabs'
+import DealNotesTab from './DealNotesTab'
 
 interface Props {
   params: Promise<{ locale: string; id: string }>
@@ -34,10 +37,13 @@ export default async function DealDetailPage({ params }: Props) {
   const { locale, id } = await params
   setRequestLocale(locale)
 
-  const deal = await getDealById(id)
+  const [deal, session] = await Promise.all([getDealById(id), getSession()])
   if (!deal) notFound()
 
-  const [lead, activities, auditLog, agents, providers, allLeads, documents] = await Promise.all([
+  const role = session?.role ?? 'agent'
+  const showCommission = !['csr', 'office_manager'].includes(role)
+
+  const [lead, activities, auditLog, agents, providers, allLeads, documents, dealNotes] = await Promise.all([
     deal.lead_id ? getLeadById(deal.lead_id) : Promise.resolve(null),
     deal.lead_id ? getActivities({ leadId: deal.lead_id, limit: 10 }) : getActivities({ limit: 10 }),
     getDealAuditLog(deal.id),
@@ -45,6 +51,7 @@ export default async function DealDetailPage({ params }: Props) {
     getProvidersFromDB(),
     getLeads(),
     getDealDocuments(deal.id),
+    getDealNotes(deal.id),
   ])
 
   const provider = mockProviders.find(p => p.name === deal.provider)
@@ -106,7 +113,7 @@ export default async function DealDetailPage({ params }: Props) {
               }}
             />
           )}
-          <DealEditForm deal={deal} locale={locale} agents={agents} providers={providers} leads={allLeads} />
+          <DealEditForm deal={deal} locale={locale} agents={agents} providers={providers} leads={allLeads} role={role} />
           <DeleteDealButton dealId={deal.id} locale={locale} />
         </div>
       </div>
@@ -137,26 +144,35 @@ export default async function DealDetailPage({ params }: Props) {
         </div>
       )}
 
-      <div className="grid lg:grid-cols-3 gap-5">
+      <DealTabs
+        noteCount={dealNotes.length}
+        notes={<DealNotesTab dealId={deal.id} initialNotes={dealNotes} />}
+        overview={<div className="grid lg:grid-cols-3 gap-5">
         {/* Left — deal details */}
         <div className="lg:col-span-2 space-y-5">
           {/* Key Metrics */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
-              <DollarSign size={18} className="text-green-500 mx-auto mb-2" />
-              <p className="text-xl font-bold text-gray-900">${deal.value}<span className="text-sm font-normal text-gray-400">/mo</span></p>
-              <p className="text-xs text-gray-500 mt-0.5">Contract Value</p>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
-              <Target size={18} className="text-purple-500 mx-auto mb-2" />
-              <p className="text-xl font-bold text-gray-900">${Math.round(deal.value * deal.probability / 100)}<span className="text-sm font-normal text-gray-400">/mo</span></p>
-              <p className="text-xs text-gray-500 mt-0.5">Weighted Value</p>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
-              <TrendingUp size={18} className="text-amber-500 mx-auto mb-2" />
-              <p className="text-xl font-bold text-gray-900">${estimatedLifetimeCommission.toLocaleString()}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Est. Commission</p>
-            </div>
+            {showCommission && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
+                <DollarSign size={18} className="text-green-500 mx-auto mb-2" />
+                <p className="text-xl font-bold text-gray-900">${deal.value}<span className="text-sm font-normal text-gray-400">/mo</span></p>
+                <p className="text-xs text-gray-500 mt-0.5">Contract Value</p>
+              </div>
+            )}
+            {showCommission && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
+                <Target size={18} className="text-purple-500 mx-auto mb-2" />
+                <p className="text-xl font-bold text-gray-900">${Math.round(deal.value * deal.probability / 100)}<span className="text-sm font-normal text-gray-400">/mo</span></p>
+                <p className="text-xs text-gray-500 mt-0.5">Weighted Value</p>
+              </div>
+            )}
+            {showCommission && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
+                <TrendingUp size={18} className="text-amber-500 mx-auto mb-2" />
+                <p className="text-xl font-bold text-gray-900">${estimatedLifetimeCommission.toLocaleString()}</p>
+                <p className="text-xs text-gray-500 mt-0.5">Est. Commission</p>
+              </div>
+            )}
           </div>
 
           {/* Contract Details */}
@@ -172,7 +188,7 @@ export default async function DealDetailPage({ params }: Props) {
                 { label: 'Product Type',      value: deal.product_type     ?? '—' },
                 { label: 'Contract Term',     value: deal.term_months      ? `${deal.term_months} months` : '—' },
                 { label: 'Contract Rate',     value: deal.rate_kwh         ? `${(deal.rate_kwh * 100).toFixed(3)}¢/kWh` : '—' },
-                { label: 'Adder ($/kWh)',     value: deal.adder_kwh        ? `${(deal.adder_kwh * 100).toFixed(3)}¢/kWh` : '—' },
+                ...(showCommission ? [{ label: 'Adder ($/kWh)', value: deal.adder_kwh ? `${(deal.adder_kwh * 100).toFixed(3)}¢/kWh` : '—' }] : []),
                 { label: 'Est. Usage',        value: deal.usage_kwh        ? `${deal.usage_kwh.toLocaleString()} kWh/mo` : '—' },
                 { label: 'Est. Monthly Bill', value: deal.rate_kwh && deal.usage_kwh ? `$${Math.round((deal.rate_kwh + (deal.adder_kwh ?? 0)) * deal.usage_kwh)}/mo` : '—' },
                 { label: 'Contract Start',    value: deal.contract_start_date ?? '—' },
@@ -195,7 +211,7 @@ export default async function DealDetailPage({ params }: Props) {
           </div>
 
           {/* Property Info */}
-          {(deal.service_address || deal.esid) && (
+          {(deal.service_address || deal.service_city || deal.esid) && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <MapPin size={16} className="text-brand-green" />
@@ -204,8 +220,26 @@ export default async function DealDetailPage({ params }: Props) {
               <div className="divide-y divide-gray-50">
                 {deal.service_address && (
                   <div className="flex items-start justify-between py-2.5 gap-4">
-                    <span className="text-xs text-gray-400 uppercase tracking-wide flex-shrink-0">Service Address</span>
+                    <span className="text-xs text-gray-400 uppercase tracking-wide flex-shrink-0">Street</span>
                     <span className="text-sm font-medium text-gray-900 text-right">{deal.service_address}</span>
+                  </div>
+                )}
+                {deal.service_city && (
+                  <div className="flex items-start justify-between py-2.5 gap-4">
+                    <span className="text-xs text-gray-400 uppercase tracking-wide flex-shrink-0">City</span>
+                    <span className="text-sm font-medium text-gray-900 text-right">{deal.service_city}</span>
+                  </div>
+                )}
+                {deal.service_state && (
+                  <div className="flex items-start justify-between py-2.5 gap-4">
+                    <span className="text-xs text-gray-400 uppercase tracking-wide flex-shrink-0">State</span>
+                    <span className="text-sm font-medium text-gray-900 text-right">{deal.service_state}</span>
+                  </div>
+                )}
+                {deal.service_zip && (
+                  <div className="flex items-start justify-between py-2.5 gap-4">
+                    <span className="text-xs text-gray-400 uppercase tracking-wide flex-shrink-0">Zip</span>
+                    <span className="text-sm font-medium text-gray-900 text-right">{deal.service_zip}</span>
                   </div>
                 )}
                 {deal.esid && (
@@ -377,7 +411,7 @@ export default async function DealDetailPage({ params }: Props) {
             </div>
           </div>
         </div>
-      </div>
+      </div>} />
     </div>
   )
 }

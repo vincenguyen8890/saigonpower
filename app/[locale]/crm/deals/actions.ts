@@ -1,8 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { insertDeal, updateDeal, deleteDeal, getDealById, insertActivity, updateAccountStatus } from '@/lib/supabase/queries'
+import { insertDeal, updateDeal, updateLead, deleteDeal, getDealById, getDealsByLead, insertActivity, updateAccountStatus, insertDealNote } from '@/lib/supabase/queries'
 import type { Deal } from '@/lib/supabase/queries'
+import { getSession } from '@/lib/auth/session'
 
 const AUDIT_LABELS: Partial<Record<keyof Deal, string>> = {
   stage: 'Stage', provider: 'Supplier', plan_name: 'Plan', rate_kwh: 'Rate',
@@ -50,6 +51,15 @@ export async function createDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated
   if (!result) return {
     error: `Save failed. mock=${mock} url=${url.slice(0, 40)} key=${key.slice(0, 10)}…`,
   }
+
+  if (deal.lead_id) {
+    // Mark lead as enrolled and create account record
+    await Promise.all([
+      updateLead(deal.lead_id, { status: 'enrolled' }).catch(() => {}),
+      recalcAccountStatus(deal.lead_id).catch(() => {}),
+    ])
+  }
+
   bust()
   return {}
 }
@@ -57,18 +67,40 @@ export async function createDeal(deal: Omit<Deal, 'id' | 'created_at' | 'updated
 export async function updateDealAction(id: string, updates: Partial<Deal>) {
   const old = await getDealById(id)
   await updateDeal(id, updates)
-  if (old) await logDealChange(id, old.lead_id, old, updates)
+  if (old) {
+    await logDealChange(id, old.lead_id, old, updates)
+    if (updates.stage && updates.stage !== old.stage) {
+      await runDealStageAutomation(id, updates.stage, old.title, old.lead_id).catch(() => {})
+    }
+  }
   bust()
 }
 
 export async function deleteDealAction(id: string): Promise<void> {
+  const deal = await getDealById(id)
   await deleteDeal(id)
+  if (deal?.lead_id) {
+    await recalcAccountStatus(deal.lead_id).catch(() => {})
+  }
   bust()
 }
 
 export async function bulkUpdateDealsAction(ids: string[], updates: Partial<Deal>): Promise<void> {
   await Promise.all(ids.map(id => updateDeal(id, updates)))
   bust()
+}
+
+/**
+ * Recalculate and update a lead's account_status based on their current deals:
+ *   won deal exists          → 'active'
+ *   deals exist but none won → 'inactive'
+ *   no deals                 → leave as-is (don't strip existing status)
+ */
+async function recalcAccountStatus(leadId: string): Promise<void> {
+  const deals = await getDealsByLead(leadId)
+  if (deals.length === 0) return // nothing to recalc
+  const hasWon = deals.some(d => d.stage === 'won')
+  await updateAccountStatus(leadId, hasWon ? 'active' : 'inactive')
 }
 
 /**
@@ -91,8 +123,8 @@ export async function runDealStageAutomation(
   const action = stageActions[newStage]
   if (!action) return
 
-  if (newStage === 'won' && leadId) {
-    await updateAccountStatus(leadId, 'active')
+  if ((newStage === 'won' || newStage === 'lost') && leadId) {
+    await recalcAccountStatus(leadId)
   }
 
   await insertActivity({
@@ -107,4 +139,16 @@ export async function runDealStageAutomation(
   })
 
   bust()
+}
+
+export async function addDealNote(dealId: string, body: string): Promise<{ error?: string }> {
+  const session = await getSession()
+  if (!session) return { error: 'Not authenticated' }
+
+  const author = session.name || session.email
+  const note = await insertDealNote(dealId, body.trim(), author)
+  if (!note) return { error: 'Failed to save note' }
+
+  bust()
+  return {}
 }

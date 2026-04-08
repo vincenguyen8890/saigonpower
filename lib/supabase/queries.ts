@@ -239,19 +239,29 @@ export async function getAccounts(filters?: {
     const ids: string[] = [...new Set<string>(allDealLeadIds.map((d: { lead_id: string }) => d.lead_id))]
     if (ids.length === 0) return []
 
+    // Batch .in() to avoid Supabase URL length limit (max ~200 IDs per request)
+    const BATCH = 200
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q = (supabase.from('leads') as any)
-      .select('*')
-      .in('id', ids)
-      .order('created_at', { ascending: false })
-    if (filters?.status && filters.status !== 'all') q = q.eq('account_status', filters.status)
-    if (filters?.q) {
-      const search = filters.q
-      q = q.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`)
+    let allLeads: any[] = []
+    for (let i = 0; i < ids.length; i += BATCH) {
+      const chunk = ids.slice(i, i + BATCH)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let q = (supabase.from('leads') as any)
+        .select('*')
+        .in('id', chunk)
+      if (filters?.status && filters.status !== 'all') q = q.eq('account_status', filters.status)
+      if (filters?.q) {
+        const search = filters.q
+        q = q.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`)
+      }
+      const { data, error } = await q
+      if (error) throw error
+      allLeads = allLeads.concat(data ?? [])
     }
-    const { data, error } = await q
-    if (error) throw error
-    return data ?? []
+
+    // Sort by created_at desc after merging batches
+    allLeads.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    return allLeads
   } catch {
     return mockLeads.filter(l => ['lead-001', 'lead-002', 'lead-003', 'lead-006'].includes(l.id))
   }
@@ -413,6 +423,9 @@ export interface Deal {
   service_order: string | null
   agent_code: string | null
   service_address: string | null
+  service_city: string | null
+  service_state: string | null
+  service_zip: string | null
   esid: string | null
   contract_start_date: string | null
   contract_end_date: string | null
@@ -431,10 +444,10 @@ export interface Deal {
 }
 
 const mockDeals: Deal[] = [
-  { id: 'd-001', lead_id: 'lead-002', title: 'Minh Tran – Nail Salon Commercial', value: 200, stage: 'proposal',     probability: 70, expected_close: '2025-05-01', provider: 'Reliant Energy', plan_name: 'Reliant Business 12', service_type: 'commercial',  notes: null, assigned_to: 'agent@saigonllc.com', service_order: null, agent_code: null, service_address: '910 Business Blvd, Sugar Land TX', esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: 0.132, adder_kwh: null, term_months: 12, product_type: 'FIXED RATE', usage_kwh: 1800, flags: null, commission_paid: null, commission_paid_amount: null, commission_paid_at: null, share_token: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: 'd-002', lead_id: 'lead-003', title: 'Mai Pham – Residential 12mo',       value: 75,  stage: 'negotiation', probability: 85, expected_close: '2025-04-15', provider: 'Gexa Energy',    plan_name: 'Gexa Saver 12',       service_type: 'residential', notes: null, assigned_to: 'agent@saigonllc.com', service_order: null, agent_code: null, service_address: '5678 Oak Ave, Katy TX', esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: 0.109, adder_kwh: null, term_months: 12, product_type: 'FIXED RATE', usage_kwh: 1200, flags: null, commission_paid: null, commission_paid_amount: null, commission_paid_at: null, share_token: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: 'd-003', lead_id: 'lead-006', title: 'Hoa Nguyen Restaurant',             value: 350, stage: 'qualified',   probability: 50, expected_close: '2025-05-15', provider: null,             plan_name: null,                  service_type: 'commercial',  notes: 'High usage ~3200 kWh/mo', assigned_to: null, service_order: null, agent_code: null, service_address: null, esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: null, adder_kwh: null, term_months: null, product_type: null, usage_kwh: 3200, flags: null, commission_paid: null, commission_paid_amount: null, commission_paid_at: null, share_token: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: 'd-004', lead_id: 'lead-001', title: 'Lan Nguyen – Residential',          value: 75,  stage: 'prospect',    probability: 30, expected_close: '2025-06-01', provider: null,             plan_name: null,                  service_type: 'residential', notes: null, assigned_to: null, service_order: null, agent_code: null, service_address: null, esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: null, adder_kwh: null, term_months: null, product_type: null, usage_kwh: null, flags: null, commission_paid: null, commission_paid_amount: null, commission_paid_at: null, share_token: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'd-001', lead_id: 'lead-002', title: 'Minh Tran – Nail Salon Commercial', value: 200, stage: 'proposal',     probability: 70, expected_close: '2025-05-01', provider: 'Reliant Energy', plan_name: 'Reliant Business 12', service_type: 'commercial',  notes: null, assigned_to: 'agent@saigonllc.com', service_order: null, agent_code: null, service_address: '910 Business Blvd', service_city: 'Sugar Land', service_state: 'TX', service_zip: null, esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: 0.132, adder_kwh: null, term_months: 12, product_type: 'FIXED RATE', usage_kwh: 1800, flags: null, commission_paid: null, commission_paid_amount: null, commission_paid_at: null, share_token: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'd-002', lead_id: 'lead-003', title: 'Mai Pham – Residential 12mo',       value: 75,  stage: 'negotiation', probability: 85, expected_close: '2025-04-15', provider: 'Gexa Energy',    plan_name: 'Gexa Saver 12',       service_type: 'residential', notes: null, assigned_to: 'agent@saigonllc.com', service_order: null, agent_code: null, service_address: '5678 Oak Ave', service_city: 'Katy', service_state: 'TX', service_zip: null, esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: 0.109, adder_kwh: null, term_months: 12, product_type: 'FIXED RATE', usage_kwh: 1200, flags: null, commission_paid: null, commission_paid_amount: null, commission_paid_at: null, share_token: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'd-003', lead_id: 'lead-006', title: 'Hoa Nguyen Restaurant',             value: 350, stage: 'qualified',   probability: 50, expected_close: '2025-05-15', provider: null,             plan_name: null,                  service_type: 'commercial',  notes: 'High usage ~3200 kWh/mo', assigned_to: null, service_order: null, agent_code: null, service_address: null, service_city: null, service_state: null, service_zip: null, esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: null, adder_kwh: null, term_months: null, product_type: null, usage_kwh: 3200, flags: null, commission_paid: null, commission_paid_amount: null, commission_paid_at: null, share_token: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'd-004', lead_id: 'lead-001', title: 'Lan Nguyen – Residential',          value: 75,  stage: 'prospect',    probability: 30, expected_close: '2025-06-01', provider: null,             plan_name: null,                  service_type: 'residential', notes: null, assigned_to: null, service_order: null, agent_code: null, service_address: null, service_city: null, service_state: null, service_zip: null, esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: null, adder_kwh: null, term_months: null, product_type: null, usage_kwh: null, flags: null, commission_paid: null, commission_paid_amount: null, commission_paid_at: null, share_token: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
 ]
 
 export async function getDeals(stage?: string): Promise<Deal[]> {
@@ -1109,4 +1122,40 @@ export async function deleteDealTemplate(id: string): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from('crm_deal_templates') as any).delete().eq('id', id)
   } catch { /* ignore */ }
+}
+
+// ─── Deal Notes ───────────────────────────────────────────────────────────────
+
+export interface DealNote {
+  id: string
+  deal_id: string
+  body: string
+  created_by: string   // display name or email of the author
+  created_at: string
+}
+
+export async function getDealNotes(dealId: string): Promise<DealNote[]> {
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('deal_notes') as any)
+      .select('*')
+      .eq('deal_id', dealId)
+      .order('created_at', { ascending: false })
+    if (!error && data) return data as DealNote[]
+  } catch { /* ignore */ }
+  return []
+}
+
+export async function insertDealNote(dealId: string, body: string, createdBy: string): Promise<DealNote | null> {
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('deal_notes') as any)
+      .insert({ deal_id: dealId, body, created_by: createdBy })
+      .select()
+      .single()
+    if (!error && data) return data as DealNote
+  } catch { /* ignore */ }
+  return null
 }
