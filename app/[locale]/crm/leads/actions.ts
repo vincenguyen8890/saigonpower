@@ -1,9 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { updateLead, insertActivity } from '@/lib/supabase/queries'
+import { updateLead, insertActivity, insertLeadNote } from '@/lib/supabase/queries'
 import type { LeadStatus, LeadTag } from '@/data/mock-crm'
 import type { Activity } from '@/lib/supabase/queries'
+import { getSession } from '@/lib/auth/session'
 
 function bust() {
   revalidatePath('/', 'layout')
@@ -76,4 +77,16 @@ export async function completeLeadActivity(id: string) {
   const { completeActivity } = await import('@/lib/supabase/queries')
   await completeActivity(id)
   bust()
+}
+
+export async function addLeadNote(leadId: string, body: string): Promise<{ error?: string }> {
+  const session = await getSession()
+  if (!session) return { error: 'Not authenticated' }
+
+  const author = session.name || session.email
+  const note = await insertLeadNote(leadId, body.trim(), author)
+  if (!note) return { error: 'Failed to save note' }
+
+  bust()
+  return {}
 }

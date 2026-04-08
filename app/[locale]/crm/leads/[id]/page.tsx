@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ArrowLeft, Phone, Mail, MapPin, Globe, User, FileText, Calendar, CheckCircle2, Clock, RefreshCw, TrendingUp } from 'lucide-react'
 import LeadStatusBadge from '@/components/crm/LeadStatusBadge'
 import LeadStatusSelect from '@/components/crm/LeadStatusSelect'
-import { getLeadById, getQuotesByLead, getActivities, getDealsByLead } from '@/lib/supabase/queries'
+import { getLeadById, getQuotesByLead, getActivities, getDealsByLead, getLeadNotes } from '@/lib/supabase/queries'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
 import NotesFormComponent from './NotesForm'
@@ -33,11 +33,12 @@ export default async function LeadDetailPage({ params }: Props) {
   const { locale, id } = await params
   setRequestLocale(locale)
 
-  const [lead, quotes, activities, deals] = await Promise.all([
+  const [lead, quotes, activities, deals, leadNotes] = await Promise.all([
     getLeadById(id),
     getQuotesByLead(id),
     getActivities({ leadId: id, limit: 20 }),
     getDealsByLead(id),
+    getLeadNotes(id),
   ])
   if (!lead) notFound()
 
@@ -446,7 +447,7 @@ export default async function LeadDetailPage({ params }: Props) {
               <Calendar size={16} className="text-brand-green" />
               Notes
             </h2>
-            <NotesFormComponent leadId={lead.id} initialNotes={lead.notes || ''} />
+            <NotesFormComponent leadId={lead.id} initialNotes={leadNotes} />
           </div>
 
           {/* Timeline */}

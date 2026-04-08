@@ -1159,3 +1159,39 @@ export async function insertDealNote(dealId: string, body: string, createdBy: st
   } catch { /* ignore */ }
   return null
 }
+
+// ─── Lead Notes ───────────────────────────────────────────────────────────────
+
+export interface LeadNote {
+  id: string
+  lead_id: string
+  body: string
+  created_by: string
+  created_at: string
+}
+
+export async function getLeadNotes(leadId: string): Promise<LeadNote[]> {
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('lead_notes') as any)
+      .select('*')
+      .eq('lead_id', leadId)
+      .order('created_at', { ascending: false })
+    if (!error && data) return data as LeadNote[]
+  } catch { /* ignore */ }
+  return []
+}
+
+export async function insertLeadNote(leadId: string, body: string, createdBy: string): Promise<LeadNote | null> {
+  try {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('lead_notes') as any)
+      .insert({ lead_id: leadId, body, created_by: createdBy })
+      .select()
+      .single()
+    if (!error && data) return data as LeadNote
+  } catch { /* ignore */ }
+  return null
+}
