@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import createMiddleware from 'next-intl/middleware'
+import { routing } from './i18n/routing'
 
-export function middleware(_request: NextRequest) {
-  return NextResponse.next()
-}
+export default createMiddleware(routing)
 
-// Empty matcher = middleware never runs
 export const config = {
-  matcher: [],
+  matcher: [
+    // Match all pathnames except internals and static files
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)',
+  ],
 }
