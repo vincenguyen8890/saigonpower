@@ -41,7 +41,8 @@ function getUsers(): UserEntry[] {
   return users
 }
 
-async function checkAgentPassword(email: string, password: string): Promise<UserEntry | null> {
+// Returns the matched user, null if wrong password, or 'not_found' if email not in DB.
+async function checkAgentPassword(email: string, password: string): Promise<UserEntry | null | 'not_found'> {
   try {
     const { createAdminClient } = await import('@/lib/supabase/admin')
     const db = createAdminClient()
@@ -50,7 +51,8 @@ async function checkAgentPassword(email: string, password: string): Promise<User
       .select('id, email, name, role, password, active')
       .eq('email', email.trim().toLowerCase())
       .single()
-    if (!data || !data.active) return null
+    if (!data) return 'not_found'
+    if (!data.active) return null
 
     // If DB password is set, validate against it directly
     if (data.password) {
@@ -65,7 +67,7 @@ async function checkAgentPassword(email: string, password: string): Promise<User
     if (!envMatch) return null
     return { email: data.email, password: envMatch.password, role: data.role, name: data.name }
   } catch {
-    return null
+    return 'not_found'
   }
 }
 
@@ -76,13 +78,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
   }
 
-  // Check env-var users first, then crm_agents.password
-  const users = getUsers()
-  let match = users.find(
-    u => u.email.toLowerCase() === email.trim().toLowerCase() && u.password === password
-  )
-  if (!match) {
-    match = await checkAgentPassword(email, password) ?? undefined
+  // DB is authoritative. Only fall back to env vars if the email has no DB record at all.
+  const dbResult = await checkAgentPassword(email, password)
+  let match: UserEntry | undefined
+  if (dbResult === 'not_found') {
+    const users = getUsers()
+    match = users.find(
+      u => u.email.toLowerCase() === email.trim().toLowerCase() && u.password === password
+    )
+  } else {
+    match = dbResult ?? undefined
   }
 
   if (!match) {

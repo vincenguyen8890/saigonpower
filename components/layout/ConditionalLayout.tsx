@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import Header from './Header'
 import Footer from './Footer'
 import ChatWidget from '@/components/chat/ChatWidget'
+import VapiVoiceWidget from '@/components/chat/VapiVoiceWidget'
 
 interface Props {
   children: React.ReactNode
@@ -23,6 +24,7 @@ export default function ConditionalLayout({ children }: Props) {
       <main>{children}</main>
       <Footer />
       <ChatWidget />
+      <VapiVoiceWidget />
     </>
   )
 }

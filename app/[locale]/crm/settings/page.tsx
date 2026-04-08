@@ -45,7 +45,7 @@ export default async function SettingsPage({ params }: Props) {
           key: 'admin_email',
           label: 'Admin Email',
           description: 'Receives system-level alerts and summaries.',
-          value: 'admin@saigonllc.com',
+          value: 'vince@saigonllc.com',
           type: 'email',
         },
         {
@@ -74,7 +74,7 @@ export default async function SettingsPage({ params }: Props) {
           key: 'new_lead_alert_email',
           label: 'New Lead Alert Email',
           description: 'Receive an email whenever a new lead is created.',
-          value: 'admin@saigonllc.com',
+          value: 'vince@saigonllc.com',
           type: 'email',
         },
         {

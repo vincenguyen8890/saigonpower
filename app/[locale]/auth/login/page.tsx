@@ -134,7 +134,7 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => { setEmail('admin@saigonllc.com'); setPassword('SaigonPower2024!') }}
+                onClick={() => { setEmail('vince@saigonllc.com'); setPassword('SaigonPower2024!') }}
                 className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-xs font-medium hover:bg-amber-100 transition-colors"
               >
                 <ShieldCheck size={13} />
@@ -173,8 +173,8 @@ export default function LoginPage() {
           </p>
           <p className="text-center text-xs text-gray-400 mt-2">
             {isVi ? 'Quên mật khẩu? Liên hệ' : 'Forgot password? Contact'}{' '}
-            <a href="mailto:admin@saigonllc.com" className="text-green-700 hover:underline font-medium">
-              admin@saigonllc.com
+            <a href="mailto:vince@saigonllc.com" className="text-green-700 hover:underline font-medium">
+              vince@saigonllc.com
             </a>
           </p>
         </div>
