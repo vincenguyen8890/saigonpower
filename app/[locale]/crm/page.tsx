@@ -9,6 +9,7 @@ import {
   getContracts, getProvidersFromDB,
 } from '@/lib/supabase/queries'
 import { formatDate } from '@/lib/utils'
+import { getSession } from '@/lib/auth/session'
 import LeadStatusBadge from '@/components/crm/LeadStatusBadge'
 import RevenueChart from '@/components/crm/RevenueChart'
 import KpiCard from '@/components/dashboard/KpiCard'
@@ -24,14 +25,16 @@ export default async function CRMOverview({ params }: Props) {
   const { locale } = await params
   setRequestLocale(locale)
 
-  const [stats, allLeads, deals, activities, contracts, providers] = await Promise.all([
+  const [stats, allLeads, deals, activities, contracts, providers, session] = await Promise.all([
     getCRMStats(),
     getLeads(),
     getDeals(),
     getActivities({ completed: false, limit: 25 }),
     getContracts('active'),
     getProvidersFromDB(),
+    getSession(),
   ])
+  const showValue = !['csr', 'office_manager'].includes(session?.role ?? '')
 
   // ── Time context ─────────────────────────────────────────────────────────
   const now = new Date()
@@ -81,12 +84,13 @@ export default async function CRMOverview({ params }: Props) {
   const activeStageDeals = deals.filter(d => ['qualified', 'proposal'].includes(d.stage))
   const closingDeals     = deals.filter(d => d.stage === 'negotiation')
 
-  const pipelineStages: PipelineStage[] = [
+  const allPipelineStages: PipelineStage[] = [
     { key: 'prospect', label: 'New',     count: prospectDeals.length,    value: prospectDeals.reduce((s, d) => s + d.value, 0),    barColor: 'bg-slate-300',   bg: 'bg-slate-50',    textColor: 'text-slate-700'  },
     { key: 'active',   label: 'Active',  count: activeStageDeals.length, value: activeStageDeals.reduce((s, d) => s + d.value, 0), barColor: 'bg-[#2979FF]',   bg: 'bg-[#EBF2FF]',   textColor: 'text-[#2979FF]'  },
     { key: 'closing',  label: 'Closing', count: closingDeals.length,     value: closingDeals.reduce((s, d) => s + d.value, 0),     barColor: 'bg-amber-400',   bg: 'bg-amber-50',    textColor: 'text-amber-700'  },
     { key: 'won',      label: 'Won',     count: wonDeals.length,         value: wonValue,                                          barColor: 'bg-[#00C853]',   bg: 'bg-[#E8FFF1]',   textColor: 'text-[#00A846]'  },
   ]
+  const pipelineStages = showValue ? allPipelineStages : allPipelineStages.filter(s => s.key !== 'won')
 
   // ── Priority actions ─────────────────────────────────────────────────────
   const priorityActions: PriorityAction[] = []
@@ -141,20 +145,22 @@ export default async function CRMOverview({ params }: Props) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard title="New Leads Today" value={stats.newLeadsToday} subtitle={`${stats.newLeadsWeek} this week`} icon={Users} color="blue" trend={{ value: 12, label: 'vs last week' }} href={`/${locale}/crm/leads?status=new`} />
         <KpiCard title="Active Deals" value={activeDeals.length} subtitle={`$${activeDeals.reduce((s, d) => s + d.value, 0).toLocaleString()}/mo`} icon={TrendingUp} color="green" trend={{ value: 8, label: 'vs last month' }} href={`/${locale}/crm/deals`} />
-        <KpiCard title="Commission/mo" value={`$${monthlyCommission.toLocaleString()}`} subtitle={`$${annualCommission.toLocaleString()} annual`} icon={DollarSign} color="purple" trend={{ value: 5, label: 'vs last month' }} href={`/${locale}/crm/accounting`} />
+        {showValue && <KpiCard title="Commission/mo" value={`$${monthlyCommission.toLocaleString()}`} subtitle={`$${annualCommission.toLocaleString()} annual`} icon={DollarSign} color="purple" trend={{ value: 5, label: 'vs last month' }} href={`/${locale}/crm/accounting`} />}
         <KpiCard title="Expiring Soon" value={expiring30.length} subtitle="Contracts within 30d" icon={AlertTriangle} color={expiring30.length > 3 ? 'red' : 'orange'} href={`/${locale}/crm/renewals`} />
       </div>
 
       {/* ── Pipeline + Revenue ── */}
-      <div className="grid lg:grid-cols-3 gap-4">
+      <div className={`grid gap-4 ${showValue ? 'lg:grid-cols-3' : ''}`}>
         <PipelineMini stages={pipelineStages} locale={locale} />
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 p-4 sm:p-5 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp size={14} className="text-[#00C853]" />
-            <h2 className="text-sm font-semibold text-[#0F172A]">Revenue &amp; Enrollment</h2>
+        {showValue && (
+          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 p-4 sm:p-5 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp size={14} className="text-[#00C853]" />
+              <h2 className="text-sm font-semibold text-[#0F172A]">Revenue &amp; Enrollment</h2>
+            </div>
+            <RevenueChart />
           </div>
-          <RevenueChart />
-        </div>
+        )}
       </div>
 
       {/* ── Priority actions + Activity feed ── */}
@@ -362,7 +368,7 @@ export default async function CRMOverview({ params }: Props) {
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${daysLeft <= 14 ? 'bg-red-100 text-red-700' : daysLeft <= 30 ? 'bg-amber-100 text-amber-700' : 'bg-yellow-100 text-yellow-700'}`}>
                       {daysLeft}d left
                     </span>
-                    <p className="text-xs text-slate-400 mt-0.5">${deal.value}/mo</p>
+                    {showValue && <p className="text-xs text-slate-400 mt-0.5">${deal.value}/mo</p>}
                   </div>
                 </div>
               )
@@ -397,7 +403,7 @@ export default async function CRMOverview({ params }: Props) {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize ${stageColors[deal.stage]}`}>{deal.stage}</span>
-                  <span className="text-[13px] font-bold text-[#0F172A]">${deal.value}/mo</span>
+                  {showValue && <span className="text-[13px] font-bold text-[#0F172A]">${deal.value}/mo</span>}
                 </div>
               </Link>
             ))}
@@ -413,7 +419,7 @@ export default async function CRMOverview({ params }: Props) {
                 </div>
                 <div className="flex items-center gap-2.5 flex-shrink-0">
                   <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold capitalize ${stageColors[deal.stage]}`}>{deal.stage}</span>
-                  <span className="text-[13px] font-bold text-[#0F172A] tabular-nums">${deal.value}/mo</span>
+                  {showValue && <span className="text-[13px] font-bold text-[#0F172A] tabular-nums">${deal.value}/mo</span>}
                 </div>
               </div>
             ))}
