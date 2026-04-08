@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import type { CRMAgent } from '@/lib/supabase/queries'
 import {
-  updateUserRole, toggleUserActive, inviteUser, deleteUser, resetUserPassword,
+  updateUserRole, toggleUserActive, inviteUser, deleteUser, resetUserPassword, updateUser,
 } from '@/app/[locale]/crm/users/actions'
 
 interface UsersClientProps {
@@ -29,12 +29,14 @@ function UserRow({
   onRoleChange,
   onToggleActive,
   onDelete,
+  onEdit,
 }: {
   agent: CRMAgent
   isSelf: boolean
   onRoleChange: (id: string, role: CRMAgent['role']) => Promise<void>
   onToggleActive: (id: string, active: boolean) => Promise<void>
   onDelete: (id: string) => Promise<void>
+  onEdit: (agent: CRMAgent) => void
 }) {
   const [isPending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<'saved' | 'error' | null>(null)
@@ -138,6 +140,13 @@ function UserRow({
 
           {!isSelf && (
             <>
+              <button
+                onClick={() => onEdit(agent)}
+                className="text-slate-300 hover:text-[#00C853] transition-colors p-1 rounded"
+                title="Edit user"
+              >
+                <Pencil size={13} />
+              </button>
               <button
                 onClick={() => { setShowPasswordReset(v => !v); setNewPassword(''); setPwFeedback('idle') }}
                 className="text-slate-300 hover:text-blue-500 transition-colors p-1 rounded"
@@ -332,10 +341,140 @@ function InviteModal({ onClose, onInvited }: { onClose: () => void; onInvited: (
   )
 }
 
+function EditUserModal({ agent, onClose, onSaved }: { agent: CRMAgent; onClose: () => void; onSaved: (updated: CRMAgent) => void }) {
+  const [form, setForm] = useState({
+    name: agent.name,
+    email: agent.email,
+    phone: agent.phone ?? '',
+    role: agent.role,
+    agent_type: agent.agent_type ?? 'electricity_broker',
+  })
+  const [isPending, startTransition] = useTransition()
+  const [error, setError] = useState('')
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    startTransition(async () => {
+      const result = await updateUser(agent.id, {
+        name: form.name,
+        email: form.email,
+        phone: form.phone || undefined,
+        role: form.role,
+        agent_type: form.agent_type,
+      })
+      if (result.ok) {
+        onSaved({ ...agent, ...form, phone: form.phone || null, agent_type: form.agent_type })
+        onClose()
+      } else {
+        setError(result.error ?? 'Failed to update user')
+      }
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h2 className="text-sm font-bold text-[#0F172A]">Edit {agent.name}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600">
+              <AlertCircle size={13} /> {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Full Name</label>
+              <input
+                required
+                type="text"
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Email</label>
+              <input
+                required
+                type="email"
+                value={form.email}
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Phone</label>
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Role</label>
+              <select
+                value={form.role}
+                onChange={e => setForm(f => ({ ...f, role: e.target.value as CRMAgent['role'] }))}
+                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
+              >
+                <option value="agent">Sales Agent</option>
+                <option value="csr">CSR</option>
+                <option value="office_manager">Office Manager</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Agent Type</label>
+              <select
+                value={form.agent_type}
+                onChange={e => setForm(f => ({ ...f, agent_type: e.target.value }))}
+                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
+              >
+                <option value="electricity_broker">Electricity Broker</option>
+                <option value="realtor">Realtor</option>
+                <option value="insurance_agent">Insurance Agent</option>
+                <option value="independent">Independent</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isPending}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#00C853] hover:bg-[#00A846] rounded-lg transition-colors disabled:opacity-60 shadow-sm"
+            >
+              {isPending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              {isPending ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function UsersClient({ agents: initial, currentEmail }: UsersClientProps) {
   const [agents, setAgents] = useState(initial)
   const [search, setSearch] = useState('')
   const [showInvite, setShowInvite] = useState(false)
+  const [editingAgent, setEditingAgent] = useState<CRMAgent | null>(null)
   const [filterRole, setFilterRole] = useState<'all' | CRMAgent['role']>('all')
 
   const filtered = agents.filter(a => {
@@ -365,8 +504,19 @@ export default function UsersClient({ agents: initial, currentEmail }: UsersClie
     await deleteUser(id)
   }
 
+  function handleEditSaved(updated: CRMAgent) {
+    setAgents(prev => prev.map(a => a.id === updated.id ? updated : a))
+  }
+
   return (
     <>
+      {editingAgent && (
+        <EditUserModal
+          agent={editingAgent}
+          onClose={() => setEditingAgent(null)}
+          onSaved={handleEditSaved}
+        />
+      )}
       {showInvite && (
         <InviteModal
           onClose={() => setShowInvite(false)}
@@ -470,6 +620,7 @@ export default function UsersClient({ agents: initial, currentEmail }: UsersClie
                     onRoleChange={handleRoleChange}
                     onToggleActive={handleToggleActive}
                     onDelete={handleDelete}
+                    onEdit={setEditingAgent}
                   />
                 ))
               )}

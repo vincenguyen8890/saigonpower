@@ -96,6 +96,32 @@ export async function deleteUser(id: string): Promise<{ ok: boolean; error?: str
   }
 }
 
+export async function updateUser(
+  id: string,
+  data: {
+    name?: string
+    email?: string
+    phone?: string
+    role?: 'admin' | 'office_manager' | 'csr' | 'agent'
+    agent_type?: string
+  },
+): Promise<{ ok: boolean; error?: string }> {
+  const session = await getSession()
+  if (!session || session.role !== 'admin') return { ok: false, error: 'Unauthorized' }
+
+  if (useMock()) return { ok: true }
+
+  try {
+    const { error } = await adminDb().from('crm_agents').update(data).eq('id', id)
+    if (error) throw error
+    revalidatePath('/crm/users')
+    return { ok: true }
+  } catch (e) {
+    console.error(e)
+    return { ok: false, error: 'Failed to update user' }
+  }
+}
+
 export async function resetUserPassword(
   id: string,
   newPassword: string,
