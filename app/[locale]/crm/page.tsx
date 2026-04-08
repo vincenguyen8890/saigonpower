@@ -10,6 +10,7 @@ import {
 } from '@/lib/supabase/queries'
 import { formatDate } from '@/lib/utils'
 import { getSession } from '@/lib/auth/session'
+import { can } from '@/lib/auth/permissions'
 import LeadStatusBadge from '@/components/crm/LeadStatusBadge'
 import RevenueChart from '@/components/crm/RevenueChart'
 import KpiCard from '@/components/dashboard/KpiCard'
@@ -34,7 +35,9 @@ export default async function CRMOverview({ params }: Props) {
     getProvidersFromDB(),
     getSession(),
   ])
-  const showValue = !['csr', 'office_manager'].includes(session?.role ?? '')
+  const role = session?.role ?? 'agent'
+  const showValue = !['csr', 'office_manager'].includes(role)
+  const showReports = can(role, 'reports')
 
   // ── Time context ─────────────────────────────────────────────────────────
   const now = new Date()
@@ -133,12 +136,14 @@ export default async function CRMOverview({ params }: Props) {
             {today} · Here&apos;s what needs your attention
           </p>
         </div>
-        <Link
-          href={`/${locale}/crm/reports`}
-          className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#0F172A] bg-white border border-slate-200 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
-        >
-          <TrendingUp size={13} /> View Reports
-        </Link>
+        {showReports && (
+          <Link
+            href={`/${locale}/crm/reports`}
+            className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#0F172A] bg-white border border-slate-200 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+          >
+            <TrendingUp size={13} /> View Reports
+          </Link>
+        )}
       </div>
 
       {/* ── KPI strip ── */}

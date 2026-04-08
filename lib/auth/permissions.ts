@@ -33,8 +33,8 @@ export type Feature =
 
 const ACCESS: Record<Feature, CRMRole[]> = {
   agents:       ['admin', 'office_manager'],
-  reports:      ['admin', 'office_manager', 'agent'],
-  accounting:   ['admin', 'office_manager'],
+  reports:      ['admin', 'agent'],
+  accounting:   ['admin'],
   automation:   ['admin', 'office_manager'],
   providers:    ['admin', 'office_manager'],
   plans:        ['admin', 'office_manager'],
