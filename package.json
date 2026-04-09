@@ -17,7 +17,6 @@
     "@react-three/fiber": "^9.5.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.10",
-    "@vapi-ai/web": "^2.5.2",
     "ai": "^6.0.146",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
