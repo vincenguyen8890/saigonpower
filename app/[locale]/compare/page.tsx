@@ -1,14 +1,13 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
 import { MapPin, Zap, ArrowRight } from 'lucide-react'
 import PlanCard from '@/components/compare/PlanCard'
 import PlanFilters from '@/components/compare/PlanFilters'
 import Button from '@/components/ui/Button'
-import { mockPlans } from '@/data/mock-plans'
-import type { PlanFilter, PlanSortOption } from '@/types/plans'
+import type { ElectricityPlan, PlanFilter, PlanSortOption } from '@/types/plans'
 import { isValidZip } from '@/lib/utils'
 
 // Inner component that uses useSearchParams — must be wrapped in Suspense
@@ -21,8 +20,19 @@ function ComparePlans() {
   const [submittedZip, setSubmittedZip] = useState(searchParams.get('zip') || '')
   const [filters, setFilters] = useState<PlanFilter>({ rateType: 'all', minRenewable: 0 })
   const [sortBy, setSortBy] = useState<PlanSortOption>('lowestRate')
+  const [allPlans, setAllPlans] = useState<ElectricityPlan[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const residentialPlans = mockPlans.filter(p => p.planType === 'residential' || p.planType === 'both')
+  // Fetch live plans from CRM on mount
+  useEffect(() => {
+    fetch('/api/plans')
+      .then(r => r.json())
+      .then(json => setAllPlans(json.data ?? json))
+      .catch(() => setAllPlans([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const residentialPlans = allPlans.filter(p => p.planType === 'residential' || p.planType === 'both')
 
   const filteredPlans = residentialPlans.filter((plan) => {
     if (filters.provider && plan.providerId !== filters.provider) return false
@@ -75,6 +85,11 @@ function ComparePlans() {
               </Button>
             </form>
           </div>
+        </div>
+      ) : loading ? (
+        <div className="py-20 text-center text-gray-500">
+          <Zap size={32} className="mx-auto mb-3 opacity-30 animate-pulse" />
+          <p>{locale === 'vi' ? 'Đang tải gói điện...' : 'Loading plans...'}</p>
         </div>
       ) : (
         <div>

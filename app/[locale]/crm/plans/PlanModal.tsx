@@ -15,16 +15,17 @@ export default function PlanModal({ plan, onClose, onSave, providers }: Props) {
   const isEdit = !!plan
 
   const [form, setForm] = useState({
-    provider_id:      plan?.provider_id      ?? providers[0]?.id ?? '',
-    provider_name:    plan?.provider_name    ?? providers[0]?.name ?? '',
-    name:             plan?.name             ?? '',
-    rate_kwh:         plan?.rate_kwh         ?? 0.10900,
-    term_months:      plan?.term_months      ?? 12,
-    service_type:     plan?.service_type     ?? ('residential' as Plan['service_type']),
-    cancellation_fee: plan?.cancellation_fee ?? (null as number | null),
-    renewable:        plan?.renewable        ?? false,
-    promo:            plan?.promo            ?? '',
-    status:           plan?.status           ?? ('active' as Plan['status']),
+    provider_id:       plan?.provider_id       ?? providers[0]?.id ?? '',
+    provider_name:     plan?.provider_name     ?? providers[0]?.name ?? '',
+    name:              plan?.name              ?? '',
+    rate_kwh:          plan?.rate_kwh          ?? 0.10900,
+    term_months:       plan?.term_months       ?? 12,
+    service_type:      plan?.service_type      ?? ('residential' as Plan['service_type']),
+    cancellation_fee:  plan?.cancellation_fee  ?? (null as number | null),
+    renewable:         plan?.renewable         ?? false,
+    renewable_percent: plan?.renewable_percent ?? 0,
+    promo:             plan?.promo             ?? '',
+    status:            plan?.status            ?? ('active' as Plan['status']),
   })
 
   function handleProviderChange(id: string) {
@@ -35,17 +36,18 @@ export default function PlanModal({ plan, onClose, onSave, providers }: Props) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const saved: Plan = {
-      id:               isEdit ? plan.id : `plan-${Date.now()}`,
-      provider_id:      form.provider_id,
-      provider_name:    form.provider_name,
-      name:             form.name.trim(),
-      rate_kwh:         Number(form.rate_kwh),
-      term_months:      Number(form.term_months),
-      service_type:     form.service_type,
-      cancellation_fee: form.cancellation_fee !== null ? Number(form.cancellation_fee) : null,
-      renewable:        form.renewable,
-      promo:            form.promo.trim() || null,
-      status:           form.status,
+      id:                isEdit ? plan.id : `plan-${Date.now()}`,
+      provider_id:       form.provider_id,
+      provider_name:     form.provider_name,
+      name:              form.name.trim(),
+      rate_kwh:          Number(form.rate_kwh),
+      term_months:       Number(form.term_months),
+      service_type:      form.service_type,
+      cancellation_fee:  form.cancellation_fee !== null ? Number(form.cancellation_fee) : null,
+      renewable:         form.renewable,
+      renewable_percent: form.renewable ? (form.renewable_percent || 100) : 0,
+      promo:             form.promo.trim() || null,
+      status:            form.status,
     }
     onSave(saved)
   }

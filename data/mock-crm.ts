@@ -303,6 +303,7 @@ export interface Plan {
   service_type: ServiceType
   cancellation_fee: number | null
   renewable: boolean
+  renewable_percent: number   // 0–100; synced from DB, defaults to renewable ? 100 : 0
   promo: string | null
   status: 'active' | 'inactive'
 }
@@ -317,18 +318,18 @@ export const mockProviders: Provider[] = [
 ]
 
 export const mockPlans: Plan[] = [
-  { id: 'plan-001', provider_id: 'prv-001', provider_name: 'Gexa Energy',    name: 'Gexa Saver 12',        rate_kwh: 0.109, term_months: 12, service_type: 'residential', cancellation_fee: 150, renewable: false, promo: null,                  status: 'active' },
-  { id: 'plan-002', provider_id: 'prv-001', provider_name: 'Gexa Energy',    name: 'Gexa Saver 24',        rate_kwh: 0.115, term_months: 24, service_type: 'residential', cancellation_fee: 200, renewable: false, promo: '$50 bill credit',      status: 'active' },
-  { id: 'plan-003', provider_id: 'prv-001', provider_name: 'Gexa Energy',    name: 'Gexa Green 12',        rate_kwh: 0.118, term_months: 12, service_type: 'residential', cancellation_fee: 150, renewable: true,  promo: null,                  status: 'active' },
-  { id: 'plan-004', provider_id: 'prv-002', provider_name: 'TXU Energy',     name: 'TXU Simple Rate 12',   rate_kwh: 0.121, term_months: 12, service_type: 'residential', cancellation_fee: 175, renewable: false, promo: null,                  status: 'active' },
-  { id: 'plan-005', provider_id: 'prv-002', provider_name: 'TXU Energy',     name: 'TXU Energy Saver 24',  rate_kwh: 0.118, term_months: 24, service_type: 'residential', cancellation_fee: 200, renewable: false, promo: '$100 Visa gift card', status: 'active' },
-  { id: 'plan-006', provider_id: 'prv-002', provider_name: 'TXU Energy',     name: 'TXU Business 12',      rate_kwh: 0.128, term_months: 12, service_type: 'commercial',  cancellation_fee: 300, renewable: false, promo: null,                  status: 'active' },
-  { id: 'plan-007', provider_id: 'prv-003', provider_name: 'Reliant Energy', name: 'Reliant Secure 12',    rate_kwh: 0.124, term_months: 12, service_type: 'residential', cancellation_fee: 150, renewable: false, promo: null,                  status: 'active' },
-  { id: 'plan-008', provider_id: 'prv-003', provider_name: 'Reliant Energy', name: 'Reliant Business 12',  rate_kwh: 0.132, term_months: 12, service_type: 'commercial',  cancellation_fee: 350, renewable: false, promo: null,                  status: 'active' },
-  { id: 'plan-009', provider_id: 'prv-004', provider_name: 'Green Mountain', name: 'Green Simple 12',      rate_kwh: 0.125, term_months: 12, service_type: 'residential', cancellation_fee: 100, renewable: true,  promo: null,                  status: 'active' },
-  { id: 'plan-010', provider_id: 'prv-005', provider_name: 'Cirro Energy',   name: 'Cirro Value 6',        rate_kwh: 0.114, term_months: 6,  service_type: 'residential', cancellation_fee: 75,  renewable: false, promo: null,                  status: 'active' },
-  { id: 'plan-011', provider_id: 'prv-005', provider_name: 'Cirro Energy',   name: 'Cirro Value 12',       rate_kwh: 0.119, term_months: 12, service_type: 'residential', cancellation_fee: 100, renewable: false, promo: null,                  status: 'active' },
-  { id: 'plan-012', provider_id: 'prv-006', provider_name: 'Payless Power',  name: 'Payless Prepaid',      rate_kwh: 0.138, term_months: 0,  service_type: 'residential', cancellation_fee: null,renewable: false, promo: 'No deposit required', status: 'active' },
+  { id: 'plan-001', provider_id: 'prv-001', provider_name: 'Gexa Energy',    name: 'Gexa Saver 12',        rate_kwh: 0.109, term_months: 12, service_type: 'residential', cancellation_fee: 150, renewable: false, renewable_percent: 0,   promo: null,                  status: 'active' },
+  { id: 'plan-002', provider_id: 'prv-001', provider_name: 'Gexa Energy',    name: 'Gexa Saver 24',        rate_kwh: 0.115, term_months: 24, service_type: 'residential', cancellation_fee: 200, renewable: false, renewable_percent: 0,   promo: '$50 bill credit',      status: 'active' },
+  { id: 'plan-003', provider_id: 'prv-001', provider_name: 'Gexa Energy',    name: 'Gexa Green 12',        rate_kwh: 0.118, term_months: 12, service_type: 'residential', cancellation_fee: 150, renewable: true,  renewable_percent: 100, promo: null,                  status: 'active' },
+  { id: 'plan-004', provider_id: 'prv-002', provider_name: 'TXU Energy',     name: 'TXU Simple Rate 12',   rate_kwh: 0.121, term_months: 12, service_type: 'residential', cancellation_fee: 175, renewable: false, renewable_percent: 0,   promo: null,                  status: 'active' },
+  { id: 'plan-005', provider_id: 'prv-002', provider_name: 'TXU Energy',     name: 'TXU Energy Saver 24',  rate_kwh: 0.118, term_months: 24, service_type: 'residential', cancellation_fee: 200, renewable: false, renewable_percent: 0,   promo: '$100 Visa gift card', status: 'active' },
+  { id: 'plan-006', provider_id: 'prv-002', provider_name: 'TXU Energy',     name: 'TXU Business 12',      rate_kwh: 0.128, term_months: 12, service_type: 'commercial',  cancellation_fee: 300, renewable: false, renewable_percent: 0,   promo: null,                  status: 'active' },
+  { id: 'plan-007', provider_id: 'prv-003', provider_name: 'Reliant Energy', name: 'Reliant Secure 12',    rate_kwh: 0.124, term_months: 12, service_type: 'residential', cancellation_fee: 150, renewable: false, renewable_percent: 0,   promo: null,                  status: 'active' },
+  { id: 'plan-008', provider_id: 'prv-003', provider_name: 'Reliant Energy', name: 'Reliant Business 12',  rate_kwh: 0.132, term_months: 12, service_type: 'commercial',  cancellation_fee: 350, renewable: false, renewable_percent: 0,   promo: null,                  status: 'active' },
+  { id: 'plan-009', provider_id: 'prv-004', provider_name: 'Green Mountain', name: 'Green Simple 12',      rate_kwh: 0.125, term_months: 12, service_type: 'residential', cancellation_fee: 100, renewable: true,  renewable_percent: 100, promo: null,                  status: 'active' },
+  { id: 'plan-010', provider_id: 'prv-005', provider_name: 'Cirro Energy',   name: 'Cirro Value 6',        rate_kwh: 0.114, term_months: 6,  service_type: 'residential', cancellation_fee: 75,  renewable: false, renewable_percent: 5,   promo: null,                  status: 'active' },
+  { id: 'plan-011', provider_id: 'prv-005', provider_name: 'Cirro Energy',   name: 'Cirro Value 12',       rate_kwh: 0.119, term_months: 12, service_type: 'residential', cancellation_fee: 100, renewable: false, renewable_percent: 5,   promo: null,                  status: 'active' },
+  { id: 'plan-012', provider_id: 'prv-006', provider_name: 'Payless Power',  name: 'Payless Prepaid',      rate_kwh: 0.138, term_months: 0,  service_type: 'residential', cancellation_fee: null,renewable: false, renewable_percent: 0,   promo: 'No deposit required', status: 'active' },
 ]
 
 export const mockCRMStats: CRMStats = {
