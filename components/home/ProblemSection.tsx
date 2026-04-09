@@ -1,119 +1,123 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
-import { useLocale } from 'next-intl'
-import { motion, useInView, animate } from 'framer-motion'
-import { TrendingUp } from 'lucide-react'
+import { useRef } from 'react'
+import { motion, useInView } from 'framer-motion'
+import { AlertTriangle, CheckCircle, ArrowRight } from 'lucide-react'
+import { Link } from '@/i18n/navigation'
 
-function RisingRate({ inView }: { inView: boolean }) {
-  const ref = useRef<HTMLSpanElement>(null)
-  useEffect(() => {
-    if (!inView || !ref.current) return
-    const ctrl = animate(8.2, 16.4, {
-      duration: 2.8,
-      ease: 'easeOut',
-      onUpdate(v) {
-        if (ref.current) ref.current.textContent = v.toFixed(1) + '¢'
-      },
-    })
-    return ctrl.stop
-  }, [inView])
-  return <span ref={ref}>8.2¢</span>
-}
+const BEFORE = [
+  'Paying 15–18¢/kWh without knowing it',
+  'Contract expired — auto-rolled to variable rate',
+  'Spent hours on PowerToChoose with no help',
+  'No one to call when your bill spikes',
+  'Renewing the same plan out of habit',
+]
+
+const AFTER = [
+  'Locked in at 10.9–12¢/kWh fixed rate',
+  'Renewal reminder 60 days before expiration',
+  'We compare 50+ plans and recommend the best',
+  'Dedicated agent who speaks your language',
+  'Switched in 24 hours — zero paperwork from you',
+]
 
 export default function ProblemSection() {
-  const locale = useLocale()
-  const isVi = locale === 'vi'
   const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: '-80px' })
+  const inView = useInView(ref, { once: true, margin: '-60px' })
 
   return (
-    <section className="min-h-screen bg-[#0F172A] flex items-center relative overflow-hidden">
+    <section className="bg-[#0B1120] py-20 lg:py-28 relative overflow-hidden">
 
-      {/* Subtle grid overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.025]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
-          backgroundSize: '64px 64px',
-        }}
-      />
+      {/* Subtle orange glow — suggests the "problem" heat */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full opacity-[0.06] pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse, rgba(255,109,0,1) 0%, transparent 70%)' }} />
 
-      {/* Orange atmospheric glow */}
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full opacity-[0.08] pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse, rgba(255,109,0,1) 0%, transparent 70%)' }}
-      />
+      <div ref={ref} className="max-w-5xl mx-auto px-5 lg:px-8">
 
-      <div ref={ref} className="relative z-10 max-w-5xl mx-auto px-6 lg:px-12 text-center py-24">
-
-        {/* Eyebrow */}
+        {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 bg-brand-orange/10 border border-brand-orange/25 text-brand-orange text-xs font-bold uppercase tracking-widest rounded-full px-4 py-2 mb-10"
-        >
-          <TrendingUp size={12} />
-          {isVi ? 'Thực Tế Đáng Lo' : 'The Hidden Problem'}
-        </motion.div>
-
-        {/* Headline */}
-        <motion.h2
-          initial={{ opacity: 0, y: 36 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.85, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-          className="text-[clamp(2.5rem,6vw,5rem)] font-black text-white leading-[1.08] tracking-tight mb-6"
-        >
-          {isVi ? (
-            <>
-              Bạn Đang Trả<br />
-              <span className="text-brand-orange">Quá Nhiều</span><br />
-              Tiền Điện
-            </>
-          ) : (
-            <>
-              You&apos;re Likely<br />
-              <span className="text-brand-orange">Overpaying</span><br />
-              for Electricity
-            </>
-          )}
-        </motion.h2>
-
-        {/* Subtext */}
-        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7, delay: 0.18 }}
-          className="text-xl text-slate-400 max-w-2xl mx-auto mb-16 leading-relaxed"
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
         >
-          {isVi
-            ? 'Giá điện Texas thay đổi liên tục. Hầu hết mọi người không biết mình đang trả giá quá cao.'
-            : "Electricity rates in Texas change constantly. Most people don't realize they're on an overpriced plan."}
-        </motion.p>
-
-        {/* Animated rate card */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.92, y: 20 }}
-          animate={inView ? { opacity: 1, scale: 1, y: 0 } : {}}
-          transition={{ duration: 0.7, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          className="inline-flex flex-col items-center bg-white/5 border border-white/10 rounded-3xl px-12 py-10 backdrop-blur-sm"
-        >
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-3">
-            {isVi ? 'Giá điện phổ biến tại Texas' : 'Common Texas electricity rate'}
+          <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold uppercase tracking-widest rounded-full px-4 py-1.5 mb-5">
+            <AlertTriangle size={11} />
+            The Situation Most Texans Are In
           </div>
-          <div className="text-[clamp(3.5rem,8vw,6.5rem)] font-black text-white leading-none tabular-nums">
-            <RisingRate inView={inView} />
-          </div>
-          <div className="text-slate-500 text-sm mt-2 mb-6">
-            {isVi ? 'mỗi kWh — nhiều người đang trả 15–18¢' : 'per kWh — many are paying 15–18¢'}
-          </div>
-          <div className="flex items-center gap-2 text-brand-orange text-sm font-bold">
-            <TrendingUp size={15} />
-            {isVi ? 'Giá đang tăng liên tục' : 'Rates keep rising'}
-          </div>
+          <h2 className="text-[clamp(1.8rem,4vw,3.2rem)] font-black text-white tracking-tight">
+            Most Texans Are Overpaying.<br />
+            <span className="text-orange-400">Most Don&apos;t Know It.</span>
+          </h2>
+          <p className="text-white/50 text-lg mt-4 max-w-xl mx-auto">
+            The average Texan stays on the same plan 2+ years after it expires — paying 40% more than they should.
+          </p>
         </motion.div>
+
+        {/* Before / After grid */}
+        <div className="grid md:grid-cols-2 gap-4 lg:gap-6 mb-10">
+
+          {/* BEFORE */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="bg-red-950/30 border border-red-500/20 rounded-2xl p-6"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 rounded-full bg-red-500/20 flex items-center justify-center">
+                <AlertTriangle size={13} className="text-red-400" />
+              </div>
+              <span className="text-red-400 text-sm font-bold uppercase tracking-wide">Without Saigon Power</span>
+            </div>
+            <ul className="space-y-3">
+              {BEFORE.map(item => (
+                <li key={item} className="flex items-start gap-3 text-white/50 text-sm">
+                  <span className="w-4 h-4 rounded-full border border-red-500/40 flex-shrink-0 mt-0.5" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          {/* AFTER */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.18 }}
+            className="bg-green-950/30 border border-[#00C853]/25 rounded-2xl p-6"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 rounded-full bg-[#00C853]/20 flex items-center justify-center">
+                <CheckCircle size={13} className="text-[#00C853]" />
+              </div>
+              <span className="text-[#00C853] text-sm font-bold uppercase tracking-wide">With Saigon Power</span>
+            </div>
+            <ul className="space-y-3">
+              {AFTER.map(item => (
+                <li key={item} className="flex items-start gap-3 text-white/75 text-sm">
+                  <CheckCircle size={14} className="text-[#00C853] flex-shrink-0 mt-0.5" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        </div>
+
+        {/* CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="text-center"
+        >
+          <Link href="/compare"
+            className="inline-flex items-center gap-2 bg-[#00C853] hover:bg-[#00A846] text-white font-bold px-8 py-3.5 rounded-2xl text-sm transition-all shadow-lg shadow-green-900/30 hover:-translate-y-0.5">
+            Compare My Rate Now <ArrowRight size={15} />
+          </Link>
+          <p className="text-white/30 text-xs mt-3">Free · No credit check · Takes 30 seconds</p>
+        </motion.div>
+
       </div>
     </section>
   )

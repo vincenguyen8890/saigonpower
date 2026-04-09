@@ -1,155 +1,155 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { useLocale } from 'next-intl'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
-import { Star, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Star, ChevronLeft, ChevronRight, Quote } from 'lucide-react'
 
-const reviews = [
+const REVIEWS = [
   {
     name: 'Lan Nguyễn',
     location: 'Houston, TX',
     initials: 'LN',
-    color: 'bg-brand-blue',
-    textEn: 'Saigon Power saved me $340 last year. The team explains everything in Vietnamese — no confusing paperwork.',
-    textVi: 'Saigon Power giúp tôi tiết kiệm $340 năm ngoái. Đội ngũ giải thích mọi thứ bằng tiếng Việt — không có giấy tờ phức tạp.',
+    color: 'bg-[#2979FF]',
+    savings: '$340/yr',
+    before: '15.8¢',
+    after: '10.9¢',
+    text: 'Saigon Power saved me $340 last year. They explain everything clearly and handle all the paperwork — I didn\'t have to do anything.',
   },
   {
     name: 'Minh Trần',
     location: 'Sugar Land, TX',
     initials: 'MT',
-    color: 'bg-brand-green',
-    textEn: 'As a nail salon owner, switching electricity was always confusing. Saigon Power handled everything for my 3 locations. Saved $80/month.',
-    textVi: 'Là chủ tiệm nail, việc đổi điện luôn phức tạp. Saigon Power lo hết cho 3 địa điểm của tôi. Tiết kiệm $80/tháng.',
+    color: 'bg-[#00C853]',
+    savings: '$80/mo',
+    before: '16.2¢',
+    after: '11.5¢',
+    text: 'As a nail salon owner, switching electricity was always confusing. Saigon Power handled all 3 of my locations and saved $80/month.',
   },
   {
     name: 'Hoa Lê',
     location: 'Katy, TX',
     initials: 'HL',
-    color: 'bg-brand-orange',
-    textEn: 'They sent me a renewal reminder before my contract expired — saved me from a huge rate spike. Outstanding customer service, 10/10.',
-    textVi: 'Họ nhắc nhở tôi gia hạn trước khi hết hạn — tránh bị tăng giá. Dịch vụ khách hàng xuất sắc, 10/10.',
+    color: 'bg-orange-500',
+    savings: '$95/mo',
+    before: '17.1¢',
+    after: '11.9¢',
+    text: 'They reminded me 60 days before my contract expired — saved me from a huge rate spike. Outstanding service, I tell everyone I know.',
   },
   {
     name: 'Tuấn Phạm',
     location: 'Pearland, TX',
     initials: 'TP',
     color: 'bg-purple-500',
-    textEn: "I was paying 16¢/kWh. They found me a 10.5¢ plan. That's a huge difference on my monthly bill. Super easy process.",
-    textVi: 'Tôi đang trả 16¢/kWh. Họ tìm được gói 10.5¢. Tiết kiệm rất lớn trên hóa đơn hàng tháng. Quy trình siêu dễ.',
-  },
-  {
-    name: 'Mai Võ',
-    location: 'Stafford, TX',
-    initials: 'MV',
-    color: 'bg-rose-500',
-    textEn: 'My whole family uses Saigon Power now. They explained fixed vs variable rates — no one had ever explained that to me before.',
-    textVi: 'Cả gia đình tôi dùng Saigon Power. Họ giải thích giá cố định và biến động mà trước đây chưa ai nói.',
+    savings: '$67/mo',
+    before: '16.0¢',
+    after: '10.5¢',
+    text: 'I was paying 16¢/kWh. They found me a 10.5¢ plan. That\'s a massive difference every single month. The process took 30 minutes.',
   },
   {
     name: 'Dũng Ngô',
     location: 'Richmond, TX',
     initials: 'DN',
     color: 'bg-teal-500',
-    textEn: 'Running a Vietnamese restaurant, electricity is our biggest expense. Saigon Power negotiated a rate that cut our bill by 22%.',
-    textVi: 'Điều hành nhà hàng Việt, điện là chi phí lớn nhất. Saigon Power đàm phán được mức giá giúp giảm 22% hóa đơn.',
+    savings: '$220/mo',
+    before: '18.3¢',
+    after: '12.1¢',
+    text: 'Running a Vietnamese restaurant, electricity is our biggest expense. Saigon Power cut our bill by 22%. That\'s real money every month.',
+  },
+  {
+    name: 'Mai Võ',
+    location: 'Stafford, TX',
+    initials: 'MV',
+    color: 'bg-rose-500',
+    savings: '$55/mo',
+    before: '14.9¢',
+    after: '10.9¢',
+    text: 'My whole family uses Saigon Power now. They explain fixed vs variable rates — nobody had ever explained that to me before. 10/10.',
   },
 ]
 
-const stats = [
-  { value: '500+', labelEn: 'Customers Served', labelVi: 'Khách hàng' },
-  { value: '4.9★', labelEn: 'Average Rating', labelVi: 'Đánh giá trung bình' },
-  { value: '$150', labelEn: 'Avg Monthly Savings', labelVi: 'Tiết kiệm/tháng' },
-  { value: '50+', labelEn: 'Plans Compared', labelVi: 'Gói điện so sánh' },
-]
-
 export default function GoogleReviews() {
-  const locale = useLocale()
-  const isVi = locale === 'vi'
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-60px' })
   const [current, setCurrent] = useState(0)
 
-  const visible = [
-    reviews[current % reviews.length],
-    reviews[(current + 1) % reviews.length],
-    reviews[(current + 2) % reviews.length],
-  ]
+  const visible3 = [0, 1, 2].map(offset => REVIEWS[(current + offset) % REVIEWS.length])
 
   return (
-    <section className="bg-white py-24 lg:py-32">
-      <div ref={ref} className="max-w-6xl mx-auto px-6 lg:px-12">
+    <section className="bg-[#0F172A] py-20 lg:py-28 relative overflow-hidden">
 
-        {/* Stats bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-px bg-surface-border rounded-3xl overflow-hidden mb-20 shadow-card"
-        >
-          {stats.map(({ value, labelEn, labelVi }) => (
-            <div key={value} className="bg-white px-8 py-7 text-center">
-              <div className="text-3xl font-black text-brand-dark mb-1">{value}</div>
-              <div className="text-sm text-brand-muted font-medium">{isVi ? labelVi : labelEn}</div>
-            </div>
-          ))}
-        </motion.div>
+      {/* Green ambient glow */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] rounded-full opacity-[0.07] pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse, rgba(0,200,83,1) 0%, transparent 65%)' }} />
 
-        {/* Section header */}
+      <div ref={ref} className="max-w-6xl mx-auto px-5 lg:px-8">
+
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.65, delay: 0.1 }}
-          className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-12 gap-4"
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
         >
-          <div>
-            <h2 className="text-[clamp(1.8rem,4vw,3rem)] font-black text-brand-dark tracking-tight">
-              {isVi ? 'Khách Hàng Nói Gì?' : 'What Customers Say'}
-            </h2>
-            <p className="text-brand-muted mt-1">
-              {isVi ? '200+ đánh giá Google thực tế' : '200+ real Google reviews'}
-            </p>
+          {/* Google badge */}
+          <div className="inline-flex items-center gap-3 bg-white/8 border border-white/12 rounded-2xl px-5 py-2.5 mb-6">
+            <div className="flex gap-0.5">
+              {[...Array(5)].map((_, i) => <Star key={i} size={13} className="fill-yellow-400 text-yellow-400" />)}
+            </div>
+            <span className="text-white font-black text-lg">4.9</span>
+            <span className="text-white/40 text-xs">·</span>
+            <span className="text-white/60 text-sm">200+ Google Reviews</span>
           </div>
 
-          {/* Google badge */}
-          <div className="flex items-center gap-3 bg-surface-bg border border-surface-border rounded-2xl px-5 py-3 flex-shrink-0">
-            <div className="text-2xl font-black text-brand-dark">4.9</div>
-            <div>
-              <div className="flex gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={11} className="text-yellow-400 fill-yellow-400" />
-                ))}
-              </div>
-              <div className="text-xs text-brand-muted mt-0.5">Google Reviews</div>
-            </div>
-          </div>
+          <h2 className="text-[clamp(1.8rem,4vw,3rem)] font-black text-white tracking-tight mb-3">
+            Real Texans. Real Savings.
+          </h2>
+          <p className="text-white/50 text-lg">
+            Here&apos;s what happened when they stopped overpaying.
+          </p>
         </motion.div>
 
         {/* Desktop: 3 cards */}
         <div className="hidden md:grid md:grid-cols-3 gap-5 mb-8">
-          {visible.map((r, i) => (
+          {visible3.map((r, i) => (
             <motion.div
               key={`${current}-${i}`}
-              initial={{ opacity: 0, y: 18 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: i * 0.07 }}
-              className="bg-white rounded-2xl border border-surface-border shadow-card p-7 hover:shadow-card-hover transition-shadow duration-200"
+              transition={{ duration: 0.35, delay: i * 0.07 }}
+              className="bg-white/6 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-colors"
             >
-              <div className="flex gap-0.5 mb-5">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={13} className="text-yellow-400 fill-yellow-400" />
-                ))}
+              {/* Rate savings */}
+              <div className="flex items-center gap-2 mb-4 pb-4 border-b border-white/8">
+                <div className="flex-1 text-center">
+                  <p className="text-white/35 text-[10px] font-semibold uppercase mb-1">Before</p>
+                  <p className="text-red-400 font-black text-lg">{r.before}</p>
+                  <p className="text-white/25 text-[10px]">per kWh</p>
+                </div>
+                <div className="text-white/20 text-lg">→</div>
+                <div className="flex-1 text-center">
+                  <p className="text-white/35 text-[10px] font-semibold uppercase mb-1">After</p>
+                  <p className="text-[#00C853] font-black text-lg">{r.after}</p>
+                  <p className="text-white/25 text-[10px]">per kWh</p>
+                </div>
+                <div className="flex-shrink-0 bg-[#00C853]/15 border border-[#00C853]/25 rounded-xl px-2.5 py-1.5 text-center">
+                  <p className="text-[#00C853] font-black text-sm">{r.savings}</p>
+                  <p className="text-[#00C853]/60 text-[9px]">saved</p>
+                </div>
               </div>
-              <p className="text-brand-muted text-sm leading-relaxed mb-6">
-                &ldquo;{isVi ? r.textVi : r.textEn}&rdquo;
-              </p>
-              <div className="flex items-center gap-3 pt-5 border-t border-surface-border">
-                <div className={`w-9 h-9 rounded-full ${r.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+
+              <Quote size={16} className="text-white/15 mb-3" />
+              <p className="text-white/65 text-sm leading-relaxed mb-5">{r.text}</p>
+
+              <div className="flex items-center gap-2.5">
+                <div className={`w-8 h-8 rounded-full ${r.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
                   {r.initials}
                 </div>
                 <div>
-                  <div className="text-brand-dark text-sm font-bold">{r.name}</div>
-                  <div className="text-brand-muted text-xs">{r.location}</div>
+                  <p className="text-white text-sm font-semibold">{r.name}</p>
+                  <p className="text-white/40 text-xs">{r.location}</p>
+                </div>
+                <div className="ml-auto flex gap-0.5">
+                  {[...Array(5)].map((_, i) => <Star key={i} size={10} className="fill-yellow-400 text-yellow-400" />)}
                 </div>
               </div>
             </motion.div>
@@ -164,24 +164,32 @@ export default function GoogleReviews() {
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -24 }}
-              transition={{ duration: 0.28 }}
-              className="bg-white rounded-2xl border border-surface-border shadow-card p-6"
+              transition={{ duration: 0.25 }}
+              className="bg-white/6 border border-white/10 rounded-2xl p-6"
             >
-              <div className="flex gap-0.5 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={13} className="text-yellow-400 fill-yellow-400" />
-                ))}
+              <div className="flex items-center gap-2 mb-4 pb-4 border-b border-white/8">
+                <div className="flex-1 text-center">
+                  <p className="text-white/35 text-[10px] font-semibold uppercase mb-1">Before</p>
+                  <p className="text-red-400 font-black text-xl">{REVIEWS[current].before}</p>
+                </div>
+                <span className="text-white/25 text-xl">→</span>
+                <div className="flex-1 text-center">
+                  <p className="text-white/35 text-[10px] font-semibold uppercase mb-1">After</p>
+                  <p className="text-[#00C853] font-black text-xl">{REVIEWS[current].after}</p>
+                </div>
+                <div className="bg-[#00C853]/15 border border-[#00C853]/25 rounded-xl px-3 py-1.5 text-center">
+                  <p className="text-[#00C853] font-black">{REVIEWS[current].savings}</p>
+                  <p className="text-[#00C853]/60 text-[10px]">saved</p>
+                </div>
               </div>
-              <p className="text-brand-muted text-sm leading-relaxed mb-5">
-                &ldquo;{isVi ? reviews[current].textVi : reviews[current].textEn}&rdquo;
-              </p>
-              <div className="flex items-center gap-3 pt-4 border-t border-surface-border">
-                <div className={`w-9 h-9 rounded-full ${reviews[current].color} flex items-center justify-center text-white text-xs font-bold`}>
-                  {reviews[current].initials}
+              <p className="text-white/65 text-sm leading-relaxed mb-5">{REVIEWS[current].text}</p>
+              <div className="flex items-center gap-2.5">
+                <div className={`w-8 h-8 rounded-full ${REVIEWS[current].color} flex items-center justify-center text-white text-xs font-bold`}>
+                  {REVIEWS[current].initials}
                 </div>
                 <div>
-                  <div className="text-brand-dark text-sm font-bold">{reviews[current].name}</div>
-                  <div className="text-brand-muted text-xs">{reviews[current].location}</div>
+                  <p className="text-white text-sm font-semibold">{REVIEWS[current].name}</p>
+                  <p className="text-white/40 text-xs">{REVIEWS[current].location}</p>
                 </div>
               </div>
             </motion.div>
@@ -190,30 +198,22 @@ export default function GoogleReviews() {
 
         {/* Pagination */}
         <div className="flex items-center justify-center gap-4">
-          <button
-            onClick={() => setCurrent(c => (c - 1 + reviews.length) % reviews.length)}
-            className="w-9 h-9 rounded-full border border-surface-border bg-white hover:border-brand-green hover:text-brand-green flex items-center justify-center text-brand-muted transition-all"
-          >
+          <button onClick={() => setCurrent(c => (c - 1 + REVIEWS.length) % REVIEWS.length)}
+            className="w-9 h-9 rounded-full border border-white/15 bg-white/5 hover:border-[#00C853] hover:text-[#00C853] flex items-center justify-center text-white/50 transition-all">
             <ChevronLeft size={16} />
           </button>
           <div className="flex gap-1.5">
-            {reviews.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === current ? 'w-6 bg-brand-green' : 'w-1.5 bg-surface-border hover:bg-brand-muted'
-                }`}
-              />
+            {REVIEWS.map((_, i) => (
+              <button key={i} onClick={() => setCurrent(i)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${i === current ? 'w-6 bg-[#00C853]' : 'w-1.5 bg-white/20 hover:bg-white/40'}`} />
             ))}
           </div>
-          <button
-            onClick={() => setCurrent(c => (c + 1) % reviews.length)}
-            className="w-9 h-9 rounded-full border border-surface-border bg-white hover:border-brand-green hover:text-brand-green flex items-center justify-center text-brand-muted transition-all"
-          >
+          <button onClick={() => setCurrent(c => (c + 1) % REVIEWS.length)}
+            className="w-9 h-9 rounded-full border border-white/15 bg-white/5 hover:border-[#00C853] hover:text-[#00C853] flex items-center justify-center text-white/50 transition-all">
             <ChevronRight size={16} />
           </button>
         </div>
+
       </div>
     </section>
   )

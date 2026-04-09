@@ -4,12 +4,11 @@ import TrustBar from '@/components/home/TrustBar'
 import ProblemSection from '@/components/home/ProblemSection'
 import SolutionSection from '@/components/home/SolutionSection'
 import WhoWeHelp from '@/components/home/WhoWeHelp'
-import SavingsImpact from '@/components/home/SavingsImpact'
-import HowItWorks from '@/components/home/HowItWorks'
 import GoogleReviews from '@/components/home/GoogleReviews'
 import FAQPreview from '@/components/home/FAQPreview'
 import FinalCTA from '@/components/home/FinalCTA'
 import MobileStickyBar from '@/components/home/MobileStickyBar'
+import StickyRateCTA from '@/components/home/StickyRateCTA'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -17,10 +16,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: isVi
       ? 'Saigon Power – So Sánh Giá Điện Texas Trong 30 Giây'
-      : 'Saigon Power – Compare Texas Electricity in 30 Seconds',
-    description: isVi
-      ? 'Miễn phí – Không phí ẩn – Hỗ trợ tiếng Việt 100%. So sánh 50+ gói điện Texas ngay hôm nay.'
-      : 'Free – No Hidden Fees – Vietnamese Support Available. Compare 50+ Texas electricity plans today.',
+      : 'Saigon Power – Compare Texas Electricity Plans | Free Service',
+    description: 'Free – No Hidden Fees – Switch in 24 Hours. We compare 50+ Texas electricity providers and handle all the paperwork. Start saving today.',
   }
 }
 
@@ -28,13 +25,17 @@ const localBusinessJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
   name: 'Saigon Power',
-  url: 'https://giadienre.com',
+  url: 'https://saigonpower.vercel.app',
   telephone: '+1-832-937-9999',
-  email: 'info@giadienre.com',
-  description: 'Texas electricity brokerage serving the Vietnamese community. Compare plans, save money, renewal reminders included.',
+  email: 'info@saigonllc.com',
+  description: 'Texas electricity brokerage. Compare 50+ plans, switch in 24 hours, completely free.',
   areaServed: { '@type': 'State', name: 'Texas' },
   inLanguage: ['vi', 'en'],
-  sameAs: ['https://giadienre.com'],
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.9',
+    reviewCount: '200',
+  },
 }
 
 export default function HomePage() {
@@ -45,37 +46,34 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
       />
 
-      {/* 1. Hero — full-screen, cinematic entry */}
+      {/* Sticky scroll CTA — appears after user passes hero */}
+      <StickyRateCTA />
+
+      {/* 1. Hero — dark premium, rate card, trust in-fold */}
       <Hero />
 
-      {/* 2. Trust bar — provider marquee + credibility badges */}
+      {/* 2. Trust bar — provider names + credibility badges */}
       <TrustBar />
 
-      {/* 3. Problem — dark, "you're overpaying" impact moment */}
+      {/* 3. Problem — before/after comparison (dark) */}
       <ProblemSection />
 
-      {/* 4. Solution — "we handle it for you" */}
+      {/* 4. Solution + How It Works — merged, with stats strip */}
       <SolutionSection />
 
-      {/* 5. Who We Help — segment cards (homeowners, nail salons, restaurants, businesses) */}
+      {/* 5. Who We Help — segment cards */}
       <WhoWeHelp />
 
-      {/* 6. Savings Impact — big green number moment */}
-      <SavingsImpact />
-
-      {/* 7. How It Works — 3 simple steps */}
-      <HowItWorks />
-
-      {/* 8. Social proof — stats + testimonials */}
+      {/* 6. Social proof — dark, with before/after rate cards */}
       <GoogleReviews />
 
-      {/* 9. FAQ preview — top 4 questions, links to /faq */}
+      {/* 7. FAQ */}
       <FAQPreview />
 
-      {/* 10. Final CTA — dark, "start saving today" */}
+      {/* 8. Final CTA — urgency-driven, risk reversal */}
       <FinalCTA />
 
-      {/* Mobile sticky bar — fixed Call / Get Quote (mobile only) */}
+      {/* Mobile sticky bar */}
       <MobileStickyBar />
     </>
   )
