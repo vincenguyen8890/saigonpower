@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /en/crm/
+Disallow: /vi/crm/
+Disallow: /en/auth/
+Disallow: /vi/auth/
+Disallow: /api/
+
+Allow: /
+
+Sitemap: https://saigonpower.vercel.app/sitemap.xml

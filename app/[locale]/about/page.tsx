@@ -1,18 +1,12 @@
 'use client'
 
 import { useRef } from 'react'
-import dynamic from 'next/dynamic'
 import { Link } from '@/i18n/navigation'
 import { motion, useInView } from 'framer-motion'
 import {
   ArrowRight, Phone, Zap, BarChart2, RefreshCw, Database,
   CheckCircle, Shield, Users, Globe, ChevronRight
 } from 'lucide-react'
-
-const SparklesCore = dynamic(
-  () => import('@/components/ui/sparkles').then(m => ({ default: m.SparklesCore })),
-  { ssr: false }
-)
 
 const STATS = [
   { value: '500+', label: 'Texas families served' },
@@ -83,20 +77,22 @@ export default function AboutPage() {
 
       {/* ── HERO ── */}
       <section className="relative overflow-hidden pt-32 pb-24">
-        {/* Sparkles particle background */}
-        <div className="absolute inset-0 pointer-events-none">
-          <SparklesCore
-            id="about-sparkles"
-            background="transparent"
-            minSize={0.4}
-            maxSize={1.2}
-            particleDensity={80}
-            className="w-full h-full"
-            particleColor="#00C853"
-            speed={0.8}
-          />
-          {/* Fade edges */}
-          <div className="absolute inset-0 [mask-image:radial-gradient(ellipse_80%_60%_at_50%_0%,transparent_30%,black)]" />
+        {/* CSS animated dots */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[...Array(18)].map((_, i) => (
+            <span
+              key={i}
+              className="absolute rounded-full bg-[#00C853] opacity-0 animate-[float_4s_ease-in-out_infinite]"
+              style={{
+                width: `${2 + (i % 3)}px`,
+                height: `${2 + (i % 3)}px`,
+                left: `${(i * 5.5) % 100}%`,
+                top: `${(i * 7 + 10) % 80}%`,
+                animationDelay: `${(i * 0.4) % 4}s`,
+                animationDuration: `${3 + (i % 3)}s`,
+              }}
+            />
+          ))}
         </div>
 
         {/* Green glow */}
@@ -323,17 +319,21 @@ export default function AboutPage() {
 
       {/* ── FINAL CTA ── */}
       <section className="py-20 lg:py-28 bg-[#0B1120] relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <SparklesCore
-            id="about-cta-sparkles"
-            background="transparent"
-            minSize={0.3}
-            maxSize={1}
-            particleDensity={50}
-            className="w-full h-full"
-            particleColor="#00C853"
-            speed={0.5}
-          />
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[...Array(10)].map((_, i) => (
+            <span
+              key={i}
+              className="absolute rounded-full bg-[#00C853] opacity-0 animate-[float_4s_ease-in-out_infinite]"
+              style={{
+                width: `${2 + (i % 2)}px`,
+                height: `${2 + (i % 2)}px`,
+                left: `${(i * 10) % 100}%`,
+                top: `${(i * 9 + 15) % 85}%`,
+                animationDelay: `${(i * 0.5) % 4}s`,
+                animationDuration: `${3.5 + (i % 2)}s`,
+              }}
+            />
+          ))}
         </div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full opacity-[0.12] pointer-events-none"
           style={{ background: 'radial-gradient(ellipse, rgba(0,200,83,1) 0%, transparent 60%)' }} />

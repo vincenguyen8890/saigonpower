@@ -4,6 +4,13 @@ import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 import ConditionalLayout from '@/components/layout/ConditionalLayout'
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+
+const inter = Inter({
+  subsets: ['latin', 'vietnamese'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 interface Props {
   children: React.ReactNode
@@ -24,6 +31,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       siteName: t('siteName'),
       locale: locale === 'vi' ? 'vi_VN' : 'en_US',
+      images: [
+        {
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: 'Saigon Power — Compare Texas Electricity Plans',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      images: ['/og-image.png'],
     },
     alternates: {
       languages: { vi: '/vi', en: '/en' },
@@ -47,16 +66,8 @@ export default async function LocaleLayout({ children, params }: Props) {
   const messages = await getMessages()
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="font-sans">
+    <html lang={locale} suppressHydrationWarning className={inter.variable}>
+      <body className={`${inter.className} font-sans`}>
         <NextIntlClientProvider messages={messages}>
           <ConditionalLayout>
             {children}

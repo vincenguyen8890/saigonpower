@@ -1,14 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
 import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
 import { motion } from 'framer-motion'
 import { ArrowRight, MapPin, Phone, Shield, Star, CheckCircle } from 'lucide-react'
 import { isValidZip } from '@/lib/utils'
-
-const ShaderBackground = dynamic(() => import('@/components/ui/shader-background'), { ssr: false })
 
 type PlanRow = { plan: string; provider: string; rate: string; term: string; badge: string | null; badgeColor: string }
 
@@ -70,13 +67,13 @@ export default function Hero() {
   return (
     <section className="relative min-h-screen flex flex-col overflow-hidden bg-[#0B1120]">
 
-      {/* WebGL shader background */}
+      {/* CSS background — green + blue radial glows */}
       <div className="absolute inset-0 pointer-events-none">
-        <ShaderBackground />
-        {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black/30" />
-        {/* Subtle grid overlay */}
-        <div className="absolute inset-0 opacity-[0.02]"
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-[0.18]"
+          style={{ background: 'radial-gradient(ellipse, rgba(0,200,83,0.6) 0%, transparent 60%)' }} />
+        <div className="absolute bottom-0 right-0 w-[600px] h-[500px] rounded-full opacity-[0.12]"
+          style={{ background: 'radial-gradient(circle, rgba(41,121,255,0.5) 0%, transparent 65%)' }} />
+        <div className="absolute inset-0 opacity-[0.025]"
           style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
       </div>
 

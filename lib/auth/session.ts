@@ -14,10 +14,14 @@ const COOKIE_NAME = 'crm_session'
 const SESSION_TTL = 60 * 60 * 24 * 7 // 7 days in seconds
 
 async function getKey(): Promise<CryptoKey> {
-  const secret = process.env.SESSION_SECRET || 'dev-secret-change-me-in-production-32ch'
+  const secret = process.env.SESSION_SECRET
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error('SESSION_SECRET environment variable is required in production')
+  }
+  const key = (secret || 'dev-secret-change-me-in-production-32ch')
   return crypto.subtle.importKey(
     'raw',
-    new TextEncoder().encode(secret.padEnd(32, '0').slice(0, 32)),
+    new TextEncoder().encode(key.padEnd(32, '0').slice(0, 32)),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign', 'verify']

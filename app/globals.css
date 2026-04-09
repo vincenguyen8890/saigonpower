@@ -86,6 +86,14 @@
   .badge-orange { @apply text-xs font-bold px-2.5 py-1 rounded-lg bg-brand-orangeLight text-brand-orange border border-brand-orangeBorder; }
 }
 
+/* ── Keyframes ─────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { opacity: 0; transform: translateY(0px); }
+  20%       { opacity: 0.5; }
+  50%       { opacity: 0.25; transform: translateY(-18px); }
+  80%       { opacity: 0.5; }
+}
+
 /* ── Utilities ─────────────────────────────────────── */
 @layer utilities {
   .animation-delay-100 { animation-delay: 100ms; }
