@@ -1,17 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useTranslations, useLocale } from 'next-intl'
-import { Link, usePathname, useRouter } from '@/i18n/navigation'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import { Menu, X, Phone, Zap } from 'lucide-react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 export default function Header() {
   const t = useTranslations('nav')
-  const locale = useLocale()
-  const pathname = usePathname()
-  const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -20,10 +17,6 @@ export default function Header() {
     window.addEventListener('scroll', handler, { passive: true })
     return () => window.removeEventListener('scroll', handler)
   }, [])
-
-  const toggleLocale = () => {
-    router.replace(pathname, { locale: locale === 'vi' ? 'en' : 'vi' })
-  }
 
   const navLinks = [
     { href: '/compare'     as const, label: t('compare')     },
@@ -40,7 +33,7 @@ export default function Header() {
         ? 'bg-white/98 backdrop-blur-md shadow-sm border-b border-surface-border'
         : 'bg-transparent'
     )}>
-      {/* Top utility bar — always visible */}
+      {/* Top utility bar */}
       <div className="bg-brand-dark text-white text-xs py-1.5 px-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <a href="tel:+18329379999" className="flex items-center gap-1.5 hover:text-brand-green transition-colors">
@@ -48,16 +41,9 @@ export default function Header() {
             <span className="font-medium">(832) 937-9999</span>
           </a>
           <span className="hidden sm:block text-white/40">·</span>
-          <span className="hidden sm:block text-white/70">
-            {locale === 'vi' ? 'Hỗ trợ T2–T6, 8:00–18:00' : 'Mon–Fri, 8AM–6PM support'}
-          </span>
+          <span className="hidden sm:block text-white/70">Mon–Fri, 8AM–6PM support</span>
         </div>
-        <button
-          onClick={toggleLocale}
-          className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 px-3 py-0.5 rounded-full transition-colors text-xs font-semibold border border-white/15"
-        >
-          {locale === 'vi' ? '🇺🇸 EN' : '🇻🇳 VI'}
-        </button>
+        <span className="text-white/50 text-xs">Texas Electric License #BR190102</span>
       </div>
 
       {/* Main nav */}
@@ -95,17 +81,6 @@ export default function Header() {
 
           {/* Right actions */}
           <div className="hidden lg:flex items-center gap-2.5">
-            <button
-              onClick={toggleLocale}
-              className={cn(
-                'text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all',
-                scrolled
-                  ? 'border-surface-border text-brand-muted hover:border-brand-green hover:text-brand-green'
-                  : 'border-white/25 text-white/80 hover:bg-white/10'
-              )}
-            >
-              {locale === 'vi' ? '🇺🇸 EN' : '🇻🇳 VI'}
-            </button>
             <Link href="/compare">
               <span className={cn(
                 'text-sm font-semibold px-4 py-2 rounded-xl transition-all',
@@ -147,18 +122,13 @@ export default function Header() {
                 {label}
               </Link>
             ))}
-            <div className="pt-3 pb-1 flex gap-2">
-              <Link href="/quote" className="flex-1" onClick={() => setMobileOpen(false)}>
+            <div className="pt-3 pb-1">
+              <Link href="/quote" className="block" onClick={() => setMobileOpen(false)}>
                 <span className="flex items-center justify-center gap-2 w-full bg-brand-green hover:bg-brand-greenDark text-white font-bold py-3 rounded-xl text-sm shadow-green transition-all">
                   <Zap size={15} className="fill-white" />
                   {t('getQuote')}
                 </span>
               </Link>
-              <button
-                onClick={toggleLocale}
-                className="border border-surface-border text-brand-muted px-4 rounded-xl text-sm font-semibold hover:border-brand-green hover:text-brand-green transition-all">
-                {locale === 'vi' ? 'EN' : 'VI'}
-              </button>
             </div>
           </div>
         </div>
