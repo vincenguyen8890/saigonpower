@@ -514,11 +514,11 @@ export default function ContactsTable({ contacts, locale, currentUserEmail, agen
                     className="rounded border-gray-300 text-brand-greenDark focus:ring-brand-green"
                   />
                 </th>
-                {['Name', 'Email', 'Phone Number', 'ZIP', 'Service', 'Status', 'Create Date'].map((h, i) => (
+                {['First Name', 'Last Name', 'Email', 'Phone Number', 'ZIP', 'Service', 'Status', 'Create Date'].map((h, i) => (
                   <th key={i} className={`text-left text-xs font-medium text-gray-500 uppercase tracking-wide px-4 py-3 ${
-                    i === 1 ? 'hidden md:table-cell' :
-                    i === 2 ? 'hidden sm:table-cell' :
-                    i >= 3 ? 'hidden lg:table-cell' : ''
+                    i === 2 ? 'hidden md:table-cell' :
+                    i === 3 ? 'hidden sm:table-cell' :
+                    i >= 4 ? 'hidden lg:table-cell' : ''
                   }`}>
                     {h}
                   </th>
@@ -529,7 +529,7 @@ export default function ContactsTable({ contacts, locale, currentUserEmail, agen
             <tbody className="divide-y divide-gray-50">
               {pageRows.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-16 text-gray-400 text-sm">
+                  <td colSpan={10} className="text-center py-16 text-gray-400 text-sm">
                     No customers found
                   </td>
                 </tr>
@@ -552,7 +552,7 @@ export default function ContactsTable({ contacts, locale, currentUserEmail, agen
                       />
                     </td>
 
-                    {/* Name */}
+                    {/* First Name */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <div className={`w-8 h-8 rounded-full ${avatarBg} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
@@ -563,13 +563,20 @@ export default function ContactsTable({ contacts, locale, currentUserEmail, agen
                             href={`/${locale}/crm/leads/${contact.id}`}
                             className="text-sm font-medium text-blue-600 hover:underline"
                           >
-                            {contact.name}
+                            {contact.name.includes(' ') ? contact.name.split(' ').slice(0, -1).join(' ') : contact.name}
                           </Link>
                           <p className="text-xs text-gray-400">
                             {contact.customer_id ?? '—'}
                           </p>
                         </div>
                       </div>
+                    </td>
+
+                    {/* Last Name */}
+                    <td className="px-4 py-3">
+                      <span className="text-sm text-gray-800">
+                        {contact.name.includes(' ') ? contact.name.split(' ').slice(-1)[0] : ''}
+                      </span>
                     </td>
 
                     {/* Email */}

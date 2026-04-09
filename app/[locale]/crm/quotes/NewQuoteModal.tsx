@@ -8,7 +8,7 @@ export default function NewQuoteModal() {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [form, setForm] = useState({
-    name: '', email: '', phone: '', zip: '',
+    first_name: '', last_name: '', email: '', phone: '', zip: '',
     service_type: 'residential' as 'residential' | 'commercial',
     business_name: '', monthly_usage_kwh: '',
     preferred_language: 'vi' as 'vi' | 'en',
@@ -18,9 +18,9 @@ export default function NewQuoteModal() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     startTransition(async () => {
-      await createQuoteAction(form)
+      await createQuoteAction({ ...form, name: `${form.first_name} ${form.last_name}`.trim() })
       setOpen(false)
-      setForm({ name: '', email: '', phone: '', zip: '', service_type: 'residential', business_name: '', monthly_usage_kwh: '', preferred_language: 'vi', notes: '' })
+      setForm({ first_name: '', last_name: '', email: '', phone: '', zip: '', service_type: 'residential', business_name: '', monthly_usage_kwh: '', preferred_language: 'vi', notes: '' })
     })
   }
 
@@ -45,23 +45,27 @@ export default function NewQuoteModal() {
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Full Name <span className="text-red-400">*</span></label>
-                  <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inp} required />
+                  <label className="block text-xs font-medium text-gray-600 mb-1">First Name <span className="text-red-400">*</span></label>
+                  <input type="text" value={form.first_name} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))} className={inp} required />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
-                  <input type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="(832) 555-0101" className={inp} />
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Last Name <span className="text-red-400">*</span></label>
+                  <input type="text" value={form.last_name} onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))} className={inp} required />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
-                  <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className={inp} />
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+                  <input type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="(832) 555-0101" className={inp} />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">ZIP <span className="text-red-400">*</span></label>
                   <input type="text" value={form.zip} onChange={e => setForm(f => ({ ...f, zip: e.target.value }))} placeholder="77036" maxLength={5} className={inp} required />
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+                <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className={inp} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

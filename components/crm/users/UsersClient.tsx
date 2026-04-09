@@ -223,7 +223,7 @@ function UserRow({
 }
 
 function InviteModal({ onClose, onInvited }: { onClose: () => void; onInvited: () => void }) {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', role: 'agent' as CRMAgent['role'], agent_type: 'electricity_broker' })
+  const [form, setForm] = useState({ first_name: '', last_name: '', email: '', phone: '', password: '', role: 'agent' as CRMAgent['role'], agent_type: 'electricity_broker' })
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
 
@@ -231,7 +231,7 @@ function InviteModal({ onClose, onInvited }: { onClose: () => void; onInvited: (
     e.preventDefault()
     setError('')
     startTransition(async () => {
-      const result = await inviteUser(form)
+      const result = await inviteUser({ ...form, name: `${form.first_name} ${form.last_name}`.trim() })
       if (result.ok) {
         onInvited()
         onClose()
@@ -259,14 +259,25 @@ function InviteModal({ onClose, onInvited }: { onClose: () => void; onInvited: (
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Full Name</label>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">First Name</label>
               <input
                 required
                 type="text"
-                placeholder="John Smith"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="John"
+                value={form.first_name}
+                onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
+                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Last Name</label>
+              <input
+                required
+                type="text"
+                placeholder="Smith"
+                value={form.last_name}
+                onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
                 className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
               />
             </div>
@@ -357,7 +368,8 @@ function InviteModal({ onClose, onInvited }: { onClose: () => void; onInvited: (
 
 function EditUserModal({ agent, isSelf, onClose, onSaved }: { agent: CRMAgent; isSelf: boolean; onClose: () => void; onSaved: (updated: CRMAgent) => void }) {
   const [form, setForm] = useState({
-    name: agent.name,
+    first_name: agent.name.split(' ').slice(0, -1).join(' ') || agent.name,
+    last_name: agent.name.includes(' ') ? agent.name.split(' ').slice(-1)[0] : '',
     email: agent.email,
     phone: agent.phone ?? '',
     role: agent.role,
@@ -371,14 +383,14 @@ function EditUserModal({ agent, isSelf, onClose, onSaved }: { agent: CRMAgent; i
     setError('')
     startTransition(async () => {
       const result = await updateUser(agent.id, {
-        name: form.name,
+        name: `${form.first_name} ${form.last_name}`.trim(),
         email: form.email,
         phone: form.phone || undefined,
         role: form.role,
         agent_type: form.agent_type,
       })
       if (result.ok) {
-        onSaved({ ...agent, ...form, phone: form.phone || null, agent_type: form.agent_type })
+        onSaved({ ...agent, ...form, name: `${form.first_name} ${form.last_name}`.trim(), phone: form.phone || null, agent_type: form.agent_type })
         onClose()
       } else {
         setError(result.error ?? 'Failed to update user')
@@ -404,13 +416,23 @@ function EditUserModal({ agent, isSelf, onClose, onSaved }: { agent: CRMAgent; i
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Full Name</label>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">First Name</label>
               <input
                 required
                 type="text"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                value={form.first_name}
+                onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
+                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Last Name</label>
+              <input
+                required
+                type="text"
+                value={form.last_name}
+                onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
                 className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
               />
             </div>
