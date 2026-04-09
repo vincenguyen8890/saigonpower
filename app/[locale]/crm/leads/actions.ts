@@ -1,13 +1,40 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { updateLead, insertActivity, insertLeadNote } from '@/lib/supabase/queries'
-import type { LeadStatus, LeadTag } from '@/data/mock-crm'
+import { updateLead, insertActivity, insertLeadNote, getLeadById } from '@/lib/supabase/queries'
+import type { LeadStatus, LeadTag, Lead } from '@/data/mock-crm'
 import type { Activity } from '@/lib/supabase/queries'
 import { getSession } from '@/lib/auth/session'
 
 function bust() {
   revalidatePath('/', 'layout')
+}
+
+const LEAD_AUDIT_LABELS: Partial<Record<keyof Lead, string>> = {
+  name: 'Name', email: 'Email', phone: 'Phone', zip: 'ZIP',
+  status: 'Status', service_type: 'Service type', source: 'Source',
+  assigned_to: 'Agent', preferred_language: 'Language',
+}
+
+async function logLeadChange(leadId: string, old: Lead, updates: Partial<Lead>) {
+  const changed: string[] = []
+  for (const [k, label] of Object.entries(LEAD_AUDIT_LABELS)) {
+    const key = k as keyof Lead
+    if (key in updates && String(updates[key] ?? '') !== String(old[key] ?? '')) {
+      changed.push(`${label}: "${old[key] ?? '—'}" → "${updates[key] ?? '—'}"`)
+    }
+  }
+  if (changed.length === 0) return
+  await insertActivity({
+    lead_id:     leadId,
+    type:        'note',
+    title:       'Lead updated',
+    description: changed.join(' · '),
+    due_date:    null,
+    completed:   true,
+    assigned_to: null,
+    created_by:  'system:audit',
+  })
 }
 
 export async function updateLeadStatus(leadId: string, status: LeadStatus) {
@@ -63,8 +90,10 @@ export async function updateLeadFull(leadId: string, data: {
   assigned_to: string
   tags?: LeadTag[]
 }) {
+  const old = await getLeadById(leadId)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await updateLead(leadId, data as any)
+  if (old) await logLeadChange(leadId, old, data as Partial<Lead>)
   bust()
 }
 

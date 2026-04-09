@@ -34,15 +34,23 @@ export default async function ReportsPage({ params }: Props) {
     count: deals.filter(d => d.stage === s).length,
   }))
 
-  // ── Monthly Trend (synthetic — real data needs Supabase aggregation) ──
-  const trendData = [
-    { month: 'Nov', newLeads: 11, enrolled: 8,  revenue: 4200 },
-    { month: 'Dec', newLeads: 17, enrolled: 12, revenue: 5800 },
-    { month: 'Jan', newLeads: 14, enrolled: 10, revenue: 4900 },
-    { month: 'Feb', newLeads: 22, enrolled: 16, revenue: 6700 },
-    { month: 'Mar', newLeads: 25, enrolled: 19, revenue: 7400 },
-    { month: 'Apr', newLeads: leads.length, enrolled: leads.filter(l => l.status === 'enrolled').length, revenue: 8100 },
-  ]
+  // ── Monthly Trend (last 6 months from real lead data) ────────────────
+  const monthLabels = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date()
+    d.setMonth(d.getMonth() - (5 - i))
+    return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleString('en-US', { month: 'short' }) }
+  })
+  const trendData = monthLabels.map(({ key, label }) => {
+    const monthLeads = leads.filter(l => l.created_at?.startsWith(key))
+    const monthEnrolled = leads.filter(l => l.status === 'enrolled' && l.updated_at?.startsWith(key))
+    const monthWon = deals.filter(d => d.stage === 'won' && d.updated_at?.startsWith(key))
+    return {
+      month: label,
+      newLeads: monthLeads.length,
+      enrolled: monthEnrolled.length,
+      revenue: monthWon.reduce((s, d) => s + d.value, 0),
+    }
+  })
 
   // ── Lead Sources ─────────────────────────────────────────────
   const sourceMap: Record<string, number> = {}

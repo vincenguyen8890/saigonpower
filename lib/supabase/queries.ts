@@ -31,6 +31,7 @@ export async function getLeads(filters?: {
   q?: string
   page?: number
   perPage?: number
+  assigned_to?: string
 }): Promise<Lead[]> {
   if (useMock()) {
     let leads = mockLeads
@@ -69,6 +70,7 @@ export async function getLeads(filters?: {
       if (filters.status && filters.status !== 'all') q = q.eq('status', filters.status)
       if (filters.service && filters.service !== 'all') q = q.eq('service_type', filters.service)
       if (filters.q) q = q.or(`name.ilike.%${filters.q}%,email.ilike.%${filters.q}%,phone.ilike.%${filters.q}%,zip.ilike.%${filters.q}%`)
+      if (filters.assigned_to) q = q.eq('assigned_to', filters.assigned_to)
       const { data, error } = await q
       if (error) throw error
       return (data ?? []) as Lead[]
@@ -91,6 +93,7 @@ export async function getLeads(filters?: {
         const search = filters.q
         q = q.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,zip.ilike.%${search}%`)
       }
+      if (filters?.assigned_to) q = q.eq('assigned_to', filters.assigned_to)
       const { data, error } = await q
       if (error) throw error
       all = all.concat(data ?? [])
@@ -107,12 +110,14 @@ export async function getLeadsCount(filters?: {
   status?: string
   service?: string
   q?: string
+  assigned_to?: string
 }): Promise<number> {
   if (useMock()) {
     let leads = mockLeads
     if (filters?.status && filters.status !== 'all') leads = leads.filter(l => l.status === filters.status as LeadStatus)
     if (filters?.service && filters.service !== 'all') leads = leads.filter(l => l.service_type === filters.service as Lead['service_type'])
     if (filters?.q) { const q = filters.q.toLowerCase(); leads = leads.filter(l => l.name.toLowerCase().includes(q) || l.email.toLowerCase().includes(q) || l.phone.includes(q) || l.zip.includes(q)) }
+    if (filters?.assigned_to) leads = leads.filter(l => l.assigned_to === filters.assigned_to)
     return leads.length
   }
   try {
@@ -122,6 +127,7 @@ export async function getLeadsCount(filters?: {
     if (filters?.status && filters.status !== 'all') q = q.eq('status', filters.status)
     if (filters?.service && filters.service !== 'all') q = q.eq('service_type', filters.service)
     if (filters?.q) q = q.or(`name.ilike.%${filters.q}%,email.ilike.%${filters.q}%,phone.ilike.%${filters.q}%,zip.ilike.%${filters.q}%`)
+    if (filters?.assigned_to) q = q.eq('assigned_to', filters.assigned_to)
     const { count, error } = await q
     if (error) throw error
     return count ?? 0
@@ -450,10 +456,12 @@ const mockDeals: Deal[] = [
   { id: 'd-004', lead_id: 'lead-001', title: 'Lan Nguyen – Residential',          value: 75,  stage: 'prospect',    probability: 30, expected_close: '2025-06-01', provider: null,             plan_name: null,                  service_type: 'residential', notes: null, assigned_to: null, service_order: null, agent_code: null, service_address: null, service_city: null, service_state: null, service_zip: null, esid: null, contract_start_date: null, contract_end_date: null, rate_kwh: null, adder_kwh: null, term_months: null, product_type: null, usage_kwh: null, flags: null, commission_paid: null, commission_paid_amount: null, commission_paid_at: null, share_token: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
 ]
 
-export async function getDeals(stage?: string): Promise<Deal[]> {
+export async function getDeals(stage?: string, assigned_to?: string): Promise<Deal[]> {
   if (useMock()) {
-    if (stage && stage !== 'all') return mockDeals.filter(d => d.stage === stage)
-    return mockDeals
+    let deals = mockDeals
+    if (stage && stage !== 'all') deals = deals.filter(d => d.stage === stage)
+    if (assigned_to) deals = deals.filter(d => d.assigned_to === assigned_to)
+    return deals
   }
 
   try {
@@ -469,6 +477,7 @@ export async function getDeals(stage?: string): Promise<Deal[]> {
         .order('updated_at', { ascending: false })
         .range(from, from + PAGE - 1)
       if (stage && stage !== 'all') q = q.eq('stage', stage)
+      if (assigned_to) q = q.eq('assigned_to', assigned_to)
       const { data, error } = await q
       if (error) throw error
       all = all.concat(data ?? [])

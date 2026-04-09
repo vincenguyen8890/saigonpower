@@ -1,18 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { insertActivity } from '@/lib/supabase/queries'
+import { insertActivity, getContracts } from '@/lib/supabase/queries'
 
 function bust() { revalidatePath('/', 'layout') }
-
-// Mock contracts — same data as contracts/renewals pages
-const mockContracts = [
-  { id: 'CTR-001', user_name: 'Hung Le',         lead_id: 'lead-004', end_date: '2025-05-15', provider: 'Gexa Energy',    service_type: 'residential', plan_name: 'Gexa Saver 12'       },
-  { id: 'CTR-002', user_name: 'Mai Pham',         lead_id: 'lead-003', end_date: '2025-06-01', provider: 'TXU Energy',     service_type: 'residential', plan_name: 'TXU Energy Saver 24'  },
-  { id: 'CTR-003', user_name: 'Minh Tran Nails',  lead_id: 'lead-002', end_date: '2025-05-01', provider: 'Reliant Energy', service_type: 'commercial',  plan_name: 'Reliant Business 12'  },
-  { id: 'CTR-004', user_name: 'Linh Do',          lead_id: null,       end_date: '2025-05-20', provider: 'Green Mountain', service_type: 'residential', plan_name: 'Green Mtn Simple 12'  },
-  { id: 'CTR-005', user_name: 'David Kim',        lead_id: null,       end_date: '2025-06-15', provider: 'Cirro Energy',   service_type: 'residential', plan_name: 'Cirro Value 6'        },
-]
 
 export interface AutomationResult {
   rule: string
@@ -29,33 +20,35 @@ export async function runRenewalReminders(): Promise<AutomationResult[]> {
   const now = new Date()
   const results: AutomationResult[] = []
 
+  const contracts = await getContracts('active')
+
   const windows = [
-    { label: '60-day reminder',  minDays: 55,  maxDays: 65,  urgency: 'Schedule renewal call',  type: 'call'    as const, daysUntilDue: 0 },
-    { label: '30-day reminder',  minDays: 25,  maxDays: 35,  urgency: 'Send renewal quote',      type: 'email'   as const, daysUntilDue: 0 },
-    { label: '7-day URGENT',     minDays: 5,   maxDays: 10,  urgency: 'URGENT — contract expiring', type: 'task' as const, daysUntilDue: 0 },
+    { label: '60-day reminder',  minDays: 55,  maxDays: 65,  urgency: 'Schedule renewal call',     type: 'call'  as const },
+    { label: '30-day reminder',  minDays: 25,  maxDays: 35,  urgency: 'Send renewal quote',         type: 'email' as const },
+    { label: '7-day URGENT',     minDays: 5,   maxDays: 10,  urgency: 'URGENT — contract expiring', type: 'task'  as const },
   ]
 
   for (const window of windows) {
     const created: string[] = []
     const skipped: string[] = []
 
-    for (const contract of mockContracts) {
+    for (const contract of contracts) {
       const daysLeft = Math.ceil((new Date(contract.end_date).getTime() - now.getTime()) / 86400000)
+      if (daysLeft < window.minDays || daysLeft > window.maxDays) continue
 
-      if (daysLeft >= window.minDays && daysLeft <= window.maxDays) {
-        const result = await insertActivity({
-          lead_id:     contract.lead_id,
-          type:        window.type,
-          title:       `${window.urgency} — ${contract.user_name}`,
-          description: `Contract ${contract.id} (${contract.plan_name} / ${contract.provider}) expires in ${daysLeft} days on ${contract.end_date}`,
-          due_date:    new Date(now.getTime() + window.daysUntilDue * 86400000).toISOString(),
-          completed:   false,
-          assigned_to: null,
-          created_by:  'system:renewal-engine',
-        })
-        if (result) created.push(`${contract.user_name} (${daysLeft}d left)`)
-        else skipped.push(contract.user_name)
-      }
+      const customerName = contract.customer_name ?? contract.provider
+      const result = await insertActivity({
+        lead_id:     contract.lead_id ?? null,
+        type:        window.type,
+        title:       `${window.urgency} — ${customerName}`,
+        description: `Contract (${contract.plan_name ?? 'unknown plan'} / ${contract.provider}) expires in ${daysLeft} days on ${contract.end_date}`,
+        due_date:    now.toISOString(),
+        completed:   false,
+        assigned_to: null,
+        created_by:  'system:renewal-engine',
+      })
+      if (result) created.push(`${customerName} (${daysLeft}d left)`)
+      else skipped.push(customerName)
     }
 
     results.push({ rule: window.label, created: created.length, skipped: skipped.length, details: created })

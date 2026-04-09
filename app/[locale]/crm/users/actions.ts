@@ -56,6 +56,7 @@ export async function inviteUser(data: {
   name: string
   email: string
   phone: string
+  password: string
   role: 'admin' | 'office_manager' | 'csr' | 'agent'
   agent_type: string
 }): Promise<{ ok: boolean; error?: string }> {

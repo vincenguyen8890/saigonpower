@@ -32,12 +32,14 @@ export default async function DealsPage({ params, searchParams }: Props) {
   const showUnlinked = stage === 'unlinked'
   setRequestLocale(locale)
 
-  const [deals, leads, agents, providers, session] = await Promise.all([
-    getDeals(stage),
-    getLeads(),
+  const session = await getSession()
+  const agentFilter = session?.role === 'agent' ? session.email : undefined
+
+  const [deals, leads, agents, providers] = await Promise.all([
+    getDeals(stage, agentFilter),
+    getLeads({ assigned_to: agentFilter }),
     getCRMAgents(),
     getProvidersFromDB(),
-    getSession(),
   ])
   const showValue = !['csr', 'office_manager'].includes(session?.role ?? '')
 

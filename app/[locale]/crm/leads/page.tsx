@@ -5,6 +5,7 @@ import LeadScoreBadge from '@/components/crm/LeadScoreBadge'
 import { getLeads, getLeadsCount } from '@/lib/supabase/queries'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
+import { getSession } from '@/lib/auth/session'
 import NewLeadModal from './NewLeadModal'
 import ImportLeadsModal from './ImportLeadsModal'
 
@@ -36,7 +37,10 @@ export default async function LeadsPage({ params, searchParams }: Props) {
   setRequestLocale(locale)
 
   const page = Math.max(1, Number(pageParam) || 1)
-  const filters = { status, service, q }
+  const session = await getSession()
+  // Agents only see leads assigned to them
+  const assigned_to = session?.role === 'agent' ? session.email : undefined
+  const filters = { status, service, q, assigned_to }
 
   const [leads, total] = await Promise.all([
     getLeads({ ...filters, page, perPage: PER_PAGE }),

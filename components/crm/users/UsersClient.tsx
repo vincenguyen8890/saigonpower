@@ -223,7 +223,7 @@ function UserRow({
 }
 
 function InviteModal({ onClose, onInvited }: { onClose: () => void; onInvited: () => void }) {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'agent' as CRMAgent['role'], agent_type: 'electricity_broker' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', role: 'agent' as CRMAgent['role'], agent_type: 'electricity_broker' })
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
 
@@ -288,6 +288,19 @@ function InviteModal({ onClose, onInvited }: { onClose: () => void; onInvited: (
                 placeholder="(832) 000-0000"
                 value={form.phone}
                 onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                Password <span className="text-red-500">*</span>
+              </label>
+              <input
+                required
+                type="password"
+                placeholder="Temporary password"
+                value={form.password}
+                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                 className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C853]/30 focus:border-[#00C853] transition-all"
               />
             </div>
