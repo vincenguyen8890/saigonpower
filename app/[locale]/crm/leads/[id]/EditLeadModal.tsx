@@ -30,7 +30,7 @@ export default function EditLeadModal({ lead }: { lead: Lead }) {
 
     startTransition(async () => {
       await updateLeadFull(lead.id, {
-        name:               `${get('first_name')} ${get('last_name')}`.trim(),
+        name:               get('name'),
         email:              get('email'),
         email2:             get('email2') || null,
         phone:              get('phone'),
@@ -75,13 +75,9 @@ export default function EditLeadModal({ lead }: { lead: Lead }) {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>First Name *</label>
-                  <input name="first_name" required defaultValue={lead.name.split(' ').slice(0, -1).join(' ') || lead.name} className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Last Name *</label>
-                  <input name="last_name" required defaultValue={lead.name.includes(' ') ? lead.name.split(' ').slice(-1)[0] : ''} className={inputClass} />
+                <div className="col-span-2">
+                  <label className={labelClass}>Full Name *</label>
+                  <input name="name" required defaultValue={lead.name} className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Phone 1</label>

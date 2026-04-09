@@ -53,8 +53,7 @@ function getInitials(name: string) {
 function AgentModal({ agent, onClose }: { agent?: CRMAgent; onClose: () => void }) {
   const [isPending, startTransition] = useTransition()
   const [form, setForm] = useState({
-    first_name: agent?.name ? agent.name.split(' ').slice(0, -1).join(' ') || agent.name : '',
-    last_name:  agent?.name?.includes(' ') ? agent.name.split(' ').slice(-1)[0] : '',
+    name:       agent?.name       ?? '',
     email:      agent?.email      ?? '',
     role:       agent?.role       ?? 'agent' as 'admin' | 'agent',
     agent_type: agent?.agent_type ?? '',
@@ -68,7 +67,7 @@ function AgentModal({ agent, onClose }: { agent?: CRMAgent; onClose: () => void 
     startTransition(async () => {
       await saveAgentAction({
         id:         agent?.id,
-        name:       `${form.first_name} ${form.last_name}`.trim(),
+        name:       form.name,
         email:      form.email,
         role:       form.role,
         agent_type: form.agent_type || null,
@@ -89,14 +88,9 @@ function AgentModal({ agent, onClose }: { agent?: CRMAgent; onClose: () => void 
         </div>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">First Name *</label>
-              <input required value={form.first_name} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Last Name *</label>
-              <input required value={form.last_name} onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-gray-600 block mb-1">Full Name *</label>
+              <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green" />
             </div>
             <div className="col-span-2">

@@ -19,7 +19,7 @@ export default function NewLeadModal({ locale }: { locale: string }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name:              `${get('first_name')} ${get('last_name')}`.trim(),
+          name:              get('name'),
           email:             get('email'),
           phone:             get('phone') || undefined,
           zip:               get('zip'),
@@ -66,13 +66,9 @@ export default function NewLeadModal({ locale }: { locale: string }) {
               {/* CONTACT INFO */}
               <p className={sectionClass}>Contact Info</p>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>First Name *</label>
-                  <input name="first_name" required placeholder="Van A" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Last Name *</label>
-                  <input name="last_name" required placeholder="Nguyen" className={inputClass} />
+                <div className="col-span-2">
+                  <label className={labelClass}>Full Name *</label>
+                  <input name="name" required placeholder="Nguyen Van A" className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Phone</label>
