@@ -30,15 +30,19 @@ function isRateLimited(ip: string): boolean {
 }
 
 export default function middleware(req: NextRequest) {
-  // Rate-limit brute-force login attempts
-  if (req.method === 'POST' && req.nextUrl.pathname === '/api/auth/login') {
-    if (isRateLimited(clientIP(req))) {
-      return NextResponse.json(
-        { error: 'Too many login attempts. Try again in 15 minutes.' },
-        { status: 429 }
-      )
+  const { pathname } = req.nextUrl
+
+  // Let all API routes pass through unchanged — never run intl on them
+  if (pathname.startsWith('/api/')) {
+    // Rate-limit login specifically
+    if (req.method === 'POST' && pathname === '/api/auth/login') {
+      if (isRateLimited(clientIP(req))) {
+        return NextResponse.json(
+          { error: 'Too many login attempts. Try again in 15 minutes.' },
+          { status: 429 }
+        )
+      }
     }
-    // API routes don't go through intl middleware
     return NextResponse.next()
   }
 
@@ -47,7 +51,7 @@ export default function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/api/auth/login',
+    // Match all routes except Next.js internals and static files
     '/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)',
   ],
 }
