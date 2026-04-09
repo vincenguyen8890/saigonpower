@@ -1,11 +1,15 @@
 import type { Metadata } from 'next'
 import Hero from '@/components/home/Hero'
+import TrustBar from '@/components/home/TrustBar'
 import ProblemSection from '@/components/home/ProblemSection'
 import SolutionSection from '@/components/home/SolutionSection'
+import WhoWeHelp from '@/components/home/WhoWeHelp'
 import SavingsImpact from '@/components/home/SavingsImpact'
 import HowItWorks from '@/components/home/HowItWorks'
 import GoogleReviews from '@/components/home/GoogleReviews'
+import FAQPreview from '@/components/home/FAQPreview'
 import FinalCTA from '@/components/home/FinalCTA'
+import MobileStickyBar from '@/components/home/MobileStickyBar'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -44,23 +48,35 @@ export default function HomePage() {
       {/* 1. Hero — full-screen, cinematic entry */}
       <Hero />
 
-      {/* 2. Problem — dark, "you're overpaying" impact moment */}
+      {/* 2. Trust bar — provider marquee + credibility badges */}
+      <TrustBar />
+
+      {/* 3. Problem — dark, "you're overpaying" impact moment */}
       <ProblemSection />
 
-      {/* 3. Solution — "we handle it for you" */}
+      {/* 4. Solution — "we handle it for you" */}
       <SolutionSection />
 
-      {/* 4. Savings Impact — big green number moment */}
+      {/* 5. Who We Help — segment cards (homeowners, nail salons, restaurants, businesses) */}
+      <WhoWeHelp />
+
+      {/* 6. Savings Impact — big green number moment */}
       <SavingsImpact />
 
-      {/* 5. How It Works — 3 simple steps */}
+      {/* 7. How It Works — 3 simple steps */}
       <HowItWorks />
 
-      {/* 6. Social proof — stats + testimonials */}
+      {/* 8. Social proof — stats + testimonials */}
       <GoogleReviews />
 
-      {/* 7. Final CTA — dark, "start saving today" */}
+      {/* 9. FAQ preview — top 4 questions, links to /faq */}
+      <FAQPreview />
+
+      {/* 10. Final CTA — dark, "start saving today" */}
       <FinalCTA />
+
+      {/* Mobile sticky bar — fixed Call / Get Quote (mobile only) */}
+      <MobileStickyBar />
     </>
   )
 }
