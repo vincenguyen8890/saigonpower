@@ -1,14 +1,43 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
 import { motion } from 'framer-motion'
-import { ArrowRight, MapPin, Phone, Shield, Star, Zap, CheckCircle } from 'lucide-react'
+import { ArrowRight, MapPin, Phone, Shield, Star, CheckCircle } from 'lucide-react'
 import { isValidZip } from '@/lib/utils'
 
 const ShaderBackground = dynamic(() => import('@/components/ui/shader-background'), { ssr: false })
+
+type PlanRow = { plan: string; provider: string; rate: string; term: string; badge: string | null; badgeColor: string }
+
+function useLivePlans() {
+  const [rows, setRows] = useState<PlanRow[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/plans?sortBy=lowestRate')
+      .then(r => r.json())
+      .then(({ data }) => {
+        const top3 = (data as Array<{ name: string; provider: { name: string }; rateKwh: number; termMonths: number; badges: string[] }>)
+          .slice(0, 3)
+          .map((p, i) => ({
+            plan:       p.name,
+            provider:   p.provider.name,
+            rate:       p.rateKwh.toFixed(1),
+            term:       `${p.termMonths} mo`,
+            badge:      i === 0 ? 'Lowest' : p.badges.includes('bestValue') ? 'Best Value' : null,
+            badgeColor: i === 0 ? 'bg-[#00C853]/20 text-[#00C853]' : 'bg-blue-500/20 text-blue-400',
+          }))
+        setRows(top3)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  return { rows, loading }
+}
 
 const TRUST_PILLS = [
   '100% Free Service',
@@ -35,6 +64,8 @@ export default function Hero() {
     setError('')
     router.push({ pathname: '/compare', query: { zip } } as Parameters<typeof router.push>[0])
   }
+
+  const { rows: livePlans, loading: plansLoading } = useLivePlans()
 
   return (
     <section className="relative min-h-screen flex flex-col overflow-hidden bg-[#0B1120]">
@@ -165,13 +196,21 @@ export default function Hero() {
             <p className="text-xs text-white/40 font-semibold uppercase tracking-wider mb-4">{TODAY_CITY} · Top Plans Right Now</p>
 
             {/* Rate rows */}
-            {[
-              { provider: 'Cirro Energy',  plan: 'Smart 6',       rate: '10.9', term: '6 mo',  badge: 'Lowest',    badgeColor: 'bg-[#00C853]/20 text-[#00C853]' },
-              { provider: 'Gexa Energy',   plan: 'Gexa Saver 12', rate: '11.5', term: '12 mo', badge: 'Best Value', badgeColor: 'bg-blue-500/20 text-blue-400' },
-              { provider: 'TXU Energy',    plan: 'Clear Deal 12', rate: '11.9', term: '12 mo', badge: null,         badgeColor: '' },
-            ].map((row, i) => (
+            {plansLoading ? (
+              <div className="space-y-3 py-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between py-2 animate-pulse">
+                    <div className="space-y-1.5">
+                      <div className="h-3 w-28 bg-white/10 rounded" />
+                      <div className="h-2.5 w-20 bg-white/6 rounded" />
+                    </div>
+                    <div className="h-6 w-12 bg-white/10 rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : livePlans.map((row, i) => (
               <div key={row.plan}
-                className={`flex items-center justify-between py-3 ${i < 2 ? 'border-b border-white/8' : ''}`}
+                className={`flex items-center justify-between py-3 ${i < livePlans.length - 1 ? 'border-b border-white/8' : ''}`}
               >
                 <div>
                   <div className="flex items-center gap-2">
