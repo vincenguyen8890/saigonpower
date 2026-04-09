@@ -31,10 +31,29 @@ const URGENCY_DOT = {
   low:    'bg-blue-400',
 }
 
+const STORAGE_KEY = 'crm_dismissed_notifications'
+
+function loadDismissed(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY)
+    return raw ? new Set(JSON.parse(raw) as string[]) : new Set()
+  } catch { return new Set() }
+}
+
+function saveDismissed(ids: Set<string>) {
+  try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...ids])) } catch { /* ignore */ }
+}
+
 export default function NotificationBell({ notifications, locale }: Props) {
   const [open, setOpen] = useState(false)
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const ref = useRef<HTMLDivElement>(null)
+
+  // Hydrate from sessionStorage after mount
+  useEffect(() => {
+    setDismissed(loadDismissed())
+  }, [])
 
   const visible = notifications.filter(n => !dismissed.has(n.id))
   const highCount = visible.filter(n => n.urgency === 'high').length
@@ -50,11 +69,17 @@ export default function NotificationBell({ notifications, locale }: Props) {
   }, [])
 
   function dismiss(id: string) {
-    setDismissed(prev => new Set([...prev, id]))
+    setDismissed(prev => {
+      const next = new Set([...prev, id])
+      saveDismissed(next)
+      return next
+    })
   }
 
   function dismissAll() {
-    setDismissed(new Set(notifications.map(n => n.id)))
+    const next = new Set(notifications.map(n => n.id))
+    saveDismissed(next)
+    setDismissed(next)
     setOpen(false)
   }
 

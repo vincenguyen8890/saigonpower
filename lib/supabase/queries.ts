@@ -355,8 +355,14 @@ const mockActivities: Activity[] = [
   { id: 'act-010', lead_id: 'lead-007', type: 'note',    title: 'Logged loss reason — David Kim',           description: 'Went with Pulse Power for lower intro rate',       due_date: null,           completed: true,  completed_at: _actOffset(-5), assigned_to: 'agent@saigonllc.com', created_by: 'agent@saigonllc.com', created_at: _actOffset(-5) },
 ]
 
-export async function getActivities(opts?: { leadId?: string; completed?: boolean; limit?: number }): Promise<Activity[]> {
-  if (useMock()) return mockActivities
+export async function getActivities(opts?: { leadId?: string; completed?: boolean; limit?: number; assigned_to?: string }): Promise<Activity[]> {
+  if (useMock()) {
+    let result = mockActivities
+    if (opts?.leadId)    result = result.filter(a => a.lead_id === opts.leadId)
+    if (opts?.completed !== undefined) result = result.filter(a => a.completed === opts.completed)
+    if (opts?.assigned_to) result = result.filter(a => a.assigned_to === opts.assigned_to)
+    return result.slice(0, opts?.limit ?? 50)
+  }
 
   try {
     const supabase = await createClient()
@@ -367,6 +373,7 @@ export async function getActivities(opts?: { leadId?: string; completed?: boolea
       .limit(opts?.limit ?? 50)
     if (opts?.leadId)     q = q.eq('lead_id', opts.leadId)
     if (opts?.completed !== undefined) q = q.eq('completed', opts.completed)
+    if (opts?.assigned_to) q = q.eq('assigned_to', opts.assigned_to)
     const { data, error } = await q
     if (error) throw error
     return data ?? []

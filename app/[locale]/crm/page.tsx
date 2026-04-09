@@ -26,16 +26,18 @@ export default async function CRMOverview({ params }: Props) {
   const { locale } = await params
   setRequestLocale(locale)
 
-  const [stats, allLeads, deals, activities, contracts, providers, session] = await Promise.all([
+  const session = await getSession()
+  const role = session?.role ?? 'agent'
+  const agentFilter = role === 'agent' ? session?.email : undefined
+
+  const [stats, allLeads, deals, activities, contracts, providers] = await Promise.all([
     getCRMStats(),
-    getLeads(),
-    getDeals(),
-    getActivities({ completed: false, limit: 25 }),
+    getLeads({ assigned_to: agentFilter }),
+    getDeals(undefined, agentFilter),
+    getActivities({ completed: false, limit: 25, assigned_to: agentFilter }),
     getContracts('active'),
     getProvidersFromDB(),
-    getSession(),
   ])
-  const role = session?.role ?? 'agent'
   const showValue = !['csr', 'office_manager'].includes(role)
   const showReports = can(role, 'reports')
 

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
-import { Zap, Mail, Lock, AlertCircle, ShieldCheck } from 'lucide-react'
+import { Mail, Lock, AlertCircle, ShieldCheck } from 'lucide-react'
 import Image from 'next/image'
 
 export default function LoginPage() {
@@ -127,48 +127,8 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 pt-5 border-t border-gray-100">
-            <p className="text-xs text-gray-400 text-center mb-3">
-              {isVi ? 'Đăng nhập nhanh' : 'Quick login'}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => { setEmail('vince@saigonllc.com'); setPassword('SaigonPower2024!') }}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-xs font-medium hover:bg-amber-100 transition-colors"
-              >
-                <ShieldCheck size={13} />
-                Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => { setEmail('manager@saigonllc.com'); setPassword('Manager2024!') }}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 text-xs font-medium hover:bg-blue-100 transition-colors"
-              >
-                <ShieldCheck size={13} />
-                Manager
-              </button>
-              <button
-                type="button"
-                onClick={() => { setEmail('csr@saigonllc.com'); setPassword('CSR2024!') }}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 text-xs font-medium hover:bg-purple-100 transition-colors"
-              >
-                <ShieldCheck size={13} />
-                CSR
-              </button>
-              <button
-                type="button"
-                onClick={() => { setEmail('agent@saigonllc.com'); setPassword('Agent2024!') }}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-green-200 bg-green-50 text-green-700 text-xs font-medium hover:bg-green-100 transition-colors"
-              >
-                <Zap size={13} />
-                Agent
-              </button>
-            </div>
-          </div>
-
-          <p className="text-center text-xs text-gray-400 mt-4 flex items-center justify-center gap-1.5">
-            <Zap size={12} />
+          <p className="text-center text-xs text-gray-400 mt-6 flex items-center justify-center gap-1.5">
+            <ShieldCheck size={12} />
             {isVi ? 'Chỉ dành cho nhân viên được ủy quyền' : 'Restricted to authorized staff only'}
           </p>
           <p className="text-center text-xs text-gray-400 mt-2">

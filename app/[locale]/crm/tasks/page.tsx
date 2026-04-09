@@ -1,7 +1,9 @@
 import { setRequestLocale } from 'next-intl/server'
 import { getActivities } from '@/lib/supabase/queries'
 import { getLeads } from '@/lib/supabase/queries'
+import { getSession } from '@/lib/auth/session'
 import CompleteActivityButton from '@/components/crm/CompleteActivityButton'
+import AddTaskButton from '@/components/crm/AddTaskButton'
 import { Phone, Mail, Users, FileText, Zap, AlignLeft, AlertCircle, Clock, Calendar, CalendarDays, CheckCircle2 } from 'lucide-react'
 
 interface Props {
@@ -38,9 +40,12 @@ export default async function TasksPage({ params, searchParams }: Props) {
   const { type } = await searchParams
   setRequestLocale(locale)
 
+  const session = await getSession()
+  const agentFilter = session?.role === 'agent' ? session.email : undefined
+
   const [allActivities, leads] = await Promise.all([
-    getActivities({ completed: false }),
-    getLeads(),
+    getActivities({ completed: false, assigned_to: agentFilter }),
+    getLeads({ assigned_to: agentFilter }),
   ])
 
   const leadMap = Object.fromEntries(leads.map(l => [l.id, l.name]))
@@ -111,6 +116,7 @@ export default async function TasksPage({ params, searchParams }: Props) {
             {totalOpen} open tasks · {overdue.length} overdue
           </p>
         </div>
+        <AddTaskButton />
       </div>
 
       {/* Type filter */}
