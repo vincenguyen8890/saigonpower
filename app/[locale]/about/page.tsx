@@ -1,12 +1,18 @@
 'use client'
 
 import { useRef } from 'react'
+import dynamic from 'next/dynamic'
 import { Link } from '@/i18n/navigation'
 import { motion, useInView } from 'framer-motion'
 import {
   ArrowRight, Phone, Zap, BarChart2, RefreshCw, Database,
   CheckCircle, Shield, Users, Globe, ChevronRight
 } from 'lucide-react'
+
+const SparklesCore = dynamic(
+  () => import('@/components/ui/sparkles').then(m => ({ default: m.SparklesCore })),
+  { ssr: false }
+)
 
 const STATS = [
   { value: '500+', label: 'Texas families served' },
@@ -77,11 +83,25 @@ export default function AboutPage() {
 
       {/* ── HERO ── */}
       <section className="relative overflow-hidden pt-32 pb-24">
-        {/* Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full opacity-[0.14] pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse, rgba(0,200,83,0.7) 0%, transparent 60%)' }} />
-        <div className="absolute inset-0 opacity-[0.02] pointer-events-none"
-          style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+        {/* Sparkles particle background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <SparklesCore
+            id="about-sparkles"
+            background="transparent"
+            minSize={0.4}
+            maxSize={1.2}
+            particleDensity={80}
+            className="w-full h-full"
+            particleColor="#00C853"
+            speed={0.8}
+          />
+          {/* Fade edges */}
+          <div className="absolute inset-0 [mask-image:radial-gradient(ellipse_80%_60%_at_50%_0%,transparent_30%,black)]" />
+        </div>
+
+        {/* Green glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full opacity-[0.12] pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse, rgba(0,200,83,0.8) 0%, transparent 60%)' }} />
 
         <div className="relative z-10 max-w-4xl mx-auto px-5 text-center">
           <FadeIn>
@@ -303,6 +323,18 @@ export default function AboutPage() {
 
       {/* ── FINAL CTA ── */}
       <section className="py-20 lg:py-28 bg-[#0B1120] relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <SparklesCore
+            id="about-cta-sparkles"
+            background="transparent"
+            minSize={0.3}
+            maxSize={1}
+            particleDensity={50}
+            className="w-full h-full"
+            particleColor="#00C853"
+            speed={0.5}
+          />
+        </div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full opacity-[0.12] pointer-events-none"
           style={{ background: 'radial-gradient(ellipse, rgba(0,200,83,1) 0%, transparent 60%)' }} />
 
