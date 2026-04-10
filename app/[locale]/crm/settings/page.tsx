@@ -2,9 +2,10 @@ import React from 'react'
 import { setRequestLocale } from 'next-intl/server'
 import { getSession } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
-import { Settings, Users, Bell, Shield, Database, Zap, ShieldCheck } from 'lucide-react'
+import { Settings, Users, Bell, Shield, Database, Zap, ShieldCheck, Trash2 } from 'lucide-react'
 import SettingsSection from '@/components/crm/settings/SettingsSection'
 import type { SettingsField } from '@/components/crm/settings/SettingsSection'
+import ResetDataButton from '@/components/crm/settings/ResetDataButton'
 
 interface Props {
   params: Promise<{ locale: string }>
@@ -220,6 +221,30 @@ export default async function SettingsPage({ params }: Props) {
           fields={s.fields}
         />
       ))}
+
+      {/* Danger Zone */}
+      <div className="bg-white rounded-xl border border-red-100 shadow-[0_1px_3px_rgba(15,23,42,0.06)] overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-red-100 bg-red-50/50">
+          <div className="w-8 h-8 bg-white rounded-lg border border-red-100 flex items-center justify-center shadow-sm">
+            <Trash2 size={15} className="text-red-500" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-red-700">Danger Zone</p>
+            <p className="text-xs text-red-400">Irreversible actions — proceed with caution</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-between px-6 py-4 gap-6">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-slate-700">Reset all CRM data</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Permanently deletes all customers, accounts, deals, activities, and contracts.
+            </p>
+          </div>
+          <div className="flex-shrink-0">
+            <ResetDataButton />
+          </div>
+        </div>
+      </div>
 
       <p className="text-xs text-slate-400 text-center pb-4">
         Changes are saved per section. Persistent storage requires a live Supabase connection.
