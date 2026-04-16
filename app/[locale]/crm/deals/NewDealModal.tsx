@@ -14,7 +14,16 @@ const PRODUCT_TYPES = ['FIXED RATE', 'VARIABLE', 'INDEX', 'PREPAID', 'FREE NIGHT
 
 const DEAL_FLAGS = ['TOS', 'TOAO', 'Deposit', 'Special Deal', '10% Promo']
 
-export default function NewDealModal({ locale, leads, agents, providers }: { locale: string; leads: Lead[]; agents: CRMAgent[]; providers: Provider[] }) {
+export default function NewDealModal({ locale, leads, agents, providers, preselectedLeadId }: { locale: string; leads: Lead[]; agents: CRMAgent[]; providers: Provider[]; preselectedLeadId?: string }) {
+  const preselectedLead = preselectedLeadId ? leads.find(l => l.id === preselectedLeadId) ?? null : null
+
+  function defaultTitle(lead: Lead | null) {
+    if (!lead) return ''
+    const firstName = lead.name.trim().split(' ')[0]
+    const address = lead.service_address || lead.zip || ''
+    return address ? `${firstName} – ${address}` : firstName
+  }
+
   const [open, setOpen] = useState(false)
   const [isPending, setIsPending] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -22,6 +31,7 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
   const [term,         setTerm]         = useState<string>('12')
   const [contractStart,setContractStart] = useState<string>('')
   const [title,        setTitle]        = useState<string>('')
+  const [selectedLeadId, setSelectedLeadId] = useState<string>(preselectedLeadId ?? '')
   const [adderKwh,     setAdderKwh]     = useState<string>('')
   const [usageKwh,     setUsageKwh]     = useState<string>('')
   const [providerVal,  setProviderVal]  = useState<string>('')
@@ -48,6 +58,7 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
   }
 
   function handleLeadChange(leadId: string) {
+    setSelectedLeadId(leadId)
     const lead = leads.find(l => l.id === leadId)
     if (!lead) { setTitle(''); return }
     const firstName = lead.name.trim().split(' ')[0]
@@ -103,6 +114,7 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
         product_type:        get('product_type') || null,
         usage_kwh:           Number(get('usage_kwh')) || null,
         flags:               selectedFlags.length > 0 ? selectedFlags : null,
+        deal_type:           (get('deal_type') as Deal['deal_type']) || null,
       })
       if (res.error) {
         setSubmitError(res.error)
@@ -123,7 +135,7 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
   return (
     <>
       <button
-        onClick={() => { setOpen(true); setTitle(''); setSelectedFlags([]); setTerm('12'); setContractStart(''); setAdderKwh(''); setUsageKwh(''); setProviderVal(''); setPlanNameVal(''); setProductType(''); setRateKwh('') }}
+        onClick={() => { setOpen(true); setTitle(defaultTitle(preselectedLead)); setSelectedLeadId(preselectedLeadId ?? ''); setSelectedFlags([]); setTerm('12'); setContractStart(''); setAdderKwh(''); setUsageKwh(''); setProviderVal(''); setPlanNameVal(''); setProductType(''); setRateKwh('') }}
         className="flex items-center gap-2 bg-brand-greenDark text-white text-sm px-4 py-2 rounded-xl hover:bg-brand-green transition-colors font-medium"
       >
         <PlusCircle size={16} />
@@ -151,7 +163,7 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
                     <label className={L}>Linked Contact</label>
                     <select
                       name="lead_id"
-                      defaultValue=""
+                      value={selectedLeadId}
                       className={C}
                       onChange={e => handleLeadChange(e.target.value)}
                     >
@@ -179,10 +191,20 @@ export default function NewDealModal({ locale, leads, agents, providers }: { loc
                     </select>
                   </div>
                   <div>
-                    <label className={L}>Service Type</label>
+                    <label className={L}>Meter Type</label>
                     <select name="service_type" defaultValue="residential" className={C}>
                       <option value="residential">Residential</option>
                       <option value="commercial">Commercial</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={L}>Deal Type</label>
+                    <select name="deal_type" defaultValue="" className={C}>
+                      <option value="">— Select —</option>
+                      <option value="new_business">New Business</option>
+                      <option value="renewal">Renewal</option>
+                      <option value="tos">TOS</option>
+                      <option value="toao">TOAO</option>
                     </select>
                   </div>
                   <div className="col-span-2">

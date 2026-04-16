@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { ArrowLeft, Phone, Mail, MapPin, Globe, User, FileText, Calendar, CheckCircle2, Clock, RefreshCw, TrendingUp } from 'lucide-react'
 import LeadStatusBadge from '@/components/crm/LeadStatusBadge'
 import LeadStatusSelect from '@/components/crm/LeadStatusSelect'
-import { getLeadById, getQuotesByLead, getActivities, getDealsByLead, getLeadNotes } from '@/lib/supabase/queries'
+import { getLeadById, getQuotesByLead, getActivities, getDealsByLead, getLeadNotes, getCRMAgents, getProvidersFromDB } from '@/lib/supabase/queries'
+import NewDealModal from '@/app/[locale]/crm/deals/NewDealModal'
 import { formatDate } from '@/lib/utils'
 import { setRequestLocale } from 'next-intl/server'
 import NotesFormComponent from './NotesForm'
@@ -33,12 +34,14 @@ export default async function LeadDetailPage({ params }: Props) {
   const { locale, id } = await params
   setRequestLocale(locale)
 
-  const [lead, quotes, activities, deals, leadNotes] = await Promise.all([
+  const [lead, quotes, activities, deals, leadNotes, agents, providers] = await Promise.all([
     getLeadById(id),
     getQuotesByLead(id),
     getActivities({ leadId: id, limit: 20 }),
     getDealsByLead(id),
     getLeadNotes(id),
+    getCRMAgents(),
+    getProvidersFromDB(),
   ])
   if (!lead) notFound()
 
@@ -287,12 +290,21 @@ export default async function LeadDetailPage({ params }: Props) {
                   </span>
                 )}
               </h2>
-              <Link
-                href={`/${locale}/crm/deals`}
-                className="text-xs text-brand-green hover:text-brand-greenDark font-medium"
-              >
-                View all deals →
-              </Link>
+              <div className="flex items-center gap-3">
+                <NewDealModal
+                  locale={locale}
+                  leads={[lead]}
+                  agents={agents}
+                  providers={providers}
+                  preselectedLeadId={lead.id}
+                />
+                <Link
+                  href={`/${locale}/crm/deals`}
+                  className="text-xs text-brand-green hover:text-brand-greenDark font-medium"
+                >
+                  View all →
+                </Link>
+              </div>
             </div>
             {deals.length === 0 ? (
               <p className="text-sm text-gray-400 py-2 text-center">No deals yet</p>
